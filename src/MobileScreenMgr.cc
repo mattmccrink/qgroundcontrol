@@ -21,34 +21,18 @@
  
  ======================================================================*/
 
-#ifndef PX4TuningComponent_H
-#define PX4TuningComponent_H
+#include "MobileScreenMgr.h"
 
-#include "VehicleComponent.h"
+#include <QtAndroidExtras/QtAndroidExtras>
+#include <QtAndroidExtras/QAndroidJniObject>
 
-class PX4TuningComponent : public VehicleComponent
+static const char* kJniClassName = "org/qgroundcontrol/qgchelper/UsbDeviceJNI";
+
+void MobileScreenMgr::setKeepScreenOn(bool keepScreenOn)
 {
-    Q_OBJECT
-    
-public:
-    PX4TuningComponent(Vehicle* vehicle, AutoPilotPlugin* autopilot, QObject* parent = NULL);
-    
-    // Virtuals from VehicleComponent
-    QStringList setupCompleteChangedTriggerList(void) const final;
-    
-    // Virtuals from VehicleComponent
-    QString name(void) const final;
-    QString description(void) const final;
-    QString iconResource(void) const final;
-    bool requiresSetup(void) const final;
-    bool setupComplete(void) const final;
-    QUrl setupSource(void) const final;
-    QUrl summaryQmlSource(void) const final;
-    QString prerequisiteSetup(void) const final;
-    bool allowSetupWhileArmed(void) const final { return true; }
-
-private:
-    const QString   _name;
-};
-
-#endif
+    if (keepScreenOn) {
+        QAndroidJniObject::callStaticMethod<void>(kJniClassName, "keepScreenOn", "()V");
+    } else {
+        QAndroidJniObject::callStaticMethod<void>(kJniClassName, "restoreScreenOn", "()V");
+    }
+}

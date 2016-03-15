@@ -71,6 +71,7 @@
 #include "RadioComponentController.h"
 #include "ESP8266ComponentController.h"
 #include "ScreenToolsController.h"
+#include "QGCMobileFileDialogController.h"
 #include "AutoPilotPlugin.h"
 #include "VehicleComponent.h"
 #include "FirmwarePluginManager.h"
@@ -125,6 +126,10 @@
 
 QGCApplication* QGCApplication::_app = NULL;
 
+const char* QGCApplication::parameterFileExtension =    "params";
+const char* QGCApplication::missionFileExtension =      "mission";
+const char* QGCApplication::telemetryFileExtension =     "tlog";
+
 const char* QGCApplication::_deleteAllSettingsKey           = "DeleteAllSettingsNextBoot";
 const char* QGCApplication::_settingsVersionKey             = "SettingsVersion";
 const char* QGCApplication::_promptFlightDataSave           = "PromptFLightDataSave";
@@ -152,7 +157,7 @@ static QObject* mavlinkQmlSingletonFactory(QQmlEngine*, QJSEngine*)
 
 static QObject* qgroundcontrolQmlGlobalSingletonFactory(QQmlEngine*, QJSEngine*)
 {
-    // We create this object as a QGCTool even though it isn't int he toolbox
+    // We create this object as a QGCTool even though it isn't in the toolbox
     QGroundControlQmlGlobal* qmlGlobal = new QGroundControlQmlGlobal(qgcApp());
     qmlGlobal->setToolbox(qgcApp()->toolbox());
 
@@ -449,6 +454,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterType<MissionController>                  ("QGroundControl.Controllers", 1, 0, "MissionController");
     qmlRegisterType<FlightDisplayViewController>        ("QGroundControl.Controllers", 1, 0, "FlightDisplayViewController");
     qmlRegisterType<ValuesWidgetController>             ("QGroundControl.Controllers", 1, 0, "ValuesWidgetController");
+    qmlRegisterType<QGCMobileFileDialogController>      ("QGroundControl.Controllers", 1, 0, "QGCMobileFileDialogController");
 
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
@@ -462,6 +468,35 @@ void QGCApplication::_initCommon(void)
     qmlRegisterSingletonType<QGroundControlQmlGlobal>   ("QGroundControl",                          1, 0, "QGroundControl",         qgroundcontrolQmlGlobalSingletonFactory);
     qmlRegisterSingletonType<ScreenToolsController>     ("QGroundControl.ScreenToolsController",    1, 0, "ScreenToolsController",  screenToolsControllerSingletonFactory);
     qmlRegisterSingletonType<MavlinkQmlSingleton>       ("QGroundControl.Mavlink",                  1, 0, "Mavlink",                mavlinkQmlSingletonFactory);
+}
+
+bool QGCApplication::_initForNormalAppBoot(void)
+{
+    QSettings settings;
+
+    _styleIsDark = settings.value(_styleKey, _styleIsDark).toBool();
+    _loadCurrentStyle();
+
+    // Exit main application when last window is closed
+    connect(this, &QGCApplication::lastWindowClosed, this, QGCApplication::quit);
+
+#ifdef __mobile__
+    _qmlAppEngine = new QQmlApplicationEngine(this);
+    _qmlAppEngine->addImportPath("qrc:/qml");
+    _qmlAppEngine->rootContext()->setContextProperty("joystickManager", toolbox()->joystickManager());
+    _qmlAppEngine->load(QUrl(QStringLiteral("qrc:/qml/MainWindowNative.qml")));
+#else
+    // Start the user interface
+    MainWindow* mainWindow = MainWindow::_create();
+    Q_CHECK_PTR(mainWindow);
+
+    // Now that main window is up check for lost log files
+    connect(this, &QGCApplication::checkForLostLogFiles, toolbox()->mavlinkProtocol(), &MAVLinkProtocol::checkForLostLogFiles);
+    emit checkForLostLogFiles();
+#endif
+
+    // Load known link configurations
+    toolbox()->linkManager()->loadLinkConfigurationList();
 
     // Show user an upgrade message if the settings version has been bumped up
     bool settingsUpgraded = false;
@@ -484,36 +519,6 @@ void QGCApplication::_initCommon(void)
     }
 
     settings.sync();
-}
-
-bool QGCApplication::_initForNormalAppBoot(void)
-{
-    QSettings settings;
-
-    _styleIsDark = settings.value(_styleKey, _styleIsDark).toBool();
-    _loadCurrentStyle();
-
-    // Exit main application when last window is closed
-    connect(this, &QGCApplication::lastWindowClosed, this, QGCApplication::quit);
-
-#ifdef __mobile__
-    _qmlAppEngine = new QQmlApplicationEngine(this);
-    _qmlAppEngine->addImportPath("qrc:/qml");
-    _qmlAppEngine->rootContext()->setContextProperty("multiVehicleManager", toolbox()->multiVehicleManager());
-    _qmlAppEngine->rootContext()->setContextProperty("joystickManager", toolbox()->joystickManager());
-    _qmlAppEngine->load(QUrl(QStringLiteral("qrc:/qml/MainWindowNative.qml")));
-#else
-    // Start the user interface
-    MainWindow* mainWindow = MainWindow::_create();
-    Q_CHECK_PTR(mainWindow);
-
-    // Now that main window is up check for lost log files
-    connect(this, &QGCApplication::checkForLostLogFiles, toolbox()->mavlinkProtocol(), &MAVLinkProtocol::checkForLostLogFiles);
-    emit checkForLostLogFiles();
-#endif
-
-    // Load known link configurations
-    toolbox()->linkManager()->loadLinkConfigurationList();
 
     return true;
 }

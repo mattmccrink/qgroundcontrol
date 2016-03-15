@@ -51,7 +51,7 @@ QGCView {
     readonly property int       _decimalPlaces:     8
     readonly property real      _horizontalMargin:  ScreenTools.defaultFontPixelWidth  / 2
     readonly property real      _margin:            ScreenTools.defaultFontPixelHeight / 2
-    readonly property var       _activeVehicle:     multiVehicleManager.activeVehicle
+    readonly property var       _activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
     readonly property real      _editFieldWidth:    ScreenTools.defaultFontPixelWidth * 16
     readonly property real      _rightPanelWidth:   Math.min(parent.width / 3, ScreenTools.defaultFontPixelWidth * 30)
     readonly property real      _rightPanelOpacity: 0.8
@@ -68,7 +68,7 @@ QGCView {
     onActiveVehiclePositionChanged: updateMapToVehiclePosition()
 
     Connections {
-        target: multiVehicleManager
+        target: QGroundControl.multiVehicleManager
 
         onActiveVehicleChanged: {
             // When the active vehicle changes we need to allow the first vehicle position to move the map again
@@ -92,7 +92,7 @@ QGCView {
         if (ScreenTools.isMobile) {
             _root.showDialog(mobileFilePicker, "Select Mission File", _root.showDialogDefaultWidth, StandardButton.Yes | StandardButton.Cancel)
         } else {
-            controller.loadMissionFromFile()
+            controller.loadMissionFromFilePicker()
             fitViewportToMissionItems()
         }
     }
@@ -101,7 +101,7 @@ QGCView {
         if (ScreenTools.isMobile) {
             _root.showDialog(mobileFileSaver, "Save Mission File", _root.showDialogDefaultWidth, StandardButton.Save | StandardButton.Cancel)
         } else {
-            controller.saveMissionToFile()
+            controller.saveMissionToFilePicker()
         }
     }
 
@@ -191,23 +191,13 @@ QGCView {
     Component {
         id: mobileFilePicker
 
-        QGCViewDialog {
-            ListView {
-                anchors.margins:    _margin
-                anchors.fill:       parent
-                spacing:            _margin / 2
-                orientation:    ListView.Vertical
-                model: controller.getMobileMissionFiles()
+        QGCMobileFileDialog {
+            openDialog:     true
+            fileExtension:  QGroundControl.missionFileExtension
 
-                delegate: QGCButton {
-                    text: modelData
-
-                    onClicked: {
-                        hideDialog()
-                        controller.loadMobileMissionFromFile(modelData)
-                        fitViewportToMissionItems()
-                    }
-                }
+            onFilenameReturned: {
+                controller.loadMissionFromFile(filename)
+                fitViewportToMissionItems()
             }
         }
     }
@@ -215,24 +205,12 @@ QGCView {
     Component {
         id: mobileFileSaver
 
-        QGCViewDialog {
-            function accept() {
-                hideDialog()
-                controller.saveMobileMissionToFile(filenameTextField.text)
-            }
+        QGCMobileFileDialog {
+            openDialog:     false
+            fileExtension:  QGroundControl.missionFileExtension
 
-            Column {
-                anchors.left:   parent.left
-                anchors.right:  parent.right
-                spacing:        ScreenTools.defaultFontPixelHeight
-
-                QGCLabel {
-                    text: "File name:"
-                }
-
-                QGCTextField {
-                    id: filenameTextField
-                }
+            onFilenameReturned: {
+                controller.saveMissionToFile(filename)
             }
         }
     }
@@ -465,7 +443,7 @@ QGCView {
 
                 // Add the vehicles to the map
                 MapItemView {
-                    model: multiVehicleManager.vehicles
+                    model: QGroundControl.multiVehicleManager.vehicles
                     delegate:
                         VehicleMapItem {
                                 vehicle:        object
@@ -618,7 +596,7 @@ QGCView {
                                         text:       "Vehicle"
                                         enabled:    activeVehicle && activeVehicle.latitude != 0 && activeVehicle.longitude != 0
 
-                                        property var activeVehicle: multiVehicleManager.activeVehicle
+                                        property var activeVehicle: _activeVehicle
 
                                         onClicked: {
                                             centerMapButton.hideDropDown()

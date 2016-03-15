@@ -108,7 +108,6 @@ iOSBuild {
     BUNDLE.files        = $$files($$PWD/ios/AppIcon*.png) $$PWD/ios/QGCLaunchScreen.xib
     QMAKE_BUNDLE_DATA  += BUNDLE
     LIBS               += -framework AVFoundation
-    OBJECTIVE_SOURCES  += src/audio/QGCAudioWorker_iOS.mm
     #-- Info.plist (need an "official" one for the App Store)
     ForAppStore {
         message(App Store Build)
@@ -268,6 +267,7 @@ HEADERS += \
     src/QGCGeo.h \
     src/QGCLoggingCategory.h \
     src/QGCMapPalette.h \
+    src/QGCMobileFileDialogController.h \
     src/QGCPalette.h \
     src/QGCQmlWidgetHolder.h \
     src/QGCQuickWidget.h \
@@ -363,6 +363,16 @@ HEADERS += \
     src/ViewWidgets/ViewWidgetController.h \
 }
 
+iOSBuild {
+    OBJECTIVE_SOURCES += \
+        src/audio/QGCAudioWorker_iOS.mm \
+        src/MobileScreenMgr.mm \
+}
+AndroidBuild {
+    SOURCES += src/MobileScreenMgr.cc \
+}
+
+
 SOURCES += \
     src/audio/QGCAudioWorker.cpp \
     src/CmdLineOptParser.cc \
@@ -396,6 +406,7 @@ SOURCES += \
     src/QGCFileDownload.cc \
     src/QGCLoggingCategory.cc \
     src/QGCMapPalette.cc \
+    src/QGCMobileFileDialogController.cc \
     src/QGCPalette.cc \
     src/QGCQuickWidget.cc \
     src/QGCQmlWidgetHolder.cpp \

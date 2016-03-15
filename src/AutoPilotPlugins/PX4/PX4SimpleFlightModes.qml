@@ -40,6 +40,9 @@ Item {
 
     property real _margins: ScreenTools.defaultFontPixelHeight / 2
 
+    readonly property real _flightModeComboWidth:   ScreenTools.defaultFontPixelWidth * 23
+    readonly property real _channelComboWidth:      ScreenTools.defaultFontPixelWidth * 20
+
     QGCPalette { id: qgcPal; colorGroupEnabled: panel.enabled }
 
     PX4SimpleFlightModesController {
@@ -95,7 +98,7 @@ Item {
 
                                 FactComboBox {
                                     id:         modeChannelCombo
-                                    width:      ScreenTools.defaultFontPixelWidth * 15
+                                    width:      _channelComboWidth
                                     fact:       controller.getParameterFact(-1, "RC_MAP_FLTMODE")
                                     indexModel: false
                                 }
@@ -117,7 +120,7 @@ Item {
 
                                     FactComboBox {
                                         id:         modeCombo
-                                        width:      ScreenTools.defaultFontPixelWidth * 20
+                                        width:      _flightModeComboWidth
                                         fact:       controller.getParameterFact(-1, "COM_FLTMODE" + index)
                                         indexModel: false
                                     }
@@ -148,7 +151,7 @@ Item {
                             spacing:            ScreenTools.defaultFontPixelHeight
 
                             Repeater {
-                                model: [ "RC_MAP_RETURN_SW", "RC_MAP_KILL_SW", "RC_MAP_FLAPS", "RC_MAP_AUX1", "RC_MAP_AUX2", "RC_MAP_AUX3", "RC_MAP_OFFB_SW" ]
+                                model: [ "RC_MAP_RETURN_SW", "RC_MAP_KILL_SW", "RC_MAP_OFFB_SW" ]
 
                                 Row {
                                     spacing: ScreenTools.defaultFontPixelWidth
@@ -163,7 +166,7 @@ Item {
 
                                     FactComboBox {
                                         id:         optCombo
-                                        width:      ScreenTools.defaultFontPixelWidth * 15
+                                        width:      _channelComboWidth
                                         fact:       parent.fact
                                         indexModel: false
                                     }

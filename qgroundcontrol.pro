@@ -37,7 +37,6 @@ DebugBuild {
 } else {
     DESTDIR  = $${OUT_PWD}/release
 }
-
 # Load additional config flags from user_config.pri
 exists(user_config.pri):infile(user_config.pri, CONFIG) {
     CONFIG += $$fromfile(user_config.pri, CONFIG)
@@ -778,3 +777,5 @@ include(QGCSetup.pri)
 #
 
 include(QGCInstaller.pri)
+
+DISTFILES +=

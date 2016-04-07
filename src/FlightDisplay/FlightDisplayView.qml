@@ -42,16 +42,14 @@ import QGroundControl.FactSystem    1.0
 QGCView {
     id:             root
     viewPanel:      _panel
-    topDialogMargin: height - availableHeight
 
     QGCPalette { id: qgcPal; colorGroupEnabled: enabled }
 
-    property real availableHeight: parent.height
     property var _activeVehicle:    QGroundControl.multiVehicleManager.activeVehicle
 
 
-    property bool _mainIsMap:           QGroundControl.loadBoolGlobalSetting(_mainIsMapKey,  true)
-    property bool _isPipVisible:        QGroundControl.loadBoolGlobalSetting(_PIPVisibleKey, true)
+    property bool _mainIsMap:           _controller.hasVideo ? QGroundControl.loadBoolGlobalSetting(_mainIsMapKey,  true) : true
+    property bool _isPipVisible:        _controller.hasVideo ? QGroundControl.loadBoolGlobalSetting(_PIPVisibleKey, true) : false
 
     property real _roll:                _activeVehicle ? _activeVehicle.roll.value    : _defaultRoll
     property real _pitch:               _activeVehicle ? _activeVehicle.pitch.value   : _defaultPitch
@@ -211,6 +209,7 @@ QGCView {
             anchors.left:       _panel.left
             anchors.bottom:     _panel.bottom
             anchors.margins:    ScreenTools.defaultFontPixelHeight
+            visible:            _controller.hasVideo
             isHidden:           !_isPipVisible
             isDark:             isBackgroundDark
             onActivated: {
@@ -224,14 +223,11 @@ QGCView {
 
         //-- Widgets
         Loader {
-            id:                 widgetsLoader
-            z:                  _panel.z + 4
-            anchors.right:      parent.right
-            anchors.left:       parent.left
-            anchors.bottom:     parent.bottom
-            height:             availableHeight
-            asynchronous:       true
-            visible:            status == Loader.Ready
+            id:             widgetsLoader
+            z:              _panel.z + 4
+            anchors.fill:   parent
+            asynchronous:   true
+            visible:        status == Loader.Ready
 
             property bool isBackgroundDark: root.isBackgroundDark
             property var qgcView: root

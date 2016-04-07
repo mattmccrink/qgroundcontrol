@@ -44,6 +44,8 @@ Item {
     readonly property real __closeButtonSize:   ScreenTools.defaultFontPixelHeight * 2
     readonly property real _margins:            ScreenTools.defaultFontPixelHeight / 2
 
+    QGCPalette { id: qgcPal }
+
     onVisibleChanged: {
         //-- Unselect any selected button
         panelActionGroup.current = null
@@ -106,7 +108,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.left:   parent.left
         opacity:        0.0
-        color:          __qgcPal.window
+        color:          qgcPal.window
         visible:        __rightPanel.source == ""
         // Dismiss if clicked outside menu area
         MouseArea {
@@ -134,7 +136,7 @@ Item {
         anchors.left:   parent.left
         anchors.top:    __topSeparator.bottom
         anchors.bottom: parent.bottom
-        color:          __qgcPal.windowShadeDark
+        color:          qgcPal.windowShadeDark
 
         QGCFlickable {
             anchors.fill:       parent
@@ -214,6 +216,19 @@ Item {
                 QGCButton {
                     anchors.left:   parent.left
                     anchors.right:  parent.right
+                    text:           "Console"
+                    exclusiveGroup: panelActionGroup
+                    onClicked: {
+                        if(__rightPanel.source != "QGroundControl/Controls/AppMessages.qml") {
+                            __rightPanel.source = "QGroundControl/Controls/AppMessages.qml"
+                        }
+                        checked = true
+                    }
+                }
+
+                QGCButton {
+                    anchors.left:   parent.left
+                    anchors.right:  parent.right
                     text:           "Mock Link"
                     visible:        ScreenTools.isDebug
                     exclusiveGroup: panelActionGroup
@@ -270,7 +285,7 @@ Item {
         height:         parent.height - toolBar.height - __topSeparator.height
         anchors.bottom: parent.bottom
         visible:        __rightPanel.source != ""
-        color:          __qgcPal.window
+        color:          qgcPal.window
         //-- Panel Contents
         Loader {
             id:             __rightPanel
@@ -288,7 +303,7 @@ Item {
                 source:       "/res/XDelete.svg"
                 mipmap:       true
                 fillMode:     Image.PreserveAspectFit
-                color:        __qgcPal.text
+                color:        qgcPal.text
                 width:        parent.width  * 0.75
                 height:       parent.height * 0.75
                 anchors.centerIn: parent

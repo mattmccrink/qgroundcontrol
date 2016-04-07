@@ -36,6 +36,7 @@
 #include <QPainter>
 #include <QStyleFactory>
 #include <QAction>
+#include <QStringListModel>
 
 #ifdef QGC_ENABLE_BLUETOOTH
 #include <QBluetoothLocalDevice>
@@ -100,6 +101,7 @@
 #include "LogDownloadController.h"
 #include "PX4AirframeLoader.h"
 #include "ValuesWidgetController.h"
+#include "AppMessages.h"
 
 #ifndef __ios__
     #include "SerialLink.h"
@@ -484,6 +486,7 @@ bool QGCApplication::_initForNormalAppBoot(void)
     _qmlAppEngine = new QQmlApplicationEngine(this);
     _qmlAppEngine->addImportPath("qrc:/qml");
     _qmlAppEngine->rootContext()->setContextProperty("joystickManager", toolbox()->joystickManager());
+    _qmlAppEngine->rootContext()->setContextProperty("debugMessageModel", AppMessages::getModel());
     _qmlAppEngine->load(QUrl(QStringLiteral("qrc:/qml/MainWindowNative.qml")));
 #else
     // Start the user interface
@@ -656,13 +659,12 @@ void QGCApplication::_loadCurrentStyle(void)
     }
 
     if (success && !_styleIsDark) {
-        qDebug() << "LOADING LIGHT";
         // Load the slave light stylesheet.
         QFile styleSheet(_lightStyleFile);
         if (styleSheet.open(QIODevice::ReadOnly | QIODevice::Text)) {
             styles += styleSheet.readAll();
         } else {
-            qDebug() << "Unable to load slave light sheet:";
+            qWarning() << "Unable to load slave light sheet:";
             success = false;
         }
     }
@@ -723,6 +725,11 @@ QObject* QGCApplication::_rootQmlObject(void)
 
 void QGCApplication::showMessage(const QString& message)
 {
+    // Special case hack for ArduPilot prearm messages. These show up in the center of the map, so no need for popup.
+    if (message.contains("PreArm:")) {
+        return;
+    }
+
     QObject* rootQmlObject = _rootQmlObject();
 
     if (rootQmlObject) {

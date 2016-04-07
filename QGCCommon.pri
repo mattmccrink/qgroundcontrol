@@ -60,7 +60,11 @@ linux {
         DEFINES += __macos__
         CONFIG += x86_64
         CONFIG -= x86
+equals(QT_MAJOR_VERSION, 5) | greaterThan(QT_MINOR_VERSION, 5) {
+        QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
+} else {
         QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
+}
         QMAKE_MAC_SDK = macosx10.11
         QMAKE_CXXFLAGS += -fvisibility=hidden
     } else {
@@ -162,6 +166,10 @@ MacBuild | LinuxBuild {
     QMAKE_CXXFLAGS_WARN_ON += -Wall
     WarningsAsErrorsOn {
         QMAKE_CXXFLAGS_WARN_ON += -Werror
+    }
+    MacBuild {
+        # Latest clang version has a buggy check for this which cause Qt headers to throw warnings on qmap.h
+        QMAKE_CXXFLAGS_WARN_ON += -Wno-return-stack-address
     }
 }
 

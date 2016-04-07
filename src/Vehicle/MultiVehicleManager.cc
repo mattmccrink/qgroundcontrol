@@ -29,6 +29,7 @@
 #include "MAVLinkProtocol.h"
 #include "UAS.h"
 #include "QGCApplication.h"
+#include "FollowMe.h"
 
 #ifdef __mobile__
 #include "MobileScreenMgr.h"
@@ -324,4 +325,19 @@ void MultiVehicleManager::_sendGCSHeartbeat(void)
                                    MAV_STATE_ACTIVE);       // MAV_STATE
         vehicle->sendMessage(message);
     }
+}
+
+bool MultiVehicleManager::linkInUse(LinkInterface* link, Vehicle* skipVehicle)
+{
+    for (int i=0; i< _vehicles.count(); i++) {
+        Vehicle* vehicle = qobject_cast<Vehicle*>(_vehicles[i]);
+
+        if (vehicle != skipVehicle) {
+            if (vehicle->containsLink(link)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }

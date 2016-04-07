@@ -63,7 +63,8 @@ LinuxBuild {
 
 CONFIG += qt \
     thread \
-    c++11
+    c++11 \
+    silent
 
 QT += \
     concurrent \
@@ -93,7 +94,10 @@ QT += \
 
 #  testlib is needed even in release flavor for QSignalSpy support
 QT += testlib
-
+ReleaseBuild {
+    # We don't need the testlib console in release mode
+    QT.testlib.CONFIG -= console
+}
 #
 # OS Specific settings
 #
@@ -102,6 +106,9 @@ MacBuild {
     QMAKE_INFO_PLIST    = Custom-Info.plist
     ICON                = $${BASEDIR}/resources/icons/macx.icns
     OTHER_FILES        += Custom-Info.plist
+equals(QT_MAJOR_VERSION, 5) | greaterThan(QT_MINOR_VERSION, 5) {
+    LIBS               += -framework ApplicationServices
+}
 }
 
 iOSBuild {
@@ -183,6 +190,7 @@ INCLUDEPATH += \
     src/FlightMap/Widgets \
     src/input \
     src/Joystick \
+    src/FollowMe \
     src/lib/qmapcontrol \
     src/MissionEditor \
     src/MissionManager \
@@ -247,6 +255,7 @@ HEADERS += \
     src/HomePositionManager.h \
     src/Joystick/Joystick.h \
     src/Joystick/JoystickManager.h \
+    src/FollowMe/FollowMe.h \
     src/JsonHelper.h \
     src/LogCompressor.h \
     src/MG.h \
@@ -273,6 +282,7 @@ HEADERS += \
     src/QGCQuickWidget.h \
     src/QGCTemporaryFile.h \
     src/QGCToolbox.h \
+    src/QmlControls/AppMessages.h \
     src/QmlControls/CoordinateVector.h \
     src/QmlControls/MavlinkQmlSingleton.h \
     src/QmlControls/ParameterEditorController.h \
@@ -300,6 +310,7 @@ HEADERS += \
 WindowsBuild {
     PRECOMPILED_HEADER += src/stable_headers.h
     HEADERS += src/stable_headers.h
+    CONFIG -= silent
 }
 
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
@@ -389,6 +400,7 @@ SOURCES += \
     src/Joystick/Joystick.cc \
     src/Joystick/JoystickManager.cc \
     src/JsonHelper.cc \
+    src/FollowMe/FollowMe.cc \
     src/LogCompressor.cc \
     src/main.cc \
     src/MissionManager/MissionCommandList.cc \
@@ -413,6 +425,7 @@ SOURCES += \
     src/QGCTemporaryFile.cc \
     src/QGCToolbox.cc \
     src/QGCGeo.cc \
+    src/QmlControls/AppMessages.cc \
     src/QmlControls/CoordinateVector.cc \
     src/QmlControls/ParameterEditorController.cc \
     src/QmlControls/ScreenToolsController.cc \
@@ -491,7 +504,7 @@ SOURCES += \
     src/ViewWidgets/CustomCommandWidgetController.cc \
     src/ViewWidgets/LogDownload.cc \
     src/ViewWidgets/LogDownloadController.cc \
-    src/ViewWidgets/ViewWidgetController.cc \
+    src/ViewWidgets/ViewWidgetController.cc
 }
 
 #

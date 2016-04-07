@@ -136,21 +136,26 @@
         <file alias="AntennaRC">resources/Antenna_RC.svg</file>
         <file alias="AntennaT">resources/Antenna_T.svg</file>
         <file alias="ArrowDown.svg">resources/ArrowDown.svg</file>
+        <file alias="ArrowRight.svg">resources/ArrowRight.svg</file>
         <file alias="buttonLeft.svg">resources/buttonLeft.svg</file>
         <file alias="buttonRight.svg">resources/buttonRight.svg</file>
-        <file alias="gear.svg">resources/gear.svg</file>
+        <file alias="cancel.svg">resources/cancel.svg</file>
+        <file alias="gear-black.svg">resources/gear-black.svg</file>
+        <file alias="gear-white.svg">resources/gear-white.svg</file>
         <file alias="JoystickBezel.png">resources/JoystickBezel.png</file>
         <file alias="JoystickBezelLight.png">resources/JoystickBezelLight.png</file>
         <file alias="notile.png">resources/notile.png</file>
         <file alias="Pause">resources/Pause.svg</file>
         <file alias="Play">resources/Play.svg</file>
         <file alias="PowerButton">resources/PowerButton.svg</file>
+        <file alias="QGCLogoWhite">resources/QGCLogoWhite.svg</file>
+        <file alias="QGCLogoBlack">resources/QGCLogoBlack.svg</file>
         <file alias="QGroundControlConnect">resources/QGroundControlConnect.svg</file>
         <file alias="SplashScreen">resources/SplashScreen.png</file>
         <file alias="Stop">resources/Stop.svg</file>
         <file alias="XDelete.svg">resources/XDelete.svg</file>
         <file alias="XDeleteBlack.svg">resources/XDeleteBlack.svg</file>
-    </qresource>
+</qresource>
     <qresource prefix="/res/firmware">
         <file alias="px4.png">resources/firmware/px4.png</file>
         <file alias="apm.png">resources/firmware/apm.png</file>

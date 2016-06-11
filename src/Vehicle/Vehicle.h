@@ -406,6 +406,10 @@ public:
     /// @return true: message sent, false: Link no longer connected
     bool sendMessageOnLink(LinkInterface* link, mavlink_message_t message);
 
+    /// Sends a message to the priority link
+    /// @return true: message sent, false: Link no longer connected
+    bool sendMessageOnPriorityLink(mavlink_message_t message) { return sendMessageOnLink(priorityLink(), message); }
+
     /// Sends the specified messages multiple times to the vehicle in order to attempt to
     /// guarantee that it makes it to the vehicle.
     void sendMessageMultiple(mavlink_message_t message);
@@ -490,6 +494,8 @@ public:
     uint            messagesLost        () { return _messagesLost; }
     bool            flying              () const { return _flying; }
     bool            guidedMode          () const;
+    uint8_t         baseMode            () const { return _base_mode; }
+    uint32_t        customMode          () const { return _custom_mode; }
 
     Fact* roll              (void) { return &_rollFact; }
     Fact* heading           (void) { return &_headingFact; }
@@ -513,6 +519,12 @@ public:
 
     bool containsLink(LinkInterface* link) { return _links.contains(link); }
     void doCommandLong(int component, MAV_CMD command, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f, float param6 = 0.0f, float param7 = 0.0f);
+
+    int firmwareMajorVersion(void) const { return _firmwareMajorVersion; }
+    int firmwareMinorVersion(void) const { return _firmwareMinorVersion; }
+    int firmwarePatchVersion(void) const { return _firmwarePatchVersion; }
+    void setFirmwareVersion(int majorVersion, int minorVersion, int patchVersion);
+    static const int versionNotSetValue = -1;
 
 public slots:
     void setLatitude(double latitude);
@@ -538,6 +550,7 @@ signals:
     void flyingChanged(bool flying);
     void guidedModeChanged(bool guidedMode);
     void prearmErrorChanged(const QString& prearmError);
+    void commandLongAck(uint8_t compID, uint16_t command, uint8_t result);
 
     void messagesReceivedChanged    ();
     void messagesSentChanged        ();
@@ -616,6 +629,7 @@ private:
     void _handleWind(mavlink_message_t& message);
     void _handleVibration(mavlink_message_t& message);
     void _handleExtendedSysState(mavlink_message_t& message);
+    void _handleCommandAck(mavlink_message_t& message);
     void _missionManagerError(int errorCode, const QString& errorMsg);
     void _mapTrajectoryStart(void);
     void _mapTrajectoryStop(void);
@@ -722,6 +736,10 @@ private:
     uint8_t             _messageSeq;
     uint8_t             _compID;
     bool                _heardFrom;
+
+    int _firmwareMajorVersion;
+    int _firmwareMinorVersion;
+    int _firmwarePatchVersion;
 
     static const int    _lowBatteryAnnounceRepeatMSecs; // Amount of time in between each low battery announcement
     QElapsedTimer       _lowBatteryAnnounceTimer;

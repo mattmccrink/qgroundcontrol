@@ -43,6 +43,8 @@ FactPanel {
 
     property var viewPanel
 
+    property bool __useAvailableHeight: false
+
     /// This is signalled when the top level Item reaches Component.onCompleted. This allows
     /// the view subcomponent to connect to this signal and do work once the full ui is ready
     /// to go.
@@ -54,61 +56,61 @@ FactPanel {
 
         // Accept role buttons
         if (buttons & StandardButton.Ok) {
-            __acceptButton.text = "Ok"
+            __acceptButton.text = qsTr("Ok")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.Open) {
-            __acceptButton.text = "Open"
+            __acceptButton.text = qsTr("Open")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.Save) {
-            __acceptButton.text = "Save"
+            __acceptButton.text = qsTr("Save")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.Apply) {
-            __acceptButton.text = "Apply"
+            __acceptButton.text = qsTr("Apply")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.Open) {
-            __acceptButton.text = "Open"
+            __acceptButton.text = qsTr("Open")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.SaveAll) {
-            __acceptButton.text = "Save All"
+            __acceptButton.text = qsTr("Save All")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.Yes) {
-            __acceptButton.text = "Yes"
+            __acceptButton.text = qsTr("Yes")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.YesToAll) {
-            __acceptButton.text = "Yes to All"
+            __acceptButton.text = qsTr("Yes to All")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.Retry) {
-            __acceptButton.text = "Retry"
+            __acceptButton.text = qsTr("Retry")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.Reset) {
-            __acceptButton.text = "Reset"
+            __acceptButton.text = qsTr("Reset")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.RestoreToDefaults) {
-            __acceptButton.text = "Restore to Defaults"
+            __acceptButton.text = qsTr("Restore to Defaults")
             __acceptButton.visible = true
         } else if (buttons & StandardButton.Ignore) {
-            __acceptButton.text = "Ignore"
+            __acceptButton.text = qsTr("Ignore")
             __acceptButton.visible = true
         }
 
         // Reject role buttons
         if (buttons & StandardButton.Cancel) {
-            __rejectButton.text = "Cancel"
+            __rejectButton.text = qsTr("Cancel")
             __rejectButton.visible = true
         } else if (buttons & StandardButton.Close) {
-            __rejectButton.text = "Close"
+            __rejectButton.text = qsTr("Close")
             __rejectButton.visible = true
         } else if (buttons & StandardButton.No) {
-            __rejectButton.text = "No"
+            __rejectButton.text = qsTr("No")
             __rejectButton.visible = true
         } else if (buttons & StandardButton.NoToAll) {
-            __rejectButton.text = "No to All"
+            __rejectButton.text = qsTr("No to All")
             __rejectButton.visible = true
         } else if (buttons & StandardButton.Abort) {
-            __rejectButton.text = "Abort"
+            __rejectButton.text = qsTr("Abort")
             __rejectButton.visible = true
         } else if (buttons & StandardButton.Reset) {
-            __rejectButton.text = "Reset"
+            __rejectButton.text = qsTr("Reset")
             __rejectButton.visible = true
         }
     }
@@ -121,7 +123,7 @@ FactPanel {
 
     function __checkForEarlyDialog(title) {
         if (!completedSignalled) {
-            console.warn("showDialog|Message called before QGCView.completed signalled", title)
+            console.warn(qsTr("showDialog|Message called before QGCView.completed signalled"), title)
         }
     }
 
@@ -134,10 +136,12 @@ FactPanel {
     readonly property int showDialogFullWidth:      -1  ///< Use for full width dialog
     readonly property int showDialogDefaultWidth:   40  ///< Use for default dialog width
 
-    function showDialog(component, title, charWidth, buttons) {
+    function showDialog(component, title, charWidth, buttons, useAvailableHeight) {
         if (__checkForEarlyDialog(title)) {
             return
         }
+
+        __useAvailableHeight = typeof useAvailableHeight !== 'undefined' ? useAvailableHeight : false
 
         __stopAllAnimations()
 
@@ -278,7 +282,7 @@ FactPanel {
         // This covers the parent with an transparent section
         Rectangle {
             id:             __transparentSection
-            anchors.top:    parent.top
+            height:         __useAvailableHeight ? ScreenTools.availableHeight : parent.height
             anchors.bottom: parent.bottom
             anchors.left:   parent.left
             anchors.right:  __dialogPanel.left
@@ -291,7 +295,7 @@ FactPanel {
             id:                 __dialogPanel
             width:              __dialogCharWidth == showDialogFullWidth ? parent.width : defaultTextWidth * __dialogCharWidth
             anchors.topMargin:  topDialogMargin
-            anchors.top:        parent.top
+            height:             __useAvailableHeight ? ScreenTools.availableHeight : parent.height
             anchors.bottom:     parent.bottom
             anchors.right:      parent.right
             color:              __qgcPal.windowShadeDark

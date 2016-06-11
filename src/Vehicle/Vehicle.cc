@@ -43,6 +43,8 @@ QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 #define DEFAULT_LAT  38.965767f
 #define DEFAULT_LON -120.083923f
 
+extern const char* guided_mode_not_supported_by_vehicle;
+
 const char* Vehicle::_settingsGroup =               "Vehicle%1";        // %1 replaced with mavlink system id
 const char* Vehicle::_joystickModeSettingsKey =     "JoystickMode";
 const char* Vehicle::_joystickEnabledSettingsKey =  "JoystickEnabled";
@@ -121,6 +123,9 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _messageSeq(0)
     , _compID(0)
     , _heardFrom(false)
+    , _firmwareMajorVersion(versionNotSetValue)
+    , _firmwareMinorVersion(versionNotSetValue)
+    , _firmwarePatchVersion(versionNotSetValue)
     , _rollFact             (0, _rollFactName,              FactMetaData::valueTypeDouble)
     , _pitchFact            (0, _pitchFactName,             FactMetaData::valueTypeDouble)
     , _headingFact          (0, _headingFactName,           FactMetaData::valueTypeDouble)
@@ -288,6 +293,9 @@ Vehicle::Vehicle(QObject* parent)
     , _messageSeq(0)
     , _compID(0)
     , _heardFrom(false)
+    , _firmwareMajorVersion(versionNotSetValue)
+    , _firmwareMinorVersion(versionNotSetValue)
+    , _firmwarePatchVersion(versionNotSetValue)
     , _rollFact             (0, _rollFactName,              FactMetaData::valueTypeDouble)
     , _pitchFact            (0, _pitchFactName,             FactMetaData::valueTypeDouble)
     , _headingFact          (0, _headingFactName,           FactMetaData::valueTypeDouble)
@@ -426,6 +434,9 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_EXTENDED_SYS_STATE:
         _handleExtendedSysState(message);
         break;
+    case MAVLINK_MSG_ID_COMMAND_ACK:
+        _handleCommandAck(message);
+        break;
 
     // Following are ArduPilot dialect messages
 
@@ -437,6 +448,40 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     emit mavlinkMessageReceived(message);
 
     _uas->receiveMessage(message);
+}
+
+void Vehicle::_handleCommandAck(mavlink_message_t& message)
+{
+    mavlink_command_ack_t ack;
+    mavlink_msg_command_ack_decode(&message, &ack);
+
+    emit commandLongAck(message.compid, ack.command, ack.result);
+
+    QString commandName;
+    MavCmdInfo* cmdInfo = qgcApp()->toolbox()->missionCommands()->getMavCmdInfo((MAV_CMD)ack.command, this);
+    if (cmdInfo) {
+        commandName = cmdInfo->friendlyName();
+    } else {
+        commandName = tr("cmdid %1").arg(ack.command);
+    }
+
+    switch (ack.result) {
+    case MAV_RESULT_TEMPORARILY_REJECTED:
+        qgcApp()->showMessage(tr("%1 command temporarily rejected").arg(commandName));
+        break;
+    case MAV_RESULT_DENIED:
+        qgcApp()->showMessage(tr("%1 command denied").arg(commandName));
+        break;
+    case MAV_RESULT_UNSUPPORTED:
+        qgcApp()->showMessage(tr("%1 command not supported").arg(commandName));
+        break;
+    case MAV_RESULT_FAILED:
+        qgcApp()->showMessage(tr("%1 command failed").arg(commandName));
+        break;
+    default:
+        // Do nothing
+        break;
+    }
 }
 
 void Vehicle::_handleExtendedSysState(mavlink_message_t& message)
@@ -1422,7 +1467,7 @@ bool Vehicle::pauseVehicleSupported(void) const
 void Vehicle::guidedModeRTL(void)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     _firmwarePlugin->guidedModeRTL(this);
@@ -1431,7 +1476,7 @@ void Vehicle::guidedModeRTL(void)
 void Vehicle::guidedModeLand(void)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     _firmwarePlugin->guidedModeLand(this);
@@ -1440,7 +1485,7 @@ void Vehicle::guidedModeLand(void)
 void Vehicle::guidedModeTakeoff(double altitudeRel)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     setGuidedMode(true);
@@ -1450,7 +1495,7 @@ void Vehicle::guidedModeTakeoff(double altitudeRel)
 void Vehicle::guidedModeGotoLocation(const QGeoCoordinate& gotoCoord)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     _firmwarePlugin->guidedModeGotoLocation(this, gotoCoord);
@@ -1459,7 +1504,7 @@ void Vehicle::guidedModeGotoLocation(const QGeoCoordinate& gotoCoord)
 void Vehicle::guidedModeChangeAltitude(double altitudeRel)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     _firmwarePlugin->guidedModeChangeAltitude(this, altitudeRel);
@@ -1548,6 +1593,13 @@ void Vehicle::setPrearmError(const QString& prearmError)
 void Vehicle::_prearmErrorTimeout(void)
 {
     setPrearmError(QString());
+}
+
+void Vehicle::setFirmwareVersion(int majorVersion, int minorVersion, int patchVersion)
+{
+    _firmwareMajorVersion = majorVersion;
+    _firmwareMinorVersion = minorVersion;
+    _firmwarePatchVersion = patchVersion;
 }
 
 const char* VehicleGPSFactGroup::_hdopFactName =                "hdop";

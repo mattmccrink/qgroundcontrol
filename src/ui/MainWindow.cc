@@ -278,10 +278,19 @@ MainWindow::MainWindow()
 #ifndef __mobile__
     _loadVisibleWidgetsSettings();
 #endif
+    //-- Enable message handler display of messages in main window
+    UASMessageHandler* msgHandler = qgcApp()->toolbox()->uasMessageHandler();
+    if(msgHandler) {
+        msgHandler->showErrorsInToolbar();
+    }
 }
 
 MainWindow::~MainWindow()
 {
+    // This needs to happen before we get into the QWidget dtor
+    // otherwise  the QML engine reads freed data and tries to
+    // destroy MainWindow a second time.
+    delete _mainQmlWidgetHolder;
     _instance = NULL;
 }
 

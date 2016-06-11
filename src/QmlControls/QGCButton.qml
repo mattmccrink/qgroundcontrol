@@ -33,8 +33,8 @@ Button {
             __lastGlobalMouseX = ScreenTools.mouseX()
             __lastGlobalMouseY = ScreenTools.mouseY()
         }
-        onEntered: { __forceHoverOff; false; hoverTimer.start() }
-        onExited: { __forceHoverOff; false; hoverTimer.stop() }
+        onEntered: { __forceHoverOff = false; hoverTimer.start() }
+        onExited: { __forceHoverOff = false; hoverTimer.stop() }
     }
 
     Timer {
@@ -43,11 +43,7 @@ Button {
         repeat:     true
 
         onTriggered: {
-            if (__lastGlobalMouseX != ScreenTools.mouseX() || __lastGlobalMouseY != ScreenTools.mouseY()) {
-                __forceHoverOff = true
-            } else {
-                __forceHoverOff = false
-            }
+            __forceHoverOff = (__lastGlobalMouseX != ScreenTools.mouseX() || __lastGlobalMouseY != ScreenTools.mouseY());
         }
     }
 
@@ -64,7 +60,7 @@ Button {
             background: Item {
                 property bool down: control.pressed || (control.checkable && control.checked)
                 implicitWidth: Math.round(TextSingleton.implicitHeight * 4.5)
-                implicitHeight: ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 3 * 0.75 : Math.max(25, Math.round(TextSingleton.implicitHeight * 1.2))
+                implicitHeight: ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 2.5 : Math.max(25, Math.round(TextSingleton.implicitHeight * 1.2))
 
                 Rectangle {
                     anchors.fill:   parent

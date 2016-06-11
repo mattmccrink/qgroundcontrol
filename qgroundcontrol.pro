@@ -18,7 +18,7 @@
 # -------------------------------------------------
 
 exists($${OUT_PWD}/qgroundcontrol.pro) {
-    error("You must use shadow build.")
+    error("You must use shadow build (e.g. mkdir build; cd build; qmake ../qgroundcontrol.pro).")
 }
 
 message(Qt version $$[QT_VERSION])
@@ -64,7 +64,15 @@ LinuxBuild {
 CONFIG += qt \
     thread \
     c++11 \
+
+contains(DEFINES, ENABLE_VERBOSE_OUTPUT) {
+    message("Enable verbose compiler output (manual override from command line)")
+} else:exists(user_config.pri):infile(user_config.pri, DEFINES, ENABLE_VERBOSE_OUTPUT) {
+    message("Enable verbose compiler output (manual override from user_config.pri)")
+} else {
+CONFIG += \
     silent
+}
 
 QT += \
     concurrent \
@@ -191,6 +199,7 @@ INCLUDEPATH += \
     src/input \
     src/Joystick \
     src/FollowMe \
+    src/GPS \
     src/lib/qmapcontrol \
     src/MissionEditor \
     src/MissionManager \
@@ -286,6 +295,7 @@ HEADERS += \
     src/QmlControls/CoordinateVector.h \
     src/QmlControls/MavlinkQmlSingleton.h \
     src/QmlControls/ParameterEditorController.h \
+    src/QmlControls/RCChannelMonitorController.h \
     src/QmlControls/ScreenToolsController.h \
     src/QmlControls/QGCQGeoCoordinate.h \
     src/QmlControls/QGroundControlQmlGlobal.h \
@@ -311,6 +321,7 @@ WindowsBuild {
     PRECOMPILED_HEADER += src/stable_headers.h
     HEADERS += src/stable_headers.h
     CONFIG -= silent
+    OTHER_FILES += .appveyor.yml
 }
 
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
@@ -366,6 +377,15 @@ HEADERS += \
     src/ui/uas/UASQuickViewItem.h \
     src/ui/uas/UASQuickViewItemSelect.h \
     src/ui/uas/UASQuickViewTextItem.h \
+    src/GPS/Drivers/src/gps_helper.h \
+    src/GPS/Drivers/src/ubx.h \
+    src/GPS/definitions.h \
+    src/GPS/vehicle_gps_position.h \
+    src/GPS/satellite_info.h \
+    src/GPS/RTCM/RTCMMavlink.h \
+    src/GPS/GPSManager.h \
+    src/GPS/GPSPositionMessage.h \
+    src/GPS/GPSProvider.h \
     src/VehicleSetup/JoystickConfigController.h \
     src/ViewWidgets/CustomCommandWidget.h \
     src/ViewWidgets/CustomCommandWidgetController.h \
@@ -428,6 +448,7 @@ SOURCES += \
     src/QmlControls/AppMessages.cc \
     src/QmlControls/CoordinateVector.cc \
     src/QmlControls/ParameterEditorController.cc \
+    src/QmlControls/RCChannelMonitorController.cc \
     src/QmlControls/ScreenToolsController.cc \
     src/QmlControls/QGCQGeoCoordinate.cc \
     src/QmlControls/QGroundControlQmlGlobal.cc \
@@ -499,6 +520,11 @@ SOURCES += \
     src/ui/uas/UASQuickViewItem.cc \
     src/ui/uas/UASQuickViewItemSelect.cc \
     src/ui/uas/UASQuickViewTextItem.cc \
+    src/GPS/Drivers/src/gps_helper.cpp \
+    src/GPS/Drivers/src/ubx.cpp \
+    src/GPS/RTCM/RTCMMavlink.cc \
+    src/GPS/GPSManager.cc \
+    src/GPS/GPSProvider.cc \
     src/VehicleSetup/JoystickConfigController.cc \
     src/ViewWidgets/CustomCommandWidget.cc \
     src/ViewWidgets/CustomCommandWidgetController.cc \

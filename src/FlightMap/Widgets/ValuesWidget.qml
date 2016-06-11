@@ -23,6 +23,7 @@ This file is part of the QGROUNDCONTROL project
 
 import QtQuick          2.4
 import QtQuick.Dialogs  1.2
+import QtQuick.Layouts  1.2
 
 import QGroundControl.Controls      1.0
 import QGroundControl.ScreenTools   1.0
@@ -52,7 +53,7 @@ QGCFlickable {
     }
 
     function showPicker() {
-        qgcView.showDialog(propertyPicker, "Value Widget Setup", qgcView.showDialogDefaultWidth, StandardButton.Ok)
+        qgcView.showDialog(propertyPicker, qsTr("Value Widget Setup"), qgcView.showDialogDefaultWidth, StandardButton.Ok, true /*use available height*/ )
     }
 
     function listContains(list, value) {
@@ -163,7 +164,7 @@ QGCFlickable {
 
                 QGCLabel {
                     id:     _label
-                    text:   "Select the values you want to display:"
+                    text:   qsTr("Select the values you want to display:")
                 }
 
                 Loader {
@@ -195,13 +196,13 @@ QGCFlickable {
             QGCLabel {
                 width:      parent.width
                 wrapMode:   Text.WordWrap
-                text:       factGroup ? factGroupName : "Vehicle must be connected to assign values."
+                text:       factGroup ? factGroupName : qsTr("Vehicle must be connected to assign values.")
             }
 
             Repeater {
                 model: factGroup ? factGroup.factNames : 0
 
-                Row {
+                RowLayout {
                     spacing: _margins
 
                     property string propertyName: factGroupName + "." + modelData
@@ -250,11 +251,13 @@ QGCFlickable {
                         text:       factGroup.getFact(modelData).shortDescription
                         checked:    _largeCheckBox.checked || listContains(controller.smallValues, propertyName)
                         onClicked:  updateValues()
+                        Layout.fillWidth:       true
+                        Layout.minimumWidth:    ScreenTools.defaultFontPixelWidth * 20
                     }
 
                     QGCCheckBox {
                         id:         _largeCheckBox
-                        text:       "large"
+                        text:       qsTr("Large")
                         checked:    listContains(controller.largeValues, propertyName)
                         enabled:    _addCheckBox.checked
                         onClicked:  updateValues()

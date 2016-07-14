@@ -1,25 +1,12 @@
-/*=====================================================================
+/****************************************************************************
+ *
+ *   (c) 2009-2016 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+ *
+ * QGroundControl is licensed according to the terms in the file
+ * COPYING.md in the root of the source code directory.
+ *
+ ****************************************************************************/
 
- QGroundControl Open Source Ground Control Station
-
- (c) 2009 - 2015 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
-
- This file is part of the QGROUNDCONTROL project
-
- QGROUNDCONTROL is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- QGROUNDCONTROL is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with QGROUNDCONTROL. If not, see <http://www.gnu.org/licenses/>.
-
- ======================================================================*/
 
 /// @file
 ///     @author Don Gagne <don@thegagnes.com>
@@ -42,8 +29,6 @@ FactPanel {
     property real topDialogMargin:      0           ///< Set a top margin for dialog
 
     property var viewPanel
-
-    property bool __useAvailableHeight: false
 
     /// This is signalled when the top level Item reaches Component.onCompleted. This allows
     /// the view subcomponent to connect to this signal and do work once the full ui is ready
@@ -109,9 +94,6 @@ FactPanel {
         } else if (buttons & StandardButton.Abort) {
             __rejectButton.text = qsTr("Abort")
             __rejectButton.visible = true
-        } else if (buttons & StandardButton.Reset) {
-            __rejectButton.text = qsTr("Reset")
-            __rejectButton.visible = true
         }
     }
 
@@ -136,12 +118,10 @@ FactPanel {
     readonly property int showDialogFullWidth:      -1  ///< Use for full width dialog
     readonly property int showDialogDefaultWidth:   40  ///< Use for default dialog width
 
-    function showDialog(component, title, charWidth, buttons, useAvailableHeight) {
+    function showDialog(component, title, charWidth, buttons) {
         if (__checkForEarlyDialog(title)) {
             return
         }
-
-        __useAvailableHeight = typeof useAvailableHeight !== 'undefined' ? useAvailableHeight : false
 
         __stopAllAnimations()
 
@@ -282,7 +262,7 @@ FactPanel {
         // This covers the parent with an transparent section
         Rectangle {
             id:             __transparentSection
-            height:         __useAvailableHeight ? ScreenTools.availableHeight : parent.height
+            height:         ScreenTools.availableHeight ? ScreenTools.availableHeight : parent.height
             anchors.bottom: parent.bottom
             anchors.left:   parent.left
             anchors.right:  __dialogPanel.left
@@ -295,7 +275,7 @@ FactPanel {
             id:                 __dialogPanel
             width:              __dialogCharWidth == showDialogFullWidth ? parent.width : defaultTextWidth * __dialogCharWidth
             anchors.topMargin:  topDialogMargin
-            height:             __useAvailableHeight ? ScreenTools.availableHeight : parent.height
+            height:             ScreenTools.availableHeight ? ScreenTools.availableHeight : parent.height
             anchors.bottom:     parent.bottom
             anchors.right:      parent.right
             color:              __qgcPal.windowShadeDark
@@ -330,7 +310,9 @@ FactPanel {
                     anchors.right:  parent.right
                     primary:        true
 
-                    onClicked: __dialogComponentLoader.item.accept()
+                    onClicked: {
+                       __dialogComponentLoader.item.accept()
+                    }
                 }
             }
 

@@ -4,17 +4,7 @@
 # Maintainer:
 # Lorenz Meier <lm@inf.ethz.ch>
 # (c) 2009-2015 QGroundControl Developers
-# This file is part of the open groundstation project
-# QGroundControl is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# QGroundControl is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License
-# along with QGroundControl. If not, see <http://www.gnu.org/licenses/>.
+# License terms set in COPYING.md
 # -------------------------------------------------
 
 exists($${OUT_PWD}/qgroundcontrol.pro) {
@@ -126,6 +116,12 @@ iOSBuild {
     #-- Info.plist (need an "official" one for the App Store)
     ForAppStore {
         message(App Store Build)
+        #-- Create official, versioned Info.plist
+        APP_STORE = $$system(cd $${BASEDIR} && $${BASEDIR}/tools/update_ios_version.sh $${BASEDIR}/ios/iOSForAppStore-Info-Source.plist $${BASEDIR}/ios/iOSForAppStore-Info.plist)
+        APP_ERROR = $$find(APP_STORE, "Error")
+        count(APP_ERROR, 1) {
+            error("Error building .plist file. 'ForAppStore' builds are only possible through the official build system.")
+        }
         QMAKE_INFO_PLIST  = $${BASEDIR}/ios/iOSForAppStore-Info.plist
         OTHER_FILES      += $${BASEDIR}/ios/iOSForAppStore-Info.plist
     } else {
@@ -217,6 +213,7 @@ INCLUDEPATH += \
     src/ViewWidgets \
     src/QtLocationPlugin \
     src/QtLocationPlugin/QMLControl \
+    src/PositionManager \
 
 FORMS += \
     src/ui/MainWindow.ui \
@@ -264,7 +261,9 @@ HEADERS += \
     src/HomePositionManager.h \
     src/Joystick/Joystick.h \
     src/Joystick/JoystickManager.h \
+    src/VehicleSetup/JoystickConfigController.h \
     src/FollowMe/FollowMe.h \
+    src/PositionManager/SimulatedPosition.h \
     src/JsonHelper.h \
     src/LogCompressor.h \
     src/MG.h \
@@ -307,8 +306,12 @@ HEADERS += \
     src/AutoPilotPlugins/PX4/PX4AirframeLoader.h \
     src/AutoPilotPlugins/APM/APMAirframeLoader.h \
     src/QmlControls/QGCImageProvider.h \
-    src/AutoPilotPlugins/APM/APMRemoteParamsDownloader.h \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.h \
+    src/PositionManager/PositionManager.h
+
+AndroidBuild {
+HEADERS += \
+}
 
 DebugBuild {
 HEADERS += \
@@ -342,6 +345,7 @@ HEADERS += \
     src/comm/QGCHilLink.h \
     src/comm/QGCJSBSimLink.h \
     src/comm/QGCXPlaneLink.h \
+    src/Joystick/JoystickSDL.h \
     src/QGCFileDialog.h \
     src/QGCMessageBox.h \
     src/uas/FileManager.h \
@@ -386,7 +390,6 @@ HEADERS += \
     src/GPS/GPSManager.h \
     src/GPS/GPSPositionMessage.h \
     src/GPS/GPSProvider.h \
-    src/VehicleSetup/JoystickConfigController.h \
     src/ViewWidgets/CustomCommandWidget.h \
     src/ViewWidgets/CustomCommandWidgetController.h \
     src/ViewWidgets/LogDownload.h \
@@ -399,6 +402,7 @@ iOSBuild {
         src/audio/QGCAudioWorker_iOS.mm \
         src/MobileScreenMgr.mm \
 }
+
 AndroidBuild {
     SOURCES += src/MobileScreenMgr.cc \
 }
@@ -419,6 +423,7 @@ SOURCES += \
     src/HomePositionManager.cc \
     src/Joystick/Joystick.cc \
     src/Joystick/JoystickManager.cc \
+    src/VehicleSetup/JoystickConfigController.cc \
     src/JsonHelper.cc \
     src/FollowMe/FollowMe.cc \
     src/LogCompressor.cc \
@@ -459,8 +464,9 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/PX4AirframeLoader.cc \
     src/AutoPilotPlugins/APM/APMAirframeLoader.cc \
     src/QmlControls/QGCImageProvider.cc \
-    src/AutoPilotPlugins/APM/APMRemoteParamsDownloader.cc \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.cc \
+    src/PositionManager/SimulatedPosition.cc \
+    src/PositionManager/PositionManager.cpp
 
 DebugBuild {
 SOURCES += \
@@ -495,6 +501,7 @@ SOURCES += \
     src/comm/QGCFlightGearLink.cc \
     src/comm/QGCJSBSimLink.cc \
     src/comm/QGCXPlaneLink.cc \
+    src/Joystick/JoystickSDL.cc \
     src/ui/HILDockWidget.cc \
     src/ui/linechart/ChartPlot.cc \
     src/ui/linechart/IncrementalPlot.cc \
@@ -525,7 +532,6 @@ SOURCES += \
     src/GPS/RTCM/RTCMMavlink.cc \
     src/GPS/GPSManager.cc \
     src/GPS/GPSProvider.cc \
-    src/VehicleSetup/JoystickConfigController.cc \
     src/ViewWidgets/CustomCommandWidget.cc \
     src/ViewWidgets/CustomCommandWidgetController.cc \
     src/ViewWidgets/LogDownload.cc \
@@ -645,6 +651,7 @@ HEADERS+= \
     src/AutoPilotPlugins/PX4/PowerComponentController.h \
     src/AutoPilotPlugins/PX4/PX4AutoPilotPlugin.h \
     src/AutoPilotPlugins/PX4/PX4RadioComponent.h \
+    src/AutoPilotPlugins/PX4/CameraComponent.h \
     src/AutoPilotPlugins/PX4/SafetyComponent.h \
     src/AutoPilotPlugins/PX4/SensorsComponent.h \
     src/AutoPilotPlugins/PX4/SensorsComponentController.h \
@@ -702,6 +709,7 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/PowerComponentController.cc \
     src/AutoPilotPlugins/PX4/PX4AutoPilotPlugin.cc \
     src/AutoPilotPlugins/PX4/PX4RadioComponent.cc \
+    src/AutoPilotPlugins/PX4/CameraComponent.cc \
     src/AutoPilotPlugins/PX4/SafetyComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponentController.cc \

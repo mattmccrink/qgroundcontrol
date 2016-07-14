@@ -1,25 +1,12 @@
-/*=====================================================================
+/****************************************************************************
+ *
+ *   (c) 2009-2016 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+ *
+ * QGroundControl is licensed according to the terms in the file
+ * COPYING.md in the root of the source code directory.
+ *
+ ****************************************************************************/
 
- QGroundControl Open Source Ground Control Station
-
- (c) 2009 - 2015 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
-
- This file is part of the QGROUNDCONTROL project
-
- QGROUNDCONTROL is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- QGROUNDCONTROL is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with QGROUNDCONTROL. If not, see <http://www.gnu.org/licenses/>.
-
- ======================================================================*/
 
 import QtQuick                  2.5
 import QtQuick.Controls         1.2
@@ -40,7 +27,8 @@ Rectangle {
     anchors.fill:       parent
     anchors.margins:    ScreenTools.defaultFontPixelWidth
 
-    property Fact _percentRemainingAnnounce: QGroundControl.multiVehicleManager.disconnectedVehicle.battery.percentRemainingAnnounce
+    property Fact _percentRemainingAnnounce:    QGroundControl.multiVehicleManager.disconnectedVehicle.battery.percentRemainingAnnounce
+    property real _editFieldWidth:              ScreenTools.defaultFontPixelWidth * 15
 
     QGCPalette { id: qgcPal }
 
@@ -57,16 +45,82 @@ Rectangle {
 
             QGCLabel {
                 text:   qsTr("General Settings")
-                font.pixelSize: ScreenTools.mediumFontPixelSize
+                font.pointSize: ScreenTools.mediumFontPointSize
             }
+
             Rectangle {
                 height: 1
                 width:  parent.width
-                color:  qgcPal.button
+                color:  qgcPal.text
             }
+
             Item {
                 height: ScreenTools.defaultFontPixelHeight / 2
                 width:  parent.width
+            }
+
+            //-----------------------------------------------------------------
+            //-- Base UI Font Point Size
+            Row {
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    id:     baseFontLabel
+                    text:   qsTr("Base UI font size:")
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Row {
+                    id:         baseFontRow
+                    spacing:    ScreenTools.defaultFontPixelWidth / 2
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    QGCButton {
+                        id:     decrementButton
+                        width:  height
+                        height: baseFontEdit.height
+                        text:   "-"
+
+                        onClicked: {
+                            if(ScreenTools.defaultFontPointSize > 6) {
+                                QGroundControl.baseFontPointSize = QGroundControl.baseFontPointSize - 1
+                            }
+                        }
+                    }
+
+                    QGCTextField {
+                        id:             baseFontEdit
+                        width:          _editFieldWidth - (decrementButton.width * 2) - (baseFontRow.spacing * 2)
+                        text:           QGroundControl.baseFontPointSize
+                        showUnits:      true
+                        unitsLabel:     "pt"
+                        maximumLength:  6
+                        validator:      DoubleValidator {bottom: 6.0; top: 48.0; decimals: 2;}
+
+                        onEditingFinished: {
+                            var point = parseFloat(text)
+                            if(point >= 6.0 && point <= 48.0)
+                                QGroundControl.baseFontPointSize = point;
+                        }
+                    }
+
+                    QGCButton {
+                        width:  height
+                        height: baseFontEdit.height
+                        text:   "+"
+
+                        onClicked: {
+                            if(ScreenTools.defaultFontPointSize < 49) {
+                                QGroundControl.baseFontPointSize = QGroundControl.baseFontPointSize + 1
+                            }
+                        }
+                    }
+                }
+
+                QGCLabel {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text:                   qsTr("(requires app restart)")
+                }
             }
 
             //-----------------------------------------------------------------
@@ -76,45 +130,50 @@ Rectangle {
                 spacing:    ScreenTools.defaultFontPixelWidth
 
                 QGCLabel {
-                    id:                 distanceUnitsLabel
+                    width:              baseFontLabel.width
                     anchors.baseline:   distanceUnitsCombo.baseline
                     text:               qsTr("Distance units:")
                 }
 
                 FactComboBox {
-                    id:         distanceUnitsCombo
-                    width:      ScreenTools.defaultFontPixelWidth * 10
-                    fact:       QGroundControl.distanceUnits
-                    indexModel: false
+                    id:                 distanceUnitsCombo
+                    width:              _editFieldWidth
+                    fact:               QGroundControl.distanceUnits
+                    indexModel:         false
                 }
 
                 QGCLabel {
                     anchors.baseline:   distanceUnitsCombo.baseline
-                    text:               qsTr("(requires reboot to take affect)")
+                    text:               qsTr("(requires app restart)")
                 }
 
             }
 
             Row {
-                spacing:    ScreenTools.defaultFontPixelWidth
+                spacing:                ScreenTools.defaultFontPixelWidth
 
                 QGCLabel {
+                    width:              baseFontLabel.width
                     anchors.baseline:   speedUnitsCombo.baseline
-                    width:              distanceUnitsLabel.width
                     text:               qsTr("Speed units:")
                 }
 
                 FactComboBox {
-                    id:         speedUnitsCombo
-                    width:      ScreenTools.defaultFontPixelWidth * 20
-                    fact:       QGroundControl.speedUnits
-                    indexModel: false
+                    id:                 speedUnitsCombo
+                    width:              _editFieldWidth
+                    fact:               QGroundControl.speedUnits
+                    indexModel:         false
                 }
 
                 QGCLabel {
                     anchors.baseline:   speedUnitsCombo.baseline
-                    text:              qsTr("(requires reboot to take affect)")
+                    text:               qsTr("(requires app restart)")
                 }
+            }
+
+            Item {
+                height: ScreenTools.defaultFontPixelHeight / 2
+                width:  parent.width
             }
 
             //-----------------------------------------------------------------
@@ -182,7 +241,7 @@ Rectangle {
                 QGCCheckBox {
                     id:                 announcePercentCheckbox
                     anchors.baseline:   announcePercent.baseline
-                    text:               qsTr("Announce battery percent lower than:")
+                    text:               qsTr("Announce battery lower than:")
                     checked:            _percentRemainingAnnounce.value != 0
 
                     onClicked: {
@@ -195,9 +254,9 @@ Rectangle {
                 }
 
                 FactTextField {
-                    id:         announcePercent
-                    fact:       _percentRemainingAnnounce
-                    enabled:    announcePercentCheckbox.checked
+                    id:                 announcePercent
+                    fact:               _percentRemainingAnnounce
+                    enabled:            announcePercentCheckbox.checked
                 }
             }
 
@@ -205,19 +264,22 @@ Rectangle {
                 height: ScreenTools.defaultFontPixelHeight / 2
                 width:  parent.width
             }
+
             //-----------------------------------------------------------------
             //-- Map Providers
             Row {
-                spacing:    ScreenTools.defaultFontPixelWidth
+                spacing: ScreenTools.defaultFontPixelWidth
+
                 QGCLabel {
+                    id:                 mapProvidersLabel
                     anchors.baseline:   mapProviders.baseline
-                    width:              ScreenTools.defaultFontPixelWidth * 16
-                    text:               qsTr("Map Providers:")
+                    text:               qsTr("Map Provider:")
                 }
+
                 QGCComboBox {
-                    id:     mapProviders
-                    width:  ScreenTools.defaultFontPixelWidth * 16
-                    model:  QGroundControl.flightMapSettings.mapProviders
+                    id:                 mapProviders
+                    width:              _editFieldWidth
+                    model:              QGroundControl.flightMapSettings.mapProviders
                     Component.onCompleted: {
                         var index = mapProviders.find(QGroundControl.flightMapSettings.mapProvider)
                         if (index < 0) {
@@ -238,17 +300,20 @@ Rectangle {
             //-----------------------------------------------------------------
             //-- Palette Styles
             Row {
-                spacing:    ScreenTools.defaultFontPixelWidth
+                spacing: ScreenTools.defaultFontPixelWidth
+
                 QGCLabel {
+                    width:              mapProvidersLabel.width
                     anchors.baseline:   paletteCombo.baseline
-                    width:              ScreenTools.defaultFontPixelWidth * 16
                     text:               qsTr("Style:")
                 }
+
                 QGCComboBox {
-                    id: paletteCombo
-                    width: ScreenTools.defaultFontPixelWidth * 16
-                    model: [ qsTr("Indoor"), qsTr("Outdoor") ]
-                    currentIndex: QGroundControl.isDarkStyle ? 0 : 1
+                    id:             paletteCombo
+                    width:          _editFieldWidth
+                    model:          [ qsTr("Indoor"), qsTr("Outdoor") ]
+                    currentIndex:   QGroundControl.isDarkStyle ? 0 : 1
+
                     onActivated: {
                         if (index != -1) {
                             currentIndex = index
@@ -296,6 +361,12 @@ Rectangle {
                     checked:    QGroundControl.linkManager.autoconnectUDP
                     onClicked:  QGroundControl.linkManager.autoconnectUDP = checked
                 }
+
+                QGCCheckBox {
+                    text:       qsTr("RTK GPS")
+                    checked:    QGroundControl.linkManager.autoconnectRTKGPS
+                    onClicked:  QGroundControl.linkManager.autoconnectRTKGPS = checked
+                }
             }
 
             Item {
@@ -322,13 +393,13 @@ Rectangle {
                 spacing: ScreenTools.defaultFontPixelWidth
 
                 QGCLabel {
-                    text:               qsTr("Offline mission editing vehicle type:")
+                    text:               qsTr("Offline mission editing:")
                     anchors.baseline:   offlineTypeCombo.baseline
                 }
 
                 FactComboBox {
                     id:         offlineTypeCombo
-                    width:      ScreenTools.defaultFontPixelWidth * 25
+                    width:      ScreenTools.defaultFontPixelWidth * 18
                     fact:       QGroundControl.offlineEditingFirmwareType
                     indexModel: false
                 }

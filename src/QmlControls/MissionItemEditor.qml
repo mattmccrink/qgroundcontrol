@@ -30,7 +30,7 @@ Rectangle {
     property bool   _currentItem:       missionItem.isCurrentItem
     property color  _outerTextColor:    _currentItem ? "black" : qgcPal.text
 
-    readonly property real  _editFieldWidth:    Math.min(width - _margin * 2, ScreenTools.defaultFontPixelWidth * 16)
+    readonly property real  _editFieldWidth:    Math.min(width - _margin * 2, ScreenTools.defaultFontPixelWidth * 12)
     readonly property real  _margin:            ScreenTools.defaultFontPixelWidth / 2
     readonly property real  _radius:            ScreenTools.defaultFontPixelWidth / 2
 
@@ -62,6 +62,7 @@ Rectangle {
         anchors.verticalCenter: commandPicker.verticalCenter
         width:                  commandPicker.height
         height:                 commandPicker.height
+        sourceSize.height:      height
         source:                 "qrc:/qmlimages/Hamburger.svg"
         visible:                missionItem.isCurrentItem && missionItem.sequenceNumber != 0
 
@@ -150,9 +151,9 @@ Rectangle {
         anchors.topMargin:  _margin
         anchors.left:       parent.left
         anchors.top:        commandPicker.bottom
-        height:             _currentItem && item ? item.height : 0
-        source:             _currentItem ? (missionItem.isSimpleItem ? "qrc:/qml/SimpleItemEditor.qml" : "qrc:/qml/SurveyItemEditor.qml") : ""
-
+        height:             item ? item.height : 0
+        source:             missionItem.isSimpleItem ? "qrc:/qml/SimpleItemEditor.qml" : "qrc:/qml/SurveyItemEditor.qml"
+        onLoaded:         { item.visible = Qt.binding(function() { return _currentItem; }) }
         property real   availableWidth: _root.width - (_margin * 2) ///< How wide the editor should be
         property var    editorRoot:     _root
     }

@@ -1,5 +1,12 @@
-/*===================================================================
-======================================================================*/
+/****************************************************************************
+ *
+ *   (c) 2009-2016 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+ *
+ * QGroundControl is licensed according to the terms in the file
+ * COPYING.md in the root of the source code directory.
+ *
+ ****************************************************************************/
+
 
 /**
  * @file
@@ -32,7 +39,6 @@
 #ifndef __ios__
 #include "SerialLink.h"
 #endif
-#include <Eigen/Geometry>
 #include "FirmwarePluginManager.h"
 #include "QGCLoggingCategory.h"
 #include "Vehicle.h"
@@ -665,13 +671,6 @@ void UAS::receiveMessage(mavlink_message_t message)
             setSatelliteCount(pos.satellites_visible);
         }
             break;
-        case MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN:
-        {
-            mavlink_gps_global_origin_t pos;
-            mavlink_msg_gps_global_origin_decode(&message, &pos);
-            emit homePositionChanged(uasId, pos.latitude / 10000000.0, pos.longitude / 10000000.0, pos.altitude / 1000.0);
-        }
-            break;
 
         case MAVLINK_MSG_ID_PARAM_VALUE:
         {
@@ -884,7 +883,7 @@ void UAS::startCalibration(UASInterface::StartCalibrationType calType)
                                   mavlink->getComponentId(),
                                   &msg,
                                   uasId,
-                                  0,                                // target component
+                                  _vehicle->defaultComponentId(),   // target component
                                   MAV_CMD_PREFLIGHT_CALIBRATION,    // command id
                                   0,                                // 0=first transmission of command
                                   gyroCal,                          // gyro cal
@@ -908,7 +907,7 @@ void UAS::stopCalibration(void)
                                   mavlink->getComponentId(),
                                   &msg,
                                   uasId,
-                                  0,                                // target component
+                                  _vehicle->defaultComponentId(),   // target component
                                   MAV_CMD_PREFLIGHT_CALIBRATION,    // command id
                                   0,                                // 0=first transmission of command
                                   0,                                // gyro cal
@@ -943,8 +942,8 @@ void UAS::startBusConfig(UASInterface::StartBusConfigType calType)
                                   mavlink->getComponentId(),
                                   &msg,
                                   uasId,
-                                  0,                                // target component
-                                  MAV_CMD_PREFLIGHT_UAVCAN,    // command id
+                                  _vehicle->defaultComponentId(),   // target component
+                                  MAV_CMD_PREFLIGHT_UAVCAN,         // command id
                                   0,                                // 0=first transmission of command
                                   actuatorCal,                      // actuators
                                   0,
@@ -967,8 +966,8 @@ void UAS::stopBusConfig(void)
                                   mavlink->getComponentId(),
                                   &msg,
                                   uasId,
-                                  0,                                // target component
-                                  MAV_CMD_PREFLIGHT_UAVCAN,    // command id
+                                  _vehicle->defaultComponentId(),   // target component
+                                  MAV_CMD_PREFLIGHT_UAVCAN,         // command id
                                   0,                                // 0=first transmission of command
                                   0,
                                   0,

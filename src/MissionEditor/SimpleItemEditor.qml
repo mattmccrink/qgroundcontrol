@@ -13,7 +13,7 @@ import QGroundControl.Palette       1.0
 Rectangle {
     id:                 valuesRect
     width:              availableWidth
-    height:             valuesItem.height
+    height:             visible ? valuesItem.height : 0
     color:              qgcPal.windowShadeDark
     visible:            missionItem.isCurrentItem
     radius:             _radius
@@ -40,7 +40,7 @@ Rectangle {
             QGCLabel {
                 width:          parent.width
                 wrapMode:       Text.WordWrap
-                font.pixelSize: ScreenTools.smallFontPixelHeight
+                font.pointSize: ScreenTools.smallFontPointSize
                 text:           missionItem.sequenceNumber == 0 ?
                                     qsTr("Planned home position.") :
                                     (missionItem.rawEdit ?

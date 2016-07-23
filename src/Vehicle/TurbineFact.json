@@ -1,0 +1,48 @@
+{
+    "version": 1,
+
+    "properties": [
+        {
+            "name":             "RPM",
+            "shortDescription": "Turbine RPM",
+            "type":             "int32",
+            "decimalPlaces":    0,
+            "units":            "RPM"
+        },
+        {
+            "name":             "EGT",
+            "shortDescription": "Exhaust Gas Temperature",
+            "type":             "int16",
+            "decimalPlaces":    0,
+            "units":            "C"
+        },
+        {
+            "name":             "fuelConsumed",
+            "shortDescription": "Total fuel consumed",
+            "type":             "int16",
+            "decimalPlaces":    0,
+            "units":            "mL"
+        },
+        {
+            "name":             "fuelFlow",
+            "shortDescription": "Fuel flow rate",
+            "type":             "int16",
+            "decimalPlaces":    0,
+            "units":            "mL/min"
+        },
+        {
+            "name":             "fuelRemaining",
+            "shortDescription": "Total fuel remaining",
+            "type":             "int16",
+            "decimalPlaces":    0,
+            "units":            "mL"
+        },
+        {
+            "name":             "turbineState",
+            "shortDescription": "Turbine operating state",
+            "type":             "int8",
+            "decimalPlaces":    0,
+            "units":            "n/a"
+        }
+    ]
+}

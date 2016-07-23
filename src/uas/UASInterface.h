@@ -119,7 +119,8 @@ public:
         StartCalibrationLevel,
         StartCalibrationEsc,
         StartCalibrationCopyTrims,
-        StartCalibrationUavcanEsc
+        StartCalibrationUavcanEsc,
+        StartCalibrationCompassMot,
     };
 
     enum StartBusConfigType {
@@ -306,6 +307,9 @@ signals:
     // Log Download Signals
     void logEntry   (UASInterface* uas, uint32_t time_utc, uint32_t size, uint16_t id, uint16_t num_logs, uint16_t last_log_num);
     void logData    (UASInterface* uas, uint32_t ofs, uint16_t id, uint8_t count, const uint8_t* data);
+
+    //Turbine engine state updated
+    void turbineChanged(UASInterface*, int32_t RPM_turbine, int16_t EGT, int16_t fuelConsumed, int16_t fuelFlowRate, int16_t fuelRemaining, uint8_t turbineState, quint64 msec);
 };
 
 Q_DECLARE_INTERFACE(UASInterface, "org.qgroundcontrol/1.0")

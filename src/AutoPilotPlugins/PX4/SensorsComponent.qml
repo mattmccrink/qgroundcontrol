@@ -30,7 +30,7 @@ QGCView {
     readonly property string boardRotationText: qsTr("If the orientation is in the direction of flight, select ROTATION_NONE.")
     readonly property string compassRotationText: qsTr("If the orientation is in the direction of flight, select ROTATION_NONE.")
 
-    readonly property string compassHelp:   qsTr("For Compass calibration you will need to rotate your vehicle through a number of positions. Most users prefer to do this wirelessly with the telemetry link.")
+    readonly property string compassHelp:   qsTr("For Compass calibration you will need to rotate your vehicle through a number of positions.")
     readonly property string gyroHelp:      qsTr("For Gyroscope calibration you will need to place your vehicle on a surface and leave it still.")
     readonly property string accelHelp:     qsTr("For Accelerometer calibration you will need to place your vehicle on all six sides on a perfectly level surface and hold it still in each orientation for a few seconds.")
     readonly property string levelHelp:     qsTr("To level the horizon you need to place the vehicle in its level flight position and press OK.")
@@ -108,12 +108,14 @@ QGCView {
         airspeedButton:             airspeedButton
         levelButton:                levelButton
         cancelButton:               cancelButton
+        setOrientationsButton:      setOrientationsButton
         orientationCalAreaHelpText: orientationCalAreaHelpText
 
         onResetStatusTextArea: statusLog.text = statusTextAreaDefaultText
 
         onSetCompassRotations: {
             if (showCompass0Rot || showCompass1Rot || showCompass2Rot) {
+                setOrientationsDialogShowBoardOrientation = false
                 showDialog(setOrientationsDialogComponent, qsTr("Set Compass Rotation(s)"), qgcView.showDialogDefaultWidth, StandardButton.Ok)
             }
         }
@@ -160,8 +162,8 @@ QGCView {
             }
 
             Column {
-                anchors.fill: parent
-                spacing:                5
+                anchors.fill:   parent
+                spacing:        5
 
                 QGCLabel {
                     width:      parent.width
@@ -170,21 +172,31 @@ QGCView {
                 }
 
                 QGCLabel {
+                    id:         boardRotationHelp
                     width:      parent.width
                     wrapMode:   Text.WordWrap
                     visible:    (preCalibrationDialogType != "airspeed") && (preCalibrationDialogType != "gyro")
                     text:       boardRotationText
                 }
 
-                FactComboBox {
-                    width:      rotationColumnWidth
-                    model:      rotations
-                    visible:    preCalibrationDialogType != "airspeed" && (preCalibrationDialogType != "gyro")
-                    fact:       sens_board_rot
+                Column {
+                    visible:    boardRotationHelp.visible
+                    QGCLabel {
+                        text: qsTr("Autopilot Orientation:")
+                    }
+
+                    FactComboBox {
+                        id:     boardRotationCombo
+                        width:  rotationColumnWidth;
+                        model:  rotations
+                        fact:   sens_board_rot
+                    }
                 }
             }
         }
     }
+
+    property bool setOrientationsDialogShowBoardOrientation: true
 
     Component {
         id: setOrientationsDialogComponent
@@ -212,6 +224,8 @@ QGCView {
                     }
 
                     Column {
+                        visible: setOrientationsDialogShowBoardOrientation
+
                         QGCLabel {
                             text: qsTr("Autopilot Orientation:")
                         }
@@ -390,9 +404,13 @@ QGCView {
             }
 
             QGCButton {
+                id:         setOrientationsButton
                 width:      parent.buttonWidth
                 text:       qsTr("Set Orientations")
-                onClicked: showDialog(setOrientationsDialogComponent, qsTr("Set Orientations"), qgcView.showDialogDefaultWidth, StandardButton.Ok)
+                onClicked:  {
+                    setOrientationsDialogShowBoardOrientation = true
+                    showDialog(setOrientationsDialogComponent, qsTr("Set Orientations"), qgcView.showDialogDefaultWidth, StandardButton.Ok)
+                }
             }
         } // Column - Buttons
 
@@ -454,8 +472,6 @@ QGCView {
                         anchors.bottom:     parent.bottom
                         anchors.left:       parent.left
                         anchors.right:      parent.right
-                        width:              parent.width
-                        height:             parent.height - orientationCalAreaHelpText.implicitHeight
                         spacing:            ScreenTools.defaultFontPixelWidth / 2
 
                         property real indicatorWidth:   (width / 3) - (spacing * 2)

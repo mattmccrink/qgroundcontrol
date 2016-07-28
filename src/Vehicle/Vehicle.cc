@@ -1169,7 +1169,12 @@ void Vehicle::_saveSettings(void)
     settings.beginGroup(QString(_settingsGroup).arg(_id));
 
     settings.setValue(_joystickModeSettingsKey, _joystickMode);
-    settings.setValue(_joystickEnabledSettingsKey, _joystickEnabled);
+
+    // The joystick enabled setting should only be changed if a joystick is present
+    // since the checkbox can only be clicked if one is present
+    if (qgcApp()->toolbox()->joystickManager()->joysticks().count()) {
+        settings.setValue(_joystickEnabledSettingsKey, _joystickEnabled);
+    }
 }
 
 int Vehicle::joystickMode(void)
@@ -1539,6 +1544,11 @@ bool Vehicle::rover(void) const
     return vehicleType() == MAV_TYPE_GROUND_ROVER;
 }
 
+bool Vehicle::sub(void) const
+{
+    return vehicleType() == MAV_TYPE_SUBMARINE;
+}
+
 bool Vehicle::multiRotor(void) const
 {
     switch (vehicleType()) {
@@ -1568,6 +1578,19 @@ bool Vehicle::vtol(void) const
     default:
         return false;
     }
+}
+
+bool Vehicle::supportsManualControl(void) const
+{
+    // PX4 Firmware supports manual control message
+    if ( px4Firmware() ) {
+        return true;
+    }
+    // ArduSub supports manual control message (identified by APM + Submarine type)
+    if ( apmFirmware() && vehicleType() == MAV_TYPE_SUBMARINE ) {
+        return true;
+    }
+    return false;
 }
 
 void Vehicle::_setCoordinateValid(bool coordinateValid)
@@ -1848,10 +1871,13 @@ void Vehicle::setSoloFirmware(bool soloFirmware)
     }
 }
 
+#if 0
+    // Temporarily removed, waiting for new command implementation
 void Vehicle::motorTest(int motor, int percent, int timeoutSecs)
 {
     doCommandLong(defaultComponentId(), MAV_CMD_DO_MOTOR_TEST, motor, MOTOR_TEST_THROTTLE_PERCENT, percent, timeoutSecs);
 }
+#endif
 
 const char* VehicleGPSFactGroup::_hdopFactName =                "hdop";
 const char* VehicleGPSFactGroup::_vdopFactName =                "vdop";

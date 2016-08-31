@@ -33,6 +33,8 @@ SettingsFact* QGroundControlQmlGlobal::_speedUnitsFact =                        
 FactMetaData* QGroundControlQmlGlobal::_speedUnitsMetaData =                        NULL;
 SettingsFact* QGroundControlQmlGlobal::_batteryPercentRemainingAnnounceFact =       NULL;
 FactMetaData* QGroundControlQmlGlobal::_batteryPercentRemainingAnnounceMetaData =   NULL;
+SettingsFact* QGroundControlQmlGlobal::_mavlinkVersionFact =                        NULL;
+FactMetaData* QGroundControlQmlGlobal::_mavlinkVersionMetaData =                    NULL;
 
 const char* QGroundControlQmlGlobal::_virtualTabletJoystickKey  = "VirtualTabletJoystick";
 const char* QGroundControlQmlGlobal::_baseFontPointSizeKey      = "BaseDeviceFontPointSize";
@@ -46,6 +48,7 @@ QGroundControlQmlGlobal::QGroundControlQmlGlobal(QGCApplication* app)
     , _mapEngineManager(NULL)
     , _qgcPositionManager(NULL)
     , _missionCommandTree(NULL)
+    , _videoManager(NULL)
     , _virtualTabletJoystick(false)
     , _baseFontPointSize(0.0)
 {
@@ -73,6 +76,7 @@ void QGroundControlQmlGlobal::setToolbox(QGCToolbox* toolbox)
     _mapEngineManager       = toolbox->mapEngineManager();
     _qgcPositionManager     = toolbox->qgcPositionManager();
     _missionCommandTree     = toolbox->missionCommandTree();
+    _videoManager           = toolbox->videoManager();
 }
 
 
@@ -193,12 +197,6 @@ void QGroundControlQmlGlobal::setIsMultiplexingEnabled(bool enable)
 {
     qgcApp()->toolbox()->mavlinkProtocol()->enableMultiplexing(enable);
     emit isMultiplexingEnabledChanged(enable);
-}
-
-void QGroundControlQmlGlobal::setIsVersionCheckEnabled(bool enable)
-{
-    qgcApp()->toolbox()->mavlinkProtocol()->enableVersionCheck(enable);
-    emit isVersionCheckEnabledChanged(enable);
 }
 
 void QGroundControlQmlGlobal::setMavlinkSystemID(int id)
@@ -361,6 +359,25 @@ Fact* QGroundControlQmlGlobal::batteryPercentRemainingAnnounce(void)
     }
 
     return _batteryPercentRemainingAnnounceFact;
+}
+
+Fact* QGroundControlQmlGlobal::mavlinkVersion(void)
+{
+    if (!_mavlinkVersionFact) {
+        QStringList     enumStrings;
+        QVariantList    enumValues;
+
+        _mavlinkVersionFact = new SettingsFact(QString(), "MavlinkVersion", FactMetaData::valueTypeUint32, MavlinkVersion2IfVehicle2);
+        _mavlinkVersionMetaData = new FactMetaData(FactMetaData::valueTypeUint32);
+
+        enumStrings << "Always use version 1" << "Default to 1, switch to 2 if Vehicle sends version 2" << "Always use version 2";
+        enumValues << QVariant::fromValue((uint32_t)MavlinkVersionAlways1) << QVariant::fromValue((uint32_t)MavlinkVersion2IfVehicle2) << QVariant::fromValue((uint32_t)MavlinkVersionAlways2);
+
+        _mavlinkVersionMetaData->setEnumInfo(enumStrings, enumValues);
+        _mavlinkVersionFact->setMetaData(_mavlinkVersionMetaData);
+    }
+
+    return _mavlinkVersionFact;
 }
 
 bool QGroundControlQmlGlobal::linesIntersect(QPointF line1A, QPointF line1B, QPointF line2A, QPointF line2B)

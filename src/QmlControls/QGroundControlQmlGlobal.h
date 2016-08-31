@@ -60,6 +60,13 @@ public:
         SpeedUnitsKnots,
     };
 
+    enum MavlinkVersionSend {
+        MavlinkVersionAlways1 = 0,
+        MavlinkVersion2IfVehicle2,
+        MavlinkVersionAlways2,
+    };
+
+
     Q_ENUMS(DistanceUnits)
     Q_ENUMS(AreaUnits)
     Q_ENUMS(SpeedUnits)
@@ -71,6 +78,7 @@ public:
     Q_PROPERTY(QGCMapEngineManager* mapEngineManager    READ mapEngineManager       CONSTANT)
     Q_PROPERTY(QGCPositionManager*  qgcPositionManger   READ qgcPositionManger      CONSTANT)
     Q_PROPERTY(MissionCommandTree*  missionCommandTree  READ missionCommandTree     CONSTANT)
+    Q_PROPERTY(VideoManager*        videoManager        READ videoManager           CONSTANT)
 
     Q_PROPERTY(qreal                zOrderTopMost       READ zOrderTopMost          CONSTANT) ///< z order for top most items, toolbar, main window sub view
     Q_PROPERTY(qreal                zOrderWidgets       READ zOrderWidgets          CONSTANT) ///< z order value to widgets, for example: zoom controls, hud widgetss
@@ -87,8 +95,8 @@ public:
 
     // MavLink Protocol
     Q_PROPERTY(bool     isMultiplexingEnabled   READ isMultiplexingEnabled      WRITE setIsMultiplexingEnabled      NOTIFY isMultiplexingEnabledChanged)
-    Q_PROPERTY(bool     isVersionCheckEnabled   READ isVersionCheckEnabled      WRITE setIsVersionCheckEnabled      NOTIFY isVersionCheckEnabledChanged)
     Q_PROPERTY(int      mavlinkSystemID         READ mavlinkSystemID            WRITE setMavlinkSystemID            NOTIFY mavlinkSystemIDChanged)
+    Q_PROPERTY(Fact*    mavlinkVersion                  READ mavlinkVersion                     CONSTANT)
 
     Q_PROPERTY(Fact*    offlineEditingFirmwareType      READ offlineEditingFirmwareType         CONSTANT)
     Q_PROPERTY(Fact*    offlineEditingVehicleType       READ offlineEditingVehicleType          CONSTANT)
@@ -165,6 +173,7 @@ public:
     QGCMapEngineManager*    mapEngineManager    ()      { return _mapEngineManager; }
     QGCPositionManager*     qgcPositionManger   ()      { return _qgcPositionManager; }
     MissionCommandTree*     missionCommandTree  ()      { return _missionCommandTree; }
+    VideoManager*           videoManager        ()      { return _videoManager; }
 
     qreal                   zOrderTopMost       ()      { return 1000; }
     qreal                   zOrderWidgets       ()      { return 100; }
@@ -178,7 +187,6 @@ public:
     qreal   baseFontPointSize       () { return _baseFontPointSize; }
 
     bool    isMultiplexingEnabled   () { return _toolbox->mavlinkProtocol()->multiplexingEnabled(); }
-    bool    isVersionCheckEnabled   () { return _toolbox->mavlinkProtocol()->versionCheckEnabled(); }
     int     mavlinkSystemID         () { return _toolbox->mavlinkProtocol()->getSystemId(); }
 
     QGeoCoordinate lastKnownHomePosition() { return qgcApp()->lastKnownHomePosition(); }
@@ -191,6 +199,7 @@ public:
     static Fact* areaUnits                      (void);
     static Fact* speedUnits                     (void);
     static Fact* batteryPercentRemainingAnnounce(void);
+    static Fact* mavlinkVersion                 (void);
 
     //-- TODO: Make this into an actual preference.
     bool    isAdvancedMode          () { return false; }
@@ -203,7 +212,6 @@ public:
     void    setBaseFontPointSize        (qreal size);
 
     void    setIsMultiplexingEnabled    (bool enable);
-    void    setIsVersionCheckEnabled    (bool enable);
     void    setMavlinkSystemID          (int  id);
 
     QString parameterFileExtension(void) const  { return QGCApplication::parameterFileExtension; }
@@ -221,7 +229,6 @@ signals:
     void virtualTabletJoystickChanged   (bool enabled);
     void baseFontPointSizeChanged       (qreal size);
     void isMultiplexingEnabledChanged   (bool enabled);
-    void isVersionCheckEnabledChanged   (bool enabled);
     void mavlinkSystemIDChanged         (int id);
     void flightMapPositionChanged       (QGeoCoordinate flightMapPosition);
     void flightMapZoomChanged           (double flightMapZoom);
@@ -234,6 +241,7 @@ private:
     QGCMapEngineManager*    _mapEngineManager;
     QGCPositionManager*     _qgcPositionManager;
     MissionCommandTree*     _missionCommandTree;
+    VideoManager*           _videoManager;
 
     bool                    _virtualTabletJoystick;
     qreal                   _baseFontPointSize;
@@ -255,6 +263,8 @@ private:
     static FactMetaData*    _speedUnitsMetaData;
     static SettingsFact*    _batteryPercentRemainingAnnounceFact;
     static FactMetaData*    _batteryPercentRemainingAnnounceMetaData;
+    static SettingsFact*    _mavlinkVersionFact;
+    static FactMetaData*    _mavlinkVersionMetaData;
 
     static const char*  _virtualTabletJoystickKey;
     static const char*  _baseFontPointSizeKey;

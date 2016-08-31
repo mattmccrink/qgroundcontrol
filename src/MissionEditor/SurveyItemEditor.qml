@@ -16,7 +16,7 @@ Rectangle {
     color:      qgcPal.windowShadeDark
     radius:     _radius
 
-    // The following properties must be available up the hierachy chain
+    // The following properties must be available up the hierarchy chain
     //property real   availableWidth    ///< Width for control
     //property var    missionItem       ///< Mission Item for editor
 
@@ -54,21 +54,22 @@ Rectangle {
         missionItem.cameraTriggerDistance.rawValue = cameraTriggerDistance
     }
 
-    Connections {
-        target: editorMap.polygonDraw
-
-        onPolygonCaptureStarted: {
-            missionItem.clearPolygon()
-        }
-
-        onPolygonCaptureFinished: {
-            for (var i=0; i<coordinates.length; i++) {
-                missionItem.addPolygonCoordinate(coordinates[i])
-            }
-        }
-
-        onPolygonAdjustVertex: missionItem.adjustPolygonCoordinate(vertexIndex, vertexCoordinate)
+    function polygonCaptureStarted() {
+        missionItem.clearPolygon()
     }
+
+    function polygonCaptureFinished(coordinates) {
+        for (var i=0; i<coordinates.length; i++) {
+            missionItem.addPolygonCoordinate(coordinates[i])
+        }
+    }
+
+    function polygonAdjustVertex(vertexIndex, vertexCoordinate) {
+        missionItem.adjustPolygonCoordinate(vertexIndex, vertexCoordinate)
+    }
+
+    function polygonAdjustStarted() { }
+    function polygonAdjustFinished() { }
 
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
@@ -92,7 +93,7 @@ Rectangle {
         }
 
         Repeater {
-            model: [ missionItem.gridAngle, missionItem.gridSpacing, missionItem.gridAltitude ]
+            model: [ missionItem.gridAngle, missionItem.gridSpacing, missionItem.gridAltitude, missionItem.turnaroundDist ]
 
             Item {
                 anchors.left:   parent.left
@@ -229,7 +230,7 @@ Rectangle {
                     if (editorMap.polygonDraw.drawingPolygon) {
                         editorMap.polygonDraw.finishCapturePolygon()
                     } else {
-                        editorMap.polygonDraw.startCapturePolygon()
+                        editorMap.polygonDraw.startCapturePolygon(_root)
                     }
                 }
             }
@@ -242,7 +243,7 @@ Rectangle {
                     if (editorMap.polygonDraw.adjustingPolygon) {
                         editorMap.polygonDraw.finishAdjustPolygon()
                     } else {
-                        editorMap.polygonDraw.startAdjustPolygon(missionItem.polygonPath)
+                        editorMap.polygonDraw.startAdjustPolygon(_root, missionItem.polygonPath)
                     }
                 }
             }

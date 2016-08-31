@@ -25,6 +25,7 @@
 #include "FollowMe.h"
 #include "MissionCommandTree.h"
 #include "QGroundControlQmlGlobal.h"
+#include "GeoFenceManager.h"
 
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
@@ -99,6 +100,8 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _connectionLostEnabled(true)
     , _missionManager(NULL)
     , _missionManagerInitialRequestComplete(false)
+    , _geoFenceManager(NULL)
+    , _geoFenceManagerInitialRequestComplete(false)
     , _parameterLoader(NULL)
     , _armed(false)
     , _base_mode(0)
@@ -199,7 +202,11 @@ Vehicle::Vehicle(LinkInterface*             link,
     _loadSettings();
 
     _missionManager = new MissionManager(this);
-    connect(_missionManager, &MissionManager::error, this, &Vehicle::_missionManagerError);
+    connect(_missionManager, &MissionManager::error,                    this, &Vehicle::_missionManagerError);
+    connect(_missionManager, &MissionManager::newMissionItemsAvailable, this, &Vehicle::_newMissionItemsAvailable);
+
+    _geoFenceManager = new GeoFenceManager(this);
+    connect(_geoFenceManager, &GeoFenceManager::error, this, &Vehicle::_geoFenceManagerError);
 
     _parameterLoader = new ParameterLoader(this);
     connect(_parameterLoader, &ParameterLoader::parametersReady, _autopilotPlugin, &AutoPilotPlugin::_parametersReadyPreChecks);
@@ -871,14 +878,7 @@ void Vehicle::_sendMessageOnLink(LinkInterface* link, mavlink_message_t message)
     // Give the plugin a chance to adjust
     _firmwarePlugin->adjustOutgoingMavlinkMessage(this, &message);
 
-    static const uint8_t messageKeys[256] = MAVLINK_MESSAGE_CRCS;
-    mavlink_finalize_message_chan(&message, _mavlink->getSystemId(), _mavlink->getComponentId(), link->getMavlinkChannel(), message.len, message.len, messageKeys[message.msgid]);
-
-    // Write message into buffer, prepending start sign
-    uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
-    int len = mavlink_msg_to_send_buffer(buffer, &message);
-
-    link->writeBytesSafe((const char*)buffer, len);
+    _mavlink->sendMessage(link, message);
     _messagesSent++;
     emit messagesSentChanged();
 }
@@ -1405,6 +1405,12 @@ void Vehicle::_missionManagerError(int errorCode, const QString& errorMsg)
     qgcApp()->showMessage(QString("Error during Mission communication with Vehicle: %1").arg(errorMsg));
 }
 
+void Vehicle::_geoFenceManagerError(int errorCode, const QString& errorMsg)
+{
+    Q_UNUSED(errorCode);
+    qgcApp()->showMessage(QString("Error during Geo-Fence communication with Vehicle: %1").arg(errorMsg));
+}
+
 void Vehicle::_addNewMapTrajectoryPoint(void)
 {
     if (_mapTrajectoryHaveFirstCoordinate) {
@@ -1876,6 +1882,29 @@ void Vehicle::motorTest(int motor, int percent, int timeoutSecs)
     doCommandLong(defaultComponentId(), MAV_CMD_DO_MOTOR_TEST, motor, MOTOR_TEST_THROTTLE_PERCENT, percent, timeoutSecs);
 }
 #endif
+
+/// Returns true if the specifed parameter exists from the default component
+bool Vehicle::parameterExists(int componentId, const QString& name)
+{
+    return _autopilotPlugin->parameterExists(componentId, name);
+}
+
+/// Returns the specified parameter Fact from the default component
+/// WARNING: Returns a default Fact if parameter does not exists. If that possibility exists, check for existence first with
+/// parameterExists.
+Fact* Vehicle::getParameterFact(int componentId, const QString& name)
+{
+    return _autopilotPlugin->getParameterFact(componentId, name);
+}
+
+void Vehicle::_newMissionItemsAvailable(void)
+{
+    // After the initial mission request complets we ask for the geofence
+    if (!_geoFenceManagerInitialRequestComplete) {
+        _geoFenceManagerInitialRequestComplete = true;
+        _geoFenceManager->requestGeoFence();
+    }
+}
 
 const char* VehicleGPSFactGroup::_hdopFactName =                "hdop";
 const char* VehicleGPSFactGroup::_vdopFactName =                "vdop";

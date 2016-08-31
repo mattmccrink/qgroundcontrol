@@ -301,7 +301,6 @@ void QGCMAVLinkInspector::refreshView()
     for (int i = 0; i < 256; ++i)//mavlink_message_t msg, receivedMessages)
     {
         const char* msgname = messageInfo[i].name;
-
         size_t namelen = strnlen(msgname, 5);
 
         if (namelen < 3) {

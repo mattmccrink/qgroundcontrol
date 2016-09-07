@@ -62,7 +62,7 @@ QGCMAVLinkInspector::QGCMAVLinkInspector(const QString& title, QAction* action, 
     // Attach the UI's refresh rate to a timer.
     connect(&updateTimer, &QTimer::timeout, this, &QGCMAVLinkInspector::refreshView);
     updateTimer.start(updateInterval);
-    
+
     loadSettings();
 }
 
@@ -122,7 +122,7 @@ void QGCMAVLinkInspector::addComponent(int uas, int component, const QString& na
 {
     Q_UNUSED(component);
     Q_UNUSED(name);
-    
+
     if (uas != selectedSystemID) return;
 
     rebuildComponentList();
@@ -163,7 +163,7 @@ void QGCMAVLinkInspector::clearView()
         iteTree.value() = NULL;
     }
     uasTreeWidgetItems.clear();
-    
+
     QMap<int, QMap<int, float>* >::iterator iteHz;
     for (iteHz=uasMessageHz.begin(); iteHz!=uasMessageHz.end();++iteHz)
     {
@@ -209,7 +209,7 @@ void QGCMAVLinkInspector::refreshView()
         mavlink_message_t* msg = ite.value();
         // Ignore NULL values
         if (msg->msgid == 0xFF) continue;
-
+        qDebug()<<messageInfo[msg->msgid].name;
         // Update the message frenquency
 
         // Get the previous frequency for low-pass filtering
@@ -301,6 +301,7 @@ void QGCMAVLinkInspector::refreshView()
     for (int i = 0; i < 256; ++i)//mavlink_message_t msg, receivedMessages)
     {
         const char* msgname = messageInfo[i].name;
+        qDebug()<<msgname;
         size_t namelen = strnlen(msgname, 5);
 
         if (namelen < 3) {
@@ -357,7 +358,7 @@ void QGCMAVLinkInspector::receiveMessage(LinkInterface* link,mavlink_message_t m
     Q_UNUSED(link);
 
     quint64 receiveTime;
-    
+
     if (selectedSystemID != 0 && selectedSystemID != message.sysid) return;
     if (selectedComponentID != 0 && selectedComponentID != message.compid) return;
 
@@ -398,7 +399,7 @@ void QGCMAVLinkInspector::receiveMessage(LinkInterface* link,mavlink_message_t m
     QMap<int, QMap<int, quint64>* >::const_iterator ite = uasLastMessageUpdate.find(message.sysid);
     QMap<int, quint64>* lastMsgUpdate = ite.value();
     while((ite != uasLastMessageUpdate.end()) && (ite.key() == message.sysid))
-    {   
+    {
         if(ite.value()->contains(message.msgid))
         {
             msgFound = true;
@@ -522,7 +523,7 @@ void QGCMAVLinkInspector::updateField(int sysid, int msgid, int fieldid, QTreeWi
 {
     // Add field tree widget item
     item->setData(0, Qt::DisplayRole, QVariant(messageInfo[msgid].fields[fieldid].name));
-    
+
     bool msgFound = false;
     QMap<int, mavlink_message_t* >::const_iterator iteMsg = uasMessageStorage.find(sysid);
     mavlink_message_t* uasMessage = iteMsg.value();

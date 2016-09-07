@@ -4,9 +4,6 @@ import QtQuick.Controls 1.2
 import QGroundControl               1.0
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.Controls      1.0
-import QGroundControl.FactControls  1.0
-import QGroundControl.Palette       1.0
-import QGroundControl.FlightMap     1.0
 
 QGCFlickable {
     id:             root
@@ -15,7 +12,7 @@ QGCFlickable {
     contentHeight:  geoFenceEditorRect.height
     clip:           true
 
-    readonly property real  _editFieldWidth:    Math.min(width - _margin * 2, ScreenTools.defaultFontPixelWidth * 12)
+    readonly property real  _editFieldWidth:    Math.min(width - _margin * 2, ScreenTools.defaultFontPixelWidth * 15)
     readonly property real  _margin:            ScreenTools.defaultFontPixelWidth / 2
     readonly property real  _radius:            ScreenTools.defaultFontPixelWidth / 2
 
@@ -43,7 +40,7 @@ QGCFlickable {
             anchors.margins:    _margin
             anchors.left:       parent.left
             anchors.top:        parent.top
-            text:               qsTr("Geo-Fence (WIP careful!)")
+            text:               qsTr("GeoFence (WIP careful!)")
             color:              "black"
         }
 
@@ -53,69 +50,29 @@ QGCFlickable {
             anchors.left:       parent.left
             anchors.right:      parent.right
             anchors.top:        geoFenceLabel.bottom
-            height:             editorColumn.height + (_margin * 2)
+            height:             editorLoader.y + editorLoader.height + (_margin * 2)
             color:              qgcPal.windowShadeDark
             radius:             _radius
 
-            Column {
-                id:                 editorColumn
+            QGCLabel {
+                id:                 geoLabel
                 anchors.margins:    _margin
                 anchors.top:        parent.top
                 anchors.left:       parent.left
                 anchors.right:      parent.right
-                spacing:            _margin
+                wrapMode:           Text.WordWrap
+                font.pointSize:     ScreenTools.smallFontPointSize
+                text:               qsTr("GeoFencing allows you to set a virtual ‘fence’ around the area you want to fly in.")
+            }
 
-                QGCLabel {
-                    anchors.left:   parent.left
-                    anchors.right:  parent.right
-                    wrapMode:       Text.WordWrap
-                    text:           qsTr("Click in map to set breach return point.")
-                }
+            Loader {
+                id:                 editorLoader
+                anchors.margins:    _margin
+                anchors.top:        geoLabel.bottom
+                anchors.left:       parent.left
+                source:             geoFenceController.editorQml
 
-                QGCLabel { text: qsTr("Fence Settings:") }
-
-                Rectangle {
-                    anchors.left:   parent.left
-                    anchors.right:  parent.right
-                    height:         1
-                    color:          qgcPal.text
-                }
-
-                QGCLabel {
-                    text:       qsTr("Must be connected to Vehicle to change fence settings.")
-                    visible:    !QGroundControl.multiVehicleManager.activeVehicle
-                }
-
-                Repeater {
-                    model: geoFenceController.params
-
-                    Item {
-                        width:  editorColumn.width
-                        height: textField.height
-
-                        QGCLabel {
-                            id:                 textFieldLabel
-                            anchors.baseline:   textField.baseline
-                            text:               modelData.name
-                        }
-
-                        FactTextField {
-                            id:             textField
-                            anchors.right:  parent.right
-                            width:          _editFieldWidth
-                            showUnits:      true
-                            fact:           modelData
-                        }
-                    }
-                }
-
-                QGCMapPolygonControls {
-                    anchors.left:   parent.left
-                    anchors.right:  parent.right
-                    flightMap:      editorMap
-                    polygon:        root.polygon
-                    sectionLabel:   qsTr("Fence Polygon:")
-                }
+                property real availableWidth: parent.width - (_margin * 2)
             }
         }
     }

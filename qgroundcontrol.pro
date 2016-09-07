@@ -688,6 +688,7 @@ HEADERS+= \
     src/FirmwarePlugin/FirmwarePluginManager.h \
     src/FirmwarePlugin/FirmwarePlugin.h \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.h \
+    src/FirmwarePlugin/APM/APMGeoFenceManager.h \
     src/FirmwarePlugin/APM/APMParameterMetaData.h \
     src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.h \
     src/FirmwarePlugin/APM/ArduPlaneFirmwarePlugin.h \
@@ -695,6 +696,7 @@ HEADERS+= \
     src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h \
     src/FirmwarePlugin/PX4/px4_custom_mode.h \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.h \
+    src/FirmwarePlugin/PX4/PX4GeoFenceManager.h \
     src/FirmwarePlugin/PX4/PX4ParameterMetaData.h \
     src/Vehicle/MultiVehicleManager.h \
     src/Vehicle/Vehicle.h \
@@ -747,6 +749,7 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/SensorsComponentController.cc \
     src/AutoPilotPlugins/PX4/PX4TuningComponent.cc \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.cc \
+    src/FirmwarePlugin/APM/APMGeoFenceManager.cc \
     src/FirmwarePlugin/APM/APMParameterMetaData.cc \
     src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.cc \
     src/FirmwarePlugin/APM/ArduPlaneFirmwarePlugin.cc \
@@ -755,6 +758,7 @@ SOURCES += \
     src/FirmwarePlugin/FirmwarePlugin.cc \
     src/FirmwarePlugin/FirmwarePluginManager.cc \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.cc \
+    src/FirmwarePlugin/PX4/PX4GeoFenceManager.cc \
     src/FirmwarePlugin/PX4/PX4ParameterMetaData.cc \
     src/Vehicle/MultiVehicleManager.cc \
     src/Vehicle/Vehicle.cc \

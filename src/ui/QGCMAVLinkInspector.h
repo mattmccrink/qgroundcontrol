@@ -70,7 +70,7 @@ protected:
 
     static const unsigned int updateInterval; ///< The update interval of the refresh function
     static const float updateHzLowpass; ///< The low-pass filter value for the frequency of each message
-    
+
 private slots:
     void _vehicleAdded(Vehicle* vehicle);
 

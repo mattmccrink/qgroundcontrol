@@ -45,6 +45,20 @@ contains (DEFINES, QGC_DISABLE_BLUETOOTH) {
     DEFINES += QGC_ENABLE_BLUETOOTH
 }
 
+# USB Camera and UVC Video Sources
+contains (DEFINES, QGC_DISABLE_UVC) {
+    message("Skipping support for UVC devices (manual override from command line)")
+    DEFINES += QGC_DISABLE_UVC
+} else:exists(user_config.pri):infile(user_config.pri, DEFINES, QGC_DISABLE_UVC) {
+    message("Skipping support for UVC devices (manual override from user_config.pri)")
+    DEFINES += QGC_DISABLE_UVC
+} else:LinuxBuild {
+    contains(QT_VERSION, 5.5.1) {
+        message("Skipping support for UVC devices (conflict with Qt 5.5.1 on Ubuntu)")
+        DEFINES += QGC_DISABLE_UVC
+    }
+}
+
 LinuxBuild {
     CONFIG += link_pkgconfig
 }
@@ -77,7 +91,13 @@ QT += \
     sql \
     svg \
     widgets \
-    xml \
+    xml
+
+# Multimedia only used if QVC is enabled
+!contains (DEFINES, QGC_DISABLE_UVC) {
+    QT += \
+        multimedia
+}
 
 !MobileBuild {
 QT += \
@@ -230,7 +250,6 @@ FORMS += \
     src/ui/uas/UASMessageView.ui \
     src/ui/Linechart.ui \
     src/ui/MultiVehicleDockWidget.ui \
-    src/ui/MAVLinkSettingsWidget.ui \
     src/ui/QGCDataPlot2D.ui \
     src/ui/QGCHilConfiguration.ui \
     src/ui/QGCHilFlightGearConfiguration.ui \
@@ -257,7 +276,7 @@ HEADERS += \
     src/comm/QGCMAVLink.h \
     src/comm/TCPLink.h \
     src/comm/UDPLink.h \
-    src/FlightDisplay/FlightDisplayViewController.h \
+    src/FlightDisplay/VideoManager.h \
     src/FlightMap/FlightMapSettings.h \
     src/FlightMap/Widgets/ValuesWidgetController.h \
     src/GAudioOutput.h \
@@ -271,12 +290,16 @@ HEADERS += \
     src/LogCompressor.h \
     src/MG.h \
     src/MissionManager/ComplexMissionItem.h \
+    src/MissionManager/GeoFenceController.h \
+    src/MissionManager/GeoFenceManager.h \
+    src/MissionManager/QGCMapPolygon.h \
     src/MissionManager/MissionCommandList.h \
     src/MissionManager/MissionCommandTree.h \
     src/MissionManager/MissionCommandUIInfo.h \
     src/MissionManager/MissionController.h \
     src/MissionManager/MissionItem.h \
     src/MissionManager/MissionManager.h \
+    src/MissionManager/PlanElementController.h \
     src/MissionManager/SimpleMissionItem.h \
     src/MissionManager/SurveyMissionItem.h \
     src/MissionManager/VisualMissionItem.h \
@@ -363,7 +386,6 @@ HEADERS += \
     src/ui/linechart/ScrollZoomer.h \
     src/ui/MainWindow.h \
     src/ui/MAVLinkDecoder.h \
-    src/ui/MAVLinkSettingsWidget.h \
     src/ui/MultiVehicleDockWidget.h \
     src/ui/QGCMAVLinkLogPlayer.h \
     src/ui/QGCMapRCToParamDialog.h \
@@ -419,7 +441,7 @@ SOURCES += \
     src/comm/QGCMAVLink.cc \
     src/comm/TCPLink.cc \
     src/comm/UDPLink.cc \
-    src/FlightDisplay/FlightDisplayViewController.cc \
+    src/FlightDisplay/VideoManager.cc \
     src/FlightMap/FlightMapSettings.cc \
     src/FlightMap/Widgets/ValuesWidgetController.cc \
     src/GAudioOutput.cc \
@@ -432,12 +454,16 @@ SOURCES += \
     src/LogCompressor.cc \
     src/main.cc \
     src/MissionManager/ComplexMissionItem.cc \
+    src/MissionManager/GeoFenceController.cc \
+    src/MissionManager/GeoFenceManager.cc \
+    src/MissionManager/QGCMapPolygon.cc \
     src/MissionManager/MissionCommandList.cc \
     src/MissionManager/MissionCommandTree.cc \
     src/MissionManager/MissionCommandUIInfo.cc \
     src/MissionManager/MissionController.cc \
     src/MissionManager/MissionItem.cc \
     src/MissionManager/MissionManager.cc \
+    src/MissionManager/PlanElementController.cc \
     src/MissionManager/SimpleMissionItem.cc \
     src/MissionManager/SurveyMissionItem.cc \
     src/MissionManager/VisualMissionItem.cc \
@@ -496,7 +522,6 @@ SOURCES += \
     src/uas/FileManager.cc \
     src/ui/uas/QGCUnconnectedInfoWidget.cc \
     src/ui/MAVLinkDecoder.cc \
-    src/ui/MAVLinkSettingsWidget.cc \
     src/ui/QGCMapRCToParamDialog.cpp \
     src/comm/LogReplayLink.cc \
     src/QGCFileDialog.cc \
@@ -559,6 +584,7 @@ HEADERS += \
     src/FactSystem/FactSystemTestBase.h \
     src/FactSystem/FactSystemTestGeneric.h \
     src/FactSystem/FactSystemTestPX4.h \
+    src/FactSystem/ParameterManagerTest.h \
     src/MissionManager/ComplexMissionItemTest.h \
     src/MissionManager/MissionCommandTreeTest.h \
     src/MissionManager/MissionControllerTest.h \
@@ -575,7 +601,6 @@ HEADERS += \
     src/qgcunittest/MavlinkLogTest.h \
     src/qgcunittest/MessageBoxTest.h \
     src/qgcunittest/MultiSignalSpy.h \
-    src/qgcunittest/ParameterLoaderTest.h \
     src/qgcunittest/RadioConfigTest.h \
     src/qgcunittest/TCPLinkTest.h \
     src/qgcunittest/TCPLoopBackServer.h \
@@ -587,6 +612,7 @@ SOURCES += \
     src/FactSystem/FactSystemTestBase.cc \
     src/FactSystem/FactSystemTestGeneric.cc \
     src/FactSystem/FactSystemTestPX4.cc \
+    src/FactSystem/ParameterManagerTest.cc \
     src/MissionManager/ComplexMissionItemTest.cc \
     src/MissionManager/MissionCommandTreeTest.cc \
     src/MissionManager/MissionControllerTest.cc \
@@ -603,7 +629,6 @@ SOURCES += \
     src/qgcunittest/MavlinkLogTest.cc \
     src/qgcunittest/MessageBoxTest.cc \
     src/qgcunittest/MultiSignalSpy.cc \
-    src/qgcunittest/ParameterLoaderTest.cc \
     src/qgcunittest/RadioConfigTest.cc \
     src/qgcunittest/TCPLinkTest.cc \
     src/qgcunittest/TCPLoopBackServer.cc \
@@ -668,6 +693,7 @@ HEADERS+= \
     src/FirmwarePlugin/FirmwarePluginManager.h \
     src/FirmwarePlugin/FirmwarePlugin.h \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.h \
+    src/FirmwarePlugin/APM/APMGeoFenceManager.h \
     src/FirmwarePlugin/APM/APMParameterMetaData.h \
     src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.h \
     src/FirmwarePlugin/APM/ArduPlaneFirmwarePlugin.h \
@@ -675,6 +701,7 @@ HEADERS+= \
     src/FirmwarePlugin/APM/ArduSubFirmwarePlugin.h \
     src/FirmwarePlugin/PX4/px4_custom_mode.h \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.h \
+    src/FirmwarePlugin/PX4/PX4GeoFenceManager.h \
     src/FirmwarePlugin/PX4/PX4ParameterMetaData.h \
     src/Vehicle/MultiVehicleManager.h \
     src/Vehicle/Vehicle.h \
@@ -727,6 +754,7 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/SensorsComponentController.cc \
     src/AutoPilotPlugins/PX4/PX4TuningComponent.cc \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.cc \
+    src/FirmwarePlugin/APM/APMGeoFenceManager.cc \
     src/FirmwarePlugin/APM/APMParameterMetaData.cc \
     src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.cc \
     src/FirmwarePlugin/APM/ArduPlaneFirmwarePlugin.cc \
@@ -735,6 +763,7 @@ SOURCES += \
     src/FirmwarePlugin/FirmwarePlugin.cc \
     src/FirmwarePlugin/FirmwarePluginManager.cc \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.cc \
+    src/FirmwarePlugin/PX4/PX4GeoFenceManager.cc \
     src/FirmwarePlugin/PX4/PX4ParameterMetaData.cc \
     src/Vehicle/MultiVehicleManager.cc \
     src/Vehicle/Vehicle.cc \
@@ -762,7 +791,7 @@ HEADERS += \
     src/FactSystem/FactMetaData.h \
     src/FactSystem/FactSystem.h \
     src/FactSystem/FactValidator.h \
-    src/FactSystem/ParameterLoader.h \
+    src/FactSystem/ParameterManager.h \
     src/FactSystem/SettingsFact.h \
 
 SOURCES += \
@@ -772,7 +801,7 @@ SOURCES += \
     src/FactSystem/FactMetaData.cc \
     src/FactSystem/FactSystem.cc \
     src/FactSystem/FactValidator.cc \
-    src/FactSystem/ParameterLoader.cc \
+    src/FactSystem/ParameterManager.cc \
     src/FactSystem/SettingsFact.cc \
 
 #-------------------------------------------------------------------------------------

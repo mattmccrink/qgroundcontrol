@@ -71,6 +71,7 @@ public:
     Q_PROPERTY(QGCMapEngineManager* mapEngineManager    READ mapEngineManager       CONSTANT)
     Q_PROPERTY(QGCPositionManager*  qgcPositionManger   READ qgcPositionManger      CONSTANT)
     Q_PROPERTY(MissionCommandTree*  missionCommandTree  READ missionCommandTree     CONSTANT)
+    Q_PROPERTY(VideoManager*        videoManager        READ videoManager           CONSTANT)
 
     Q_PROPERTY(qreal                zOrderTopMost       READ zOrderTopMost          CONSTANT) ///< z order for top most items, toolbar, main window sub view
     Q_PROPERTY(qreal                zOrderWidgets       READ zOrderWidgets          CONSTANT) ///< z order value to widgets, for example: zoom controls, hud widgetss
@@ -165,6 +166,7 @@ public:
     QGCMapEngineManager*    mapEngineManager    ()      { return _mapEngineManager; }
     QGCPositionManager*     qgcPositionManger   ()      { return _qgcPositionManager; }
     MissionCommandTree*     missionCommandTree  ()      { return _missionCommandTree; }
+    VideoManager*           videoManager        ()      { return _videoManager; }
 
     qreal                   zOrderTopMost       ()      { return 1000; }
     qreal                   zOrderWidgets       ()      { return 100; }
@@ -227,6 +229,9 @@ signals:
     void flightMapZoomChanged           (double flightMapZoom);
 
 private:
+    static SettingsFact* _createSettingsFact(const QString& name);
+    static QMap<QString, FactMetaData*>& nameToMetaDataMap(void);
+
     FlightMapSettings*      _flightMapSettings;
     HomePositionManager*    _homePositionManager;
     LinkManager*            _linkManager;
@@ -234,6 +239,7 @@ private:
     QGCMapEngineManager*    _mapEngineManager;
     QGCPositionManager*     _qgcPositionManager;
     MissionCommandTree*     _missionCommandTree;
+    VideoManager*           _videoManager;
 
     bool                    _virtualTabletJoystick;
     qreal                   _baseFontPointSize;
@@ -242,9 +248,7 @@ private:
 
     // These are static so they are available to C++ code as well as Qml
     static SettingsFact*    _offlineEditingFirmwareTypeFact;
-    static FactMetaData*    _offlineEditingFirmwareTypeMetaData;
     static SettingsFact*    _offlineEditingVehicleTypeFact;
-    static FactMetaData*    _offlineEditingVehicleTypeMetaData;
     static SettingsFact*    _offlineEditingCruiseSpeedFact;
     static SettingsFact*    _offlineEditingHoverSpeedFact;
     static SettingsFact*    _distanceUnitsFact;
@@ -254,7 +258,6 @@ private:
     static SettingsFact*    _speedUnitsFact;
     static FactMetaData*    _speedUnitsMetaData;
     static SettingsFact*    _batteryPercentRemainingAnnounceFact;
-    static FactMetaData*    _batteryPercentRemainingAnnounceMetaData;
 
     static const char*  _virtualTabletJoystickKey;
     static const char*  _baseFontPointSizeKey;

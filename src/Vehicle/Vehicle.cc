@@ -18,13 +18,14 @@
 #include "JoystickManager.h"
 #include "MissionManager.h"
 #include "CoordinateVector.h"
-#include "ParameterLoader.h"
+#include "ParameterManager.h"
 #include "QGCApplication.h"
 #include "QGCImageProvider.h"
 #include "GAudioOutput.h"
 #include "FollowMe.h"
 #include "MissionCommandTree.h"
 #include "QGroundControlQmlGlobal.h"
+#include "GeoFenceManager.h"
 
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
@@ -65,7 +66,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     : FactGroup(_vehicleUIUpdateRateMSecs, ":/json/Vehicle/VehicleFact.json")
     , _id(vehicleId)
     , _active(false)
-    , _disconnectedVehicle(false)
+    , _offlineEditingVehicle(false)
     , _firmwareType(firmwareType)
     , _vehicleType(vehicleType)
     , _firmwarePlugin(NULL)
@@ -99,7 +100,9 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _connectionLostEnabled(true)
     , _missionManager(NULL)
     , _missionManagerInitialRequestComplete(false)
-    , _parameterLoader(NULL)
+    , _geoFenceManager(NULL)
+    , _geoFenceManagerInitialRequestComplete(false)
+    , _parameterManager(NULL)
     , _armed(false)
     , _base_mode(0)
     , _custom_mode(0)
@@ -159,9 +162,6 @@ Vehicle::Vehicle(LinkInterface*             link,
     _firmwarePlugin     = _firmwarePluginManager->firmwarePluginForAutopilot(_firmwareType, _vehicleType);
     _autopilotPlugin    = _autopilotPluginManager->newAutopilotPluginForVehicle(this);
 
-    connect(_autopilotPlugin, &AutoPilotPlugin::parametersReadyChanged,     this, &Vehicle::_parametersReady);
-    connect(_autopilotPlugin, &AutoPilotPlugin::missingParametersChanged,   this, &Vehicle::missingParametersChanged);
-
     // connect this vehicle to the follow me handle manager
     connect(this, &Vehicle::flightModeChanged,qgcApp()->toolbox()->followMe(), &FollowMe::followMeHandleManager);
 
@@ -199,11 +199,15 @@ Vehicle::Vehicle(LinkInterface*             link,
     _loadSettings();
 
     _missionManager = new MissionManager(this);
-    connect(_missionManager, &MissionManager::error, this, &Vehicle::_missionManagerError);
+    connect(_missionManager, &MissionManager::error,                    this, &Vehicle::_missionManagerError);
+    connect(_missionManager, &MissionManager::newMissionItemsAvailable, this, &Vehicle::_newMissionItemsAvailable);
 
-    _parameterLoader = new ParameterLoader(this);
-    connect(_parameterLoader, &ParameterLoader::parametersReady, _autopilotPlugin, &AutoPilotPlugin::_parametersReadyPreChecks);
-    connect(_parameterLoader, &ParameterLoader::parameterListProgress, _autopilotPlugin, &AutoPilotPlugin::parameterListProgress);
+    _parameterManager = new ParameterManager(this);
+    connect(_parameterManager, &ParameterManager::parametersReadyChanged, this, &Vehicle::_parametersReady);
+
+    // GeoFenceManager needs to access ParameterManager so make sure to create after
+    _geoFenceManager = _firmwarePlugin->newGeoFenceManager(this);
+    connect(_geoFenceManager, &GeoFenceManager::error, this, &Vehicle::_geoFenceManagerError);
 
     // Ask the vehicle for firmware version info. This must be MAV_COMP_ID_ALL since we don't know default component id yet.
 
@@ -254,12 +258,15 @@ Vehicle::Vehicle(LinkInterface*             link,
     _turbineFactGroup.setVehicle(this);
 }
 
-// Disconnected Vehicle
-Vehicle::Vehicle(MAV_AUTOPILOT firmwareType, MAV_TYPE vehicleType, QObject* parent)
+// Disconnected Vehicle for offline editing
+Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
+                 MAV_TYPE                   vehicleType,
+                 FirmwarePluginManager*     firmwarePluginManager,
+                 QObject*                   parent)
     : FactGroup(_vehicleUIUpdateRateMSecs, ":/json/Vehicle/VehicleFact.json", parent)
     , _id(0)
     , _active(false)
-    , _disconnectedVehicle(true)
+    , _offlineEditingVehicle(true)
     , _firmwareType(firmwareType)
     , _vehicleType(vehicleType)
     , _firmwarePlugin(NULL)
@@ -290,12 +297,14 @@ Vehicle::Vehicle(MAV_AUTOPILOT firmwareType, MAV_TYPE vehicleType, QObject* pare
     , _connectionLostEnabled(true)
     , _missionManager(NULL)
     , _missionManagerInitialRequestComplete(false)
-    , _parameterLoader(NULL)
+    , _geoFenceManager(NULL)
+    , _geoFenceManagerInitialRequestComplete(false)
+    , _parameterManager(NULL)
     , _armed(false)
     , _base_mode(0)
     , _custom_mode(0)
     , _nextSendMessageMultipleIndex(0)
-    , _firmwarePluginManager(NULL)
+    , _firmwarePluginManager(firmwarePluginManager)
     , _autopilotPluginManager(NULL)
     , _joystickManager(NULL)
     , _flowImageIndex(0)
@@ -327,10 +336,17 @@ Vehicle::Vehicle(MAV_AUTOPILOT firmwareType, MAV_TYPE vehicleType, QObject* pare
     , _onboard_control_sensors_enabled(0)
     , _onboard_control_sensors_health(0)
 {
-    // This is a hack for disconnected vehicle used while unit testing
-    if (qgcApp()->toolbox() && qgcApp()->toolbox()->firmwarePluginManager()) {
-        _firmwarePlugin = qgcApp()->toolbox()->firmwarePluginManager()->firmwarePluginForAutopilot(_firmwareType, _vehicleType);
-    }
+    _firmwarePlugin = _firmwarePluginManager->firmwarePluginForAutopilot(_firmwareType, _vehicleType);
+    _firmwarePlugin->initializeVehicle(this);
+
+    _missionManager = new MissionManager(this);
+    connect(_missionManager, &MissionManager::error, this, &Vehicle::_missionManagerError);
+
+    _parameterManager = new ParameterManager(this);
+
+    // GeoFenceManager needs to access ParameterManager so make sure to create after
+    _geoFenceManager = _firmwarePlugin->newGeoFenceManager(this);
+    connect(_geoFenceManager, &GeoFenceManager::error, this, &Vehicle::_geoFenceManagerError);
 
     // Build FactGroup object model
 
@@ -468,6 +484,9 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_WIND_COV:
         _handleWindCov(message);
         break;
+    case MAVLINK_MSG_ID_HIL_ACTUATOR_CONTROLS:
+        _handleHilActuatorControls(message);
+        break;
 
     // Following are ArduPilot dialect messages
 
@@ -501,6 +520,30 @@ void Vehicle::_handleAutopilotVersion(mavlink_message_t& message)
         versionType = (FIRMWARE_VERSION_TYPE)((autopilotVersion.flight_sw_version >> (8*0)) & 0xFF);
         setFirmwareVersion(majorVersion, minorVersion, patchVersion, versionType);
     }
+}
+
+void Vehicle::_handleHilActuatorControls(mavlink_message_t &message)
+{
+    mavlink_hil_actuator_controls_t hil;
+    mavlink_msg_hil_actuator_controls_decode(&message, &hil);
+    emit hilActuatorControlsChanged(hil.time_usec, hil.flags,
+                                    hil.controls[0],
+                                    hil.controls[1],
+                                    hil.controls[2],
+                                    hil.controls[3],
+                                    hil.controls[4],
+                                    hil.controls[5],
+                                    hil.controls[6],
+                                    hil.controls[7],
+                                    hil.controls[8],
+                                    hil.controls[9],
+                                    hil.controls[10],
+                                    hil.controls[11],
+                                    hil.controls[12],
+                                    hil.controls[13],
+                                    hil.controls[14],
+                                    hil.controls[15],
+                                    hil.mode);
 }
 
 void Vehicle::_handleCommandAck(mavlink_message_t& message)
@@ -1344,11 +1387,6 @@ void Vehicle::setHilMode(bool hilMode)
     sendMessageOnPriorityLink(msg);
 }
 
-bool Vehicle::missingParameters(void)
-{
-    return _autopilotPlugin->missingParameters();
-}
-
 void Vehicle::requestDataStream(MAV_DATA_STREAM stream, uint16_t rate, bool sendMultiple)
 {
     mavlink_message_t               msg;
@@ -1405,6 +1443,12 @@ void Vehicle::_missionManagerError(int errorCode, const QString& errorMsg)
     qgcApp()->showMessage(QString("Error during Mission communication with Vehicle: %1").arg(errorMsg));
 }
 
+void Vehicle::_geoFenceManagerError(int errorCode, const QString& errorMsg)
+{
+    Q_UNUSED(errorCode);
+    qgcApp()->showMessage(QString("Error during Geo-Fence communication with Vehicle: %1").arg(errorMsg));
+}
+
 void Vehicle::_addNewMapTrajectoryPoint(void)
 {
     if (_mapTrajectoryHaveFirstCoordinate) {
@@ -1455,11 +1499,6 @@ void Vehicle::disconnectInactiveVehicle(void)
             linkMgr->disconnectLink(_links[i]);
         }
     }
-}
-
-ParameterLoader* Vehicle::getParameterLoader(void)
-{
-    return _parameterLoader;
 }
 
 void Vehicle::_imageReady(UASInterface*)
@@ -1858,7 +1897,7 @@ void Vehicle::rebootVehicle()
 
 int Vehicle::defaultComponentId(void)
 {
-    return _parameterLoader->defaultComponenentId();
+    return _parameterManager->defaultComponentId();
 }
 
 void Vehicle::setSoloFirmware(bool soloFirmware)
@@ -1876,6 +1915,15 @@ void Vehicle::motorTest(int motor, int percent, int timeoutSecs)
     doCommandLong(defaultComponentId(), MAV_CMD_DO_MOTOR_TEST, motor, MOTOR_TEST_THROTTLE_PERCENT, percent, timeoutSecs);
 }
 #endif
+
+void Vehicle::_newMissionItemsAvailable(void)
+{
+    // After the initial mission request complets we ask for the geofence
+    if (!_geoFenceManagerInitialRequestComplete) {
+        _geoFenceManagerInitialRequestComplete = true;
+        _geoFenceManager->loadFromVehicle();
+    }
+}
 
 const char* VehicleGPSFactGroup::_hdopFactName =                "hdop";
 const char* VehicleGPSFactGroup::_vdopFactName =                "vdop";

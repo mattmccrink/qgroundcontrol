@@ -30,12 +30,19 @@ linux {
         CONFIG += LinuxBuild
         DEFINES += __STDC_LIMIT_MACROS __rasp_pi2__
     } else : android-g++ {
-        message("Android build")
         CONFIG += AndroidBuild MobileBuild
         DEFINES += __android__
         DEFINES += __STDC_LIMIT_MACROS
         DEFINES += QGC_ENABLE_BLUETOOTH
         target.path = $$DESTDIR
+        equals(ANDROID_TARGET_ARCH, x86)  {
+            CONFIG += Androidx86Build
+            DEFINES += __androidx86__
+            DEFINES += QGC_DISABLE_UVC
+            message("Android x86 build")
+        } else {
+            message("Android Arm build")
+        }
     } else {
         error("Unsuported Linux toolchain, only GCC 32- or 64-bit is supported")
     }
@@ -54,12 +61,12 @@ linux {
         DEFINES += __macos__
         CONFIG += x86_64
         CONFIG -= x86
-equals(QT_MAJOR_VERSION, 5) | greaterThan(QT_MINOR_VERSION, 5) {
-        QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
-} else {
-        QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
-}
-        QMAKE_MAC_SDK = macosx10.11
+        equals(QT_MAJOR_VERSION, 5) | greaterThan(QT_MINOR_VERSION, 5) {
+                QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
+        } else {
+                QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
+        }
+        QMAKE_MAC_SDK = macosx10.12
         QMAKE_CXXFLAGS += -fvisibility=hidden
     } else {
         error("Unsupported Mac toolchain, only 64-bit LLVM+clang is supported")
@@ -106,8 +113,7 @@ exists ($$PWD/.git) {
     GIT_TIME     = $$system(git --git-dir $$PWD/.git --work-tree $$PWD show --oneline --format=\"%ci\" -s HEAD)
 
     # determine if we're on a tag matching vX.Y.Z (stable release)
-    GIT_TAG      = $$system(git --git-dir $$PWD/.git --work-tree $$PWD describe --exact-match --tags HEAD)
-    contains(GIT_TAG, v[0-9].[0-9].[0-9]) {
+    contains(GIT_DESCRIBE, v[0-9].[0-9].[0-9]) {
         # release version "vX.Y.Z"
         GIT_VERSION = $${GIT_DESCRIBE}
     } else {
@@ -123,7 +129,7 @@ exists ($$PWD/.git) {
         MAC_BUILD    = $$section(VERSION, ".", 3, 3)
         message(QGroundControl version $${MAC_VERSION} build $${MAC_BUILD} describe $${GIT_VERSION})
     } else {
-        message(QGroundControl version $${VERSION} describe $${GIT_VERSION})
+        message(QGroundControl $${GIT_VERSION})
     }
 } else {
     GIT_VERSION     = None

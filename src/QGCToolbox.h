@@ -31,6 +31,7 @@ class QGCApplication;
 class QGCImageProvider;
 class UASMessageHandler;
 class QGCPositionManager;
+class VideoManager;
 
 /// This is used to manage all of our top level services/tools
 class QGCToolbox {
@@ -54,11 +55,14 @@ public:
     UASMessageHandler*          uasMessageHandler(void)         { return _uasMessageHandler; }
     FollowMe*                   followMe(void)                  { return _followMe; }
     QGCPositionManager*         qgcPositionManager(void)        { return _qgcPositionManager; }
+    VideoManager*               videoManager(void)              { return _videoManager; }
 #ifndef __mobile__
     GPSManager*                 gpsManager(void)                { return _gpsManager; }
 #endif
 
 private:
+    void setChildToolboxes(void);
+
     GAudioOutput*               _audioOutput;
     AutoPilotPluginManager*     _autopilotPluginManager;
     FactSystem*                 _factSystem;
@@ -78,6 +82,9 @@ private:
     UASMessageHandler*          _uasMessageHandler;
     FollowMe*                   _followMe;
     QGCPositionManager*         _qgcPositionManager;
+    VideoManager*               _videoManager;
+
+    friend class QGCApplication;
 };
 
 /// This is the base class for all tools

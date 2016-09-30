@@ -194,9 +194,11 @@ Rectangle {
         spacing:            _margin
 
         QGCLabel {
+            anchors.left:   parent.left
+            anchors.right:  parent.right
             wrapMode:       Text.WordWrap
             font.pointSize: ScreenTools.smallFontPointSize
-            text:           qsTr("Work in progress, be careful!")
+            text:           qsTr("Create a flight path to fully cover a polygonal area with a camera.")
         }
 
         Repeater {

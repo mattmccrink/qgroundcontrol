@@ -109,11 +109,13 @@ QString MissionCommandUIInfo::description(void) const
 
 bool MissionCommandUIInfo::friendlyEdit(void) const
 {
-    if (_infoMap.contains(_friendlyEditJsonKey)) {
-        return _infoMap[_friendlyEditJsonKey].toBool();
-    } else {
-        return false;
-    }
+//    if (_infoMap.contains(_friendlyEditJsonKey)) {
+//        return _infoMap[_friendlyEditJsonKey].toBool();
+//    } else {
+//        return false;
+//    }
+    return true;
+
 }
 
 QString MissionCommandUIInfo::friendlyName(void) const

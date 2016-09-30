@@ -307,6 +307,10 @@ QString SimpleMissionItem::abbreviation() const
         return QStringLiteral("T");
     case MavlinkQmlSingleton::MAV_CMD_NAV_LAND:
         return QStringLiteral("L");
+    case MavlinkQmlSingleton::MAV_CMD_NAV_VTOL_TAKEOFF:
+        return QStringLiteral("VT");
+    case MavlinkQmlSingleton::MAV_CMD_NAV_VTOL_LAND:
+        return QStringLiteral("VL");
     }
 }
 
@@ -451,18 +455,32 @@ QmlObjectListModel* SimpleMissionItem::comboboxFacts(void)
 bool SimpleMissionItem::friendlyEditAllowed(void) const
 {
     const MissionCommandUIInfo* uiInfo = _commandTree->getUIInfo(_vehicle, (MAV_CMD)command());
+
+    qDebug()<<"Friendly_edit"<<uiInfo->friendlyEdit();
+    qDebug()<<"auto continue"<<_missionItem.autoContinue();
+    qDebug()<<"Frame"<<_missionItem.frame();
+    qDebug()<<"Specifies Coordinate"<<specifiesCoordinate();
+    qDebug()<<"uiInfo"<<uiInfo;
+    qDebug()<<"uiInfo and friendly edit"<<(uiInfo && uiInfo->friendlyEdit());
+    qDebug()<<"_vehicle"<<_vehicle;
+    qDebug()<<"mav command"<<(MAV_CMD)command();
+
+
     if (uiInfo && uiInfo->friendlyEdit()) {
         if (!_missionItem.autoContinue()) {
+            qDebug()<<"false 1";
             return false;
         }
 
         if (specifiesCoordinate()) {
+            qDebug()<<"false 2";
             return _missionItem.frame() == MAV_FRAME_GLOBAL || _missionItem.frame() == MAV_FRAME_GLOBAL_RELATIVE_ALT;
+
         }
 
         return true;
     }
-
+    qDebug()<<"false 3";
     return false;
 }
 

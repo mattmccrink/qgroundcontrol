@@ -189,10 +189,7 @@
         <file alias="Vehicle/GPSFact.json">src/Vehicle/GPSFact.json</file>
         <file alias="Vehicle/WindFact.json">src/Vehicle/WindFact.json</file>
         <file alias="Vehicle/VibrationFact.json">src/Vehicle/VibrationFact.json</file>
-<<<<<<< HEAD
         <file alias="Vehicle/TurbineFact.json">src/Vehicle/TurbineFact.json</file>
-=======
         <file alias="QGroundControlQmlGlobal.json">src/QmlControls/QGroundControlQmlGlobal.json</file>
->>>>>>> upstream/master
     </qresource>
 </RCC>

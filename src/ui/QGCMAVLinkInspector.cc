@@ -209,7 +209,6 @@ void QGCMAVLinkInspector::refreshView()
         mavlink_message_t* msg = ite.value();
         // Ignore NULL values
         if (msg->msgid == 0xFF) continue;
-        qDebug()<<messageInfo[msg->msgid].name;
         // Update the message frenquency
 
         // Get the previous frequency for low-pass filtering

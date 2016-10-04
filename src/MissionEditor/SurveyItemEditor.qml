@@ -67,6 +67,14 @@ Rectangle {
                imageHeight:    3456
                focalLength:    22
            }
+           ListElement {
+               text:           qsTr("Sony a6000 16mm") //http://www.sony.co.uk/electronics/interchangeable-lens-cameras/ilce-6000-body-kit#product_details_default
+               sensorWidth:    23.5
+               sensorHeight:   15.6
+               imageWidth:     6000
+               imageHeight:    4000
+               focalLength:    16
+           }
    }
 
     function recalcFromCameraValues() {
@@ -186,9 +194,11 @@ Rectangle {
         spacing:            _margin
 
         QGCLabel {
+            anchors.left:   parent.left
+            anchors.right:  parent.right
             wrapMode:       Text.WordWrap
             font.pointSize: ScreenTools.smallFontPointSize
-            text:           qsTr("Work in progress, be careful!")
+            text:           qsTr("Create a flight path to fully cover a polygonal area with a camera.")
         }
 
         Repeater {

@@ -1797,10 +1797,27 @@ void UAS::sendHilState(quint64 time_us, float roll, float pitch, float yaw, floa
         q[3] = (cosPhi_2 * cosTheta_2 * sinPsi_2 -
                 sinPhi_2 * sinTheta_2 * cosPsi_2);
 
+        int q1[4];
+
+        q1[0] = qRound(q[0]*(1<<30));
+        q1[1] = qRound(q[1]*(1<<30));
+        q1[2] = qRound(q[2]*(1<<30));
+        q1[3] = qRound(q[3]*(1<<30));
+
+        double rate_scale = 204.8*39*180/M_PI;
+        double acc_scale = 12800*39/9.81;
+
         mavlink_message_t msg;
-        mavlink_msg_hil_state_quaternion_pack(mavlink->getSystemId(), mavlink->getComponentId(), &msg,
-                                   time_us, q, rollspeed, pitchspeed, yawspeed,
-                                   lat*1e7f, lon*1e7f, alt*1000, vx*100, vy*100, vz*100, ind_airspeed*100, true_airspeed*100, xacc*1000/9.81, yacc*1000/9.81, zacc*1000/9.81);
+//        mavlink_msg_hil_state_quaternion_pack(mavlink->getSystemId(), mavlink->getComponentId(), &msg,
+//                                   time_us, q, rollspeed, pitchspeed, yawspeed,
+//                                   lat*1e7f, lon*1e7f, alt*1000, vx*100, vy*100, vz*100, ind_airspeed*100, true_airspeed*100, xacc*1000/9.81, yacc*1000/9.81, zacc*1000/9.81);
+        mavlink_msg_hil_propeller_state_quaternion_pack(mavlink->getSystemId(),mavlink->getComponentId(),&msg,
+                                                        time_us, q1,(int32_t) (rollspeed*rate_scale),(int32_t) (pitchspeed*rate_scale), (int32_t) (yawspeed*rate_scale),
+                                                        (int32_t) (xacc*acc_scale), (int32_t) (yacc*acc_scale), (int32_t) (zacc*acc_scale),
+                                                        (int32_t) (lat*1e7f), (int32_t) (lon*1e7f), (int32_t) (alt*1000.0),
+                                                        (int16_t) (vx*100.0), (int16_t) (vy*100.0), (int16_t) (vz*100.0),
+                                                        (int16_t) (ind_airspeed*100.0), (int16_t) (true_airspeed*100.0),
+                                                        (int16_t) 0, (int16_t) 0, (int16_t) 0);
         _vehicle->sendMessageOnPriorityLink(msg);
     }
     else

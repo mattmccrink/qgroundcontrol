@@ -64,8 +64,8 @@ public:
     static const int siLabsRadioVendorId =                  0x10c4; ///< Vendor ID for SILabs Radio
     static const int siLabsRadioProductId =                 0xea60; ///< Product ID for SILabs Radio
 
-    static const int ubloxRTKVendorId =                     5446;   ///< Vendor ID for ublox RTK
-    static const int ubloxRTKProductId =                    424;    ///< Product ID for ublox RTK
+    static const int ubloxRTKVendorId =                     0;//5446;   ///< Vendor ID for ublox RTK
+    static const int ubloxRTKProductId =                    0;//424;    ///< Product ID for ublox RTK
 
     static const int openpilotVendorId =                    0x20A0; ///< Vendor ID for OpenPilot
     static const int revolutionProductId =                  0x415E; ///< Product ID for OpenPilot Revolution

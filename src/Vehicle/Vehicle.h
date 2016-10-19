@@ -320,6 +320,7 @@ public:
     Q_PROPERTY(bool                 coaxialMotors           READ coaxialMotors                                          CONSTANT)
     Q_PROPERTY(bool                 xConfigMotors           READ xConfigMotors                                          CONSTANT)
     Q_PROPERTY(bool                 isOfflineEditingVehicle READ isOfflineEditingVehicle                                CONSTANT)
+    Q_PROPERTY(QString              brandImage              READ brandImage                                             CONSTANT)
 
     Q_PROPERTY(double onboard_control_sensors_enabled          READ onboard_control_sensors_enabled NOTIFY sensorsEnabledChanged)
     Q_PROPERTY(double onboard_control_sensors_health           READ onboard_control_sensors_health NOTIFY sensorsHealthChanged)
@@ -575,6 +576,7 @@ public:
     uint8_t         baseMode                () const { return _base_mode; }
     uint32_t        customMode              () const { return _custom_mode; }
     bool            isOfflineEditingVehicle () const { return _offlineEditingVehicle; }
+    QString         brandImage              () const;
 
     Fact* roll              (void) { return &_rollFact; }
     Fact* heading           (void) { return &_headingFact; }

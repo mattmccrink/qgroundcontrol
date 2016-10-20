@@ -17,6 +17,8 @@
 #include "UAS.h"
 #include "JoystickManager.h"
 #include "MissionManager.h"
+#include "GeoFenceManager.h"
+#include "RallyPointManager.h"
 #include "CoordinateVector.h"
 #include "ParameterManager.h"
 #include "QGCApplication.h"
@@ -25,7 +27,6 @@
 #include "FollowMe.h"
 #include "MissionCommandTree.h"
 #include "QGroundControlQmlGlobal.h"
-#include "GeoFenceManager.h"
 
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
@@ -99,9 +100,11 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _connectionLost(false)
     , _connectionLostEnabled(true)
     , _missionManager(NULL)
-    , _missionManagerInitialRequestComplete(false)
+    , _missionManagerInitialRequestSent(false)
     , _geoFenceManager(NULL)
-    , _geoFenceManagerInitialRequestComplete(false)
+    , _geoFenceManagerInitialRequestSent(false)
+    , _rallyPointManager(NULL)
+    , _rallyPointManagerInitialRequestSent(false)
     , _parameterManager(NULL)
     , _armed(false)
     , _base_mode(0)
@@ -208,6 +211,10 @@ Vehicle::Vehicle(LinkInterface*             link,
     // GeoFenceManager needs to access ParameterManager so make sure to create after
     _geoFenceManager = _firmwarePlugin->newGeoFenceManager(this);
     connect(_geoFenceManager, &GeoFenceManager::error, this, &Vehicle::_geoFenceManagerError);
+    connect(_geoFenceManager, &GeoFenceManager::loadComplete, this, &Vehicle::_newGeoFenceAvailable);
+
+    _rallyPointManager = _firmwarePlugin->newRallyPointManager(this);
+    connect(_rallyPointManager, &RallyPointManager::error, this, &Vehicle::_rallyPointManagerError);
 
     // Ask the vehicle for firmware version info. This must be MAV_COMP_ID_ALL since we don't know default component id yet.
 
@@ -220,7 +227,11 @@ Vehicle::Vehicle(LinkInterface*             link,
     versionCmd.param2 = versionCmd.param3 = versionCmd.param4 = versionCmd.param5 = versionCmd.param6 = versionCmd.param7 = 0;
     versionCmd.target_system = id();
     versionCmd.target_component = MAV_COMP_ID_ALL;
-    mavlink_msg_command_long_encode(_mavlink->getSystemId(), _mavlink->getComponentId(), &versionMsg, &versionCmd);
+    mavlink_msg_command_long_encode_chan(_mavlink->getSystemId(),
+                                         _mavlink->getComponentId(),
+                                         priorityLink()->mavlinkChannel(),
+                                         &versionMsg,
+                                         &versionCmd);
     sendMessageMultiple(versionMsg);
 
     _firmwarePlugin->initializeVehicle(this);
@@ -296,9 +307,11 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _connectionLost(false)
     , _connectionLostEnabled(true)
     , _missionManager(NULL)
-    , _missionManagerInitialRequestComplete(false)
+    , _missionManagerInitialRequestSent(false)
     , _geoFenceManager(NULL)
-    , _geoFenceManagerInitialRequestComplete(false)
+    , _geoFenceManagerInitialRequestSent(false)
+    , _rallyPointManager(NULL)
+    , _rallyPointManagerInitialRequestSent(false)
     , _parameterManager(NULL)
     , _armed(false)
     , _base_mode(0)
@@ -347,6 +360,9 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     // GeoFenceManager needs to access ParameterManager so make sure to create after
     _geoFenceManager = _firmwarePlugin->newGeoFenceManager(this);
     connect(_geoFenceManager, &GeoFenceManager::error, this, &Vehicle::_geoFenceManagerError);
+
+    _rallyPointManager = _firmwarePlugin->newRallyPointManager(this);
+    connect(_rallyPointManager, &RallyPointManager::error, this, &Vehicle::_rallyPointManagerError);
 
     // Build FactGroup object model
 
@@ -911,11 +927,14 @@ void Vehicle::_sendMessageOnLink(LinkInterface* link, mavlink_message_t message)
         return;
     }
 
-    // Give the plugin a chance to adjust
-    _firmwarePlugin->adjustOutgoingMavlinkMessage(this, &message);
+#if 0
+    // Leaving in for ease in Mav 2.0 testing
+    mavlink_status_t* mavlinkStatus = mavlink_get_channel_status(link->mavlinkChannel());
+    qDebug() << "_sendMessageOnLink" << mavlinkStatus << link->mavlinkChannel() << mavlinkStatus->flags << message.magic;
+#endif
 
-    static const uint8_t messageKeys[256] = MAVLINK_MESSAGE_CRCS;
-    mavlink_finalize_message_chan(&message, _mavlink->getSystemId(), _mavlink->getComponentId(), link->getMavlinkChannel(), message.len, message.len, messageKeys[message.msgid]);
+    // Give the plugin a chance to adjust
+    _firmwarePlugin->adjustOutgoingMavlinkMessage(this, link, &message);
 
     // Write message into buffer, prepending start sign
     uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
@@ -1330,9 +1349,13 @@ void Vehicle::setArmed(bool armed)
     cmd.target_system = id();
     cmd.target_component = defaultComponentId();
 
-    mavlink_msg_command_long_encode(_mavlink->getSystemId(), _mavlink->getComponentId(), &msg, &cmd);
+    mavlink_msg_command_long_encode_chan(_mavlink->getSystemId(),
+                                         _mavlink->getComponentId(),
+                                         priorityLink()->mavlinkChannel(),
+                                         &msg,
+                                         &cmd);
 
-    sendMessageOnPriorityLink(msg);
+    sendMessageOnLink(priorityLink(), msg);
 }
 
 bool Vehicle::flightModeSetAvailable(void)
@@ -1362,8 +1385,14 @@ void Vehicle::setFlightMode(const QString& flightMode)
         newBaseMode |= base_mode;
 
         mavlink_message_t msg;
-        mavlink_msg_set_mode_pack(_mavlink->getSystemId(), _mavlink->getComponentId(), &msg, id(), newBaseMode, custom_mode);
-        sendMessageOnPriorityLink(msg);
+        mavlink_msg_set_mode_pack_chan(_mavlink->getSystemId(),
+                                       _mavlink->getComponentId(),
+                                       priorityLink()->mavlinkChannel(),
+                                       &msg,
+                                       id(),
+                                       newBaseMode,
+                                       custom_mode);
+        sendMessageOnLink(priorityLink(), msg);
     } else {
         qWarning() << "FirmwarePlugin::setFlightMode failed, flightMode:" << flightMode;
     }
@@ -1383,8 +1412,14 @@ void Vehicle::setHilMode(bool hilMode)
         newBaseMode |= MAV_MODE_FLAG_HIL_ENABLED;
     }
 
-    mavlink_msg_set_mode_pack(_mavlink->getSystemId(), _mavlink->getComponentId(), &msg, id(), newBaseMode, _custom_mode);
-    sendMessageOnPriorityLink(msg);
+    mavlink_msg_set_mode_pack_chan(_mavlink->getSystemId(),
+                                   _mavlink->getComponentId(),
+                                   priorityLink()->mavlinkChannel(),
+                                   &msg,
+                                   id(),
+                                   newBaseMode,
+                                   _custom_mode);
+    sendMessageOnLink(priorityLink(), msg);
 }
 
 void Vehicle::requestDataStream(MAV_DATA_STREAM stream, uint16_t rate, bool sendMultiple)
@@ -1398,13 +1433,17 @@ void Vehicle::requestDataStream(MAV_DATA_STREAM stream, uint16_t rate, bool send
     dataStream.target_system = id();
     dataStream.target_component = defaultComponentId();
 
-    mavlink_msg_request_data_stream_encode(_mavlink->getSystemId(), _mavlink->getComponentId(), &msg, &dataStream);
+    mavlink_msg_request_data_stream_encode_chan(_mavlink->getSystemId(),
+                                                _mavlink->getComponentId(),
+                                                priorityLink()->mavlinkChannel(),
+                                                &msg,
+                                                &dataStream);
 
     if (sendMultiple) {
         // We use sendMessageMultiple since we really want these to make it to the vehicle
         sendMessageMultiple(msg);
     } else {
-        sendMessageOnPriorityLink(msg);
+        sendMessageOnLink(priorityLink(), msg);
     }
 }
 
@@ -1413,7 +1452,7 @@ void Vehicle::_sendMessageMultipleNext(void)
     if (_nextSendMessageMultipleIndex < _sendMessageMultipleList.count()) {
         qCDebug(VehicleLog) << "_sendMessageMultipleNext:" << _sendMessageMultipleList[_nextSendMessageMultipleIndex].message.msgid;
 
-        sendMessageOnPriorityLink(_sendMessageMultipleList[_nextSendMessageMultipleIndex].message);
+        sendMessageOnLink(priorityLink(), _sendMessageMultipleList[_nextSendMessageMultipleIndex].message);
 
         if (--_sendMessageMultipleList[_nextSendMessageMultipleIndex].retryCount <= 0) {
             _sendMessageMultipleList.removeAt(_nextSendMessageMultipleIndex);
@@ -1446,7 +1485,13 @@ void Vehicle::_missionManagerError(int errorCode, const QString& errorMsg)
 void Vehicle::_geoFenceManagerError(int errorCode, const QString& errorMsg)
 {
     Q_UNUSED(errorCode);
-    qgcApp()->showMessage(QString("Error during Geo-Fence communication with Vehicle: %1").arg(errorMsg));
+    qgcApp()->showMessage(QString("Error during GeoFence communication with Vehicle: %1").arg(errorMsg));
+}
+
+void Vehicle::_rallyPointManagerError(int errorCode, const QString& errorMsg)
+{
+    Q_UNUSED(errorCode);
+    qgcApp()->showMessage(QString("Error during Rally Point communication with Vehicle: %1").arg(errorMsg));
 }
 
 void Vehicle::_addNewMapTrajectoryPoint(void)
@@ -1476,8 +1521,8 @@ void Vehicle::_mapTrajectoryStop()
 
 void Vehicle::_parametersReady(bool parametersReady)
 {
-    if (parametersReady && !_missionManagerInitialRequestComplete) {
-        _missionManagerInitialRequestComplete = true;
+    if (parametersReady && !_missionManagerInitialRequestSent) {
+        _missionManagerInitialRequestSent = true;
         _missionManager->requestMissionItems();
     }
 
@@ -1811,9 +1856,13 @@ void Vehicle::emergencyStop(void)
     cmd.param7 = 0.0f;
     cmd.target_system = id();
     cmd.target_component = defaultComponentId();
-    mavlink_msg_command_long_encode(_mavlink->getSystemId(), _mavlink->getComponentId(), &msg, &cmd);
+    mavlink_msg_command_long_encode_chan(_mavlink->getSystemId(),
+                                         _mavlink->getComponentId(),
+                                         priorityLink()->mavlinkChannel(),
+                                         &msg,
+                                         &cmd);
 
-    sendMessageOnPriorityLink(msg);
+    sendMessageOnLink(priorityLink(), msg);
 }
 
 void Vehicle::setCurrentMissionSequence(int seq)
@@ -1822,8 +1871,14 @@ void Vehicle::setCurrentMissionSequence(int seq)
         seq--;
     }
     mavlink_message_t msg;
-    mavlink_msg_mission_set_current_pack(_mavlink->getSystemId(), _mavlink->getComponentId(), &msg, id(), _compID, seq);
-    sendMessageOnPriorityLink(msg);
+    mavlink_msg_mission_set_current_pack_chan(_mavlink->getSystemId(),
+                                              _mavlink->getComponentId(),
+                                              priorityLink()->mavlinkChannel(),
+                                              &msg,
+                                              id(),
+                                              _compID,
+                                              seq);
+    sendMessageOnLink(priorityLink(), msg);
 }
 
 void Vehicle::doCommandLong(int component, MAV_CMD command, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
@@ -1842,9 +1897,13 @@ void Vehicle::doCommandLong(int component, MAV_CMD command, float param1, float 
     cmd.param7 = param7;
     cmd.target_system = id();
     cmd.target_component = component;
-    mavlink_msg_command_long_encode(_mavlink->getSystemId(), _mavlink->getComponentId(), &msg, &cmd);
+    mavlink_msg_command_long_encode_chan(_mavlink->getSystemId(),
+                                         _mavlink->getComponentId(),
+                                         priorityLink()->mavlinkChannel(),
+                                         &msg,
+                                         &cmd);
 
-    sendMessageOnPriorityLink(msg);
+    sendMessageOnLink(priorityLink(), msg);
 }
 
 void Vehicle::setPrearmError(const QString& prearmError)
@@ -1919,10 +1978,24 @@ void Vehicle::motorTest(int motor, int percent, int timeoutSecs)
 void Vehicle::_newMissionItemsAvailable(void)
 {
     // After the initial mission request complets we ask for the geofence
-    if (!_geoFenceManagerInitialRequestComplete) {
-        _geoFenceManagerInitialRequestComplete = true;
+    if (!_geoFenceManagerInitialRequestSent) {
+        _geoFenceManagerInitialRequestSent = true;
         _geoFenceManager->loadFromVehicle();
     }
+}
+
+void Vehicle::_newGeoFenceAvailable(void)
+{
+    // After the initial mission request complets we ask for the geofence
+    if (!_rallyPointManagerInitialRequestSent) {
+        _rallyPointManagerInitialRequestSent = true;
+        _rallyPointManager->loadFromVehicle();
+    }
+}
+
+QString Vehicle::brandImage(void) const
+{
+    return _firmwarePlugin->brandImage(this);
 }
 
 const char* VehicleGPSFactGroup::_hdopFactName =                "hdop";

@@ -34,6 +34,7 @@ class AutoPilotPlugin;
 class AutoPilotPluginManager;
 class MissionManager;
 class GeoFenceManager;
+class RallyPointManager;
 class ParameterManager;
 class JoystickManager;
 class UASMessage;
@@ -319,6 +320,7 @@ public:
     Q_PROPERTY(bool                 coaxialMotors           READ coaxialMotors                                          CONSTANT)
     Q_PROPERTY(bool                 xConfigMotors           READ xConfigMotors                                          CONSTANT)
     Q_PROPERTY(bool                 isOfflineEditingVehicle READ isOfflineEditingVehicle                                CONSTANT)
+    Q_PROPERTY(QString              brandImage              READ brandImage                                             CONSTANT)
 
     Q_PROPERTY(double onboard_control_sensors_enabled          READ onboard_control_sensors_enabled NOTIFY sensorsEnabledChanged)
     Q_PROPERTY(double onboard_control_sensors_health           READ onboard_control_sensors_health NOTIFY sensorsHealthChanged)
@@ -480,10 +482,6 @@ public:
     /// @return true: message sent, false: Link no longer connected
     bool sendMessageOnLink(LinkInterface* link, mavlink_message_t message);
 
-    /// Sends a message to the priority link
-    /// @return true: message sent, false: Link no longer connected
-    bool sendMessageOnPriorityLink(mavlink_message_t message) { return sendMessageOnLink(priorityLink(), message); }
-
     /// Sends the specified messages multiple times to the vehicle in order to attempt to
     /// guarantee that it makes it to the vehicle.
     void sendMessageMultiple(mavlink_message_t message);
@@ -499,8 +497,9 @@ public:
 
     int manualControlReservedButtonCount(void);
 
-    MissionManager* missionManager(void) { return _missionManager; }
-    GeoFenceManager* geoFenceManager(void) { return _geoFenceManager; }
+    MissionManager*     missionManager(void)    { return _missionManager; }
+    GeoFenceManager*    geoFenceManager(void)   { return _geoFenceManager; }
+    RallyPointManager*  rallyPointManager(void) { return _rallyPointManager; }
 
     bool homePositionAvailable(void);
     QGeoCoordinate homePosition(void);
@@ -577,6 +576,7 @@ public:
     uint8_t         baseMode                () const { return _base_mode; }
     uint32_t        customMode              () const { return _custom_mode; }
     bool            isOfflineEditingVehicle () const { return _offlineEditingVehicle; }
+    QString         brandImage              () const;
 
     Fact* roll              (void) { return &_rollFact; }
     Fact* heading           (void) { return &_headingFact; }
@@ -723,6 +723,7 @@ private slots:
     void _connectionLostTimeout(void);
     void _prearmErrorTimeout(void);
     void _newMissionItemsAvailable(void);
+    void _newGeoFenceAvailable(void);
 
 private:
     bool _containsLink(LinkInterface* link);
@@ -746,6 +747,7 @@ private:
     void _handleHilActuatorControls(mavlink_message_t& message);
     void _missionManagerError(int errorCode, const QString& errorMsg);
     void _geoFenceManagerError(int errorCode, const QString& errorMsg);
+    void _rallyPointManagerError(int errorCode, const QString& errorMsg);
     void _mapTrajectoryStart(void);
     void _mapTrajectoryStop(void);
     void _connectionActive(void);
@@ -809,10 +811,13 @@ private:
     QTimer              _connectionLostTimer;
 
     MissionManager*     _missionManager;
-    bool                _missionManagerInitialRequestComplete;
+    bool                _missionManagerInitialRequestSent;
 
     GeoFenceManager*    _geoFenceManager;
-    bool                _geoFenceManagerInitialRequestComplete;
+    bool                _geoFenceManagerInitialRequestSent;
+
+    RallyPointManager*  _rallyPointManager;
+    bool                _rallyPointManagerInitialRequestSent;
 
     ParameterManager*    _parameterManager;
 

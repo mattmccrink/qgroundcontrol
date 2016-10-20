@@ -639,7 +639,8 @@ void MissionController::_recalcWaypointLines(void)
         // If we still haven't found the first coordinate item and we hit a a takeoff command link back to home
         if (firstCoordinateItem &&
                 item->isSimpleItem() &&
-                qobject_cast<SimpleMissionItem*>(item)->command() == MavlinkQmlSingleton::MAV_CMD_NAV_TAKEOFF) {
+                (qobject_cast<SimpleMissionItem*>(item)->command() == MavlinkQmlSingleton::MAV_CMD_NAV_TAKEOFF ||
+                 qobject_cast<SimpleMissionItem*>(item)->command() == MavlinkQmlSingleton::MAV_CMD_NAV_VTOL_TAKEOFF)) {
             linkBackToHome = true;
         }
 
@@ -1283,4 +1284,9 @@ void MissionController::_homeCoordinateChanged(void)
 {
     emit plannedHomePositionChanged(plannedHomePosition());
     _recalcAltitudeRangeBearing();
+}
+
+QString MissionController::fileExtension(void) const
+{
+    return QGCApplication::missionFileExtension;
 }

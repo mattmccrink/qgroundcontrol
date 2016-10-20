@@ -48,13 +48,13 @@ void GPSManager::connectGPS(const QString& device)
 
 void GPSManager::GPSPositionUpdate(GPSPositionMessage msg)
 {
-    qDebug("GPS: got position update: alt=%i, long=%i, lat=%i",
+    /**qDebug("GPS: got position update: alt=%i, long=%i, lat=%i",
             msg.position_data.alt, msg.position_data.lon,
-            msg.position_data.lat);
+            msg.position_data.lat);**/
 }
 void GPSManager::GPSSatelliteUpdate(GPSSatelliteMessage msg)
 {
-    qDebug("GPS: got satellite info update, %i satellites", (int)msg.satellite_data.count);
+    //qDebug("GPS: got satellite info update, %i satellites", (int)msg.satellite_data.count);
 }
 
 void GPSManager::cleanup()

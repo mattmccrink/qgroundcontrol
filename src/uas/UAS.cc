@@ -644,13 +644,13 @@ void UAS::receiveMessage(mavlink_message_t message)
 
             double dtmp;
             //-- Raw GPS data
-            dtmp = pos.eph == 0xFFFF ? 1e10f : pos.eph / 100.0;
+            dtmp = pos.eph == 0xFFFF ? 1e10f : pos.eph / 1000.0;
             if(dtmp != satRawHDOP)
             {
                 satRawHDOP = dtmp;
                 emit satRawHDOPChanged(satRawHDOP);
             }
-            dtmp = pos.epv == 0xFFFF ? 1e10f : pos.epv / 100.0;
+            dtmp = pos.epv == 0xFFFF ? 1e10f : pos.epv / 1000.0;
             if(dtmp != satRawVDOP)
             {
                 satRawVDOP = dtmp;

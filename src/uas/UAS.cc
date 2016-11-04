@@ -1846,6 +1846,7 @@ void UAS::sendHilState(quint64 time_us, float roll, float pitch, float yaw, floa
                                                         (int16_t) (vx*100.0), (int16_t) (vy*100.0), (int16_t) (vz*100.0),
                                                         (int16_t) (ind_airspeed*100.0), (int16_t) (true_airspeed*100.0),
                                                         (int16_t) 0, (int16_t) 0, (int16_t) 0);
+
         _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
 
     }

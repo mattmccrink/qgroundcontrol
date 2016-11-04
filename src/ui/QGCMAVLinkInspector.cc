@@ -181,6 +181,7 @@ void QGCMAVLinkInspector::refreshView()
 
         // Ignore NULL values
         if (msg->msgid == 0xFF) continue;
+
         // Update the message frenquency
 
         // Get the previous frequency for low-pass filtering
@@ -417,7 +418,6 @@ QGCMAVLinkInspector::~QGCMAVLinkInspector()
 void QGCMAVLinkInspector::updateField(mavlink_message_t* msg, const mavlink_message_info_t* msgInfo, int fieldid, QTreeWidgetItem* item)
 {
     // Add field tree widget item
-
     item->setData(0, Qt::DisplayRole, QVariant(msgInfo->fields[fieldid].name));
 
     bool msgFound = false;

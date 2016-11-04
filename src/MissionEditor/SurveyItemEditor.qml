@@ -52,7 +52,6 @@ Rectangle {
     }
 
     ListModel {
-
         id: cameraModelList
 
         Component.onCompleted: {

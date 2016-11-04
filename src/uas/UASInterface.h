@@ -310,6 +310,7 @@ signals:
 
     //Turbine engine state updated
     void turbineChanged(UASInterface*, int32_t RPM_turbine, int16_t EGT, int16_t fuelConsumed, int16_t fuelFlowRate, int16_t fuelRemaining, uint8_t turbineState, quint64 msec);
+
 };
 
 Q_DECLARE_INTERFACE(UASInterface, "org.qgroundcontrol/1.0")

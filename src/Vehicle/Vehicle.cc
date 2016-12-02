@@ -13,7 +13,6 @@
 #include "FirmwarePluginManager.h"
 #include "LinkManager.h"
 #include "FirmwarePlugin.h"
-#include "AutoPilotPluginManager.h"
 #include "UAS.h"
 #include "JoystickManager.h"
 #include "MissionManager.h"
@@ -62,7 +61,6 @@ Vehicle::Vehicle(LinkInterface*             link,
                  MAV_AUTOPILOT              firmwareType,
                  MAV_TYPE                   vehicleType,
                  FirmwarePluginManager*     firmwarePluginManager,
-                 AutoPilotPluginManager*    autopilotPluginManager,
                  JoystickManager*           joystickManager)
     : FactGroup(_vehicleUIUpdateRateMSecs, ":/json/Vehicle/VehicleFact.json")
     , _id(vehicleId)
@@ -71,6 +69,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _firmwareType(firmwareType)
     , _vehicleType(vehicleType)
     , _firmwarePlugin(NULL)
+    , _firmwarePluginInstanceData(NULL)
     , _autopilotPlugin(NULL)
     , _mavlink(NULL)
     , _soloFirmware(false)
@@ -115,7 +114,6 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _custom_mode(0)
     , _nextSendMessageMultipleIndex(0)
     , _firmwarePluginManager(firmwarePluginManager)
-    , _autopilotPluginManager(autopilotPluginManager)
     , _joystickManager(joystickManager)
     , _flowImageIndex(0)
     , _allLinksInactiveSent(false)
@@ -167,7 +165,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     connect(this, &Vehicle::remoteControlRSSIChanged,   this, &Vehicle::_remoteControlRSSIChanged);
 
     _firmwarePlugin     = _firmwarePluginManager->firmwarePluginForAutopilot(_firmwareType, _vehicleType);
-    _autopilotPlugin    = _autopilotPluginManager->newAutopilotPluginForVehicle(this);
+    _autopilotPlugin    = _firmwarePlugin->autopilotPlugin(this);
 
     // connect this vehicle to the follow me handle manager
     connect(this, &Vehicle::flightModeChanged,qgcApp()->toolbox()->followMe(), &FollowMe::followMeHandleManager);
@@ -285,6 +283,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _firmwareType(firmwareType)
     , _vehicleType(vehicleType)
     , _firmwarePlugin(NULL)
+    , _firmwarePluginInstanceData(NULL)
     , _autopilotPlugin(NULL)
     , _joystickMode(JoystickModeRC)
     , _joystickEnabled(false)
@@ -327,7 +326,6 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _custom_mode(0)
     , _nextSendMessageMultipleIndex(0)
     , _firmwarePluginManager(firmwarePluginManager)
-    , _autopilotPluginManager(NULL)
     , _joystickManager(NULL)
     , _flowImageIndex(0)
     , _allLinksInactiveSent(false)
@@ -985,7 +983,7 @@ void Vehicle::_sendMessageOnLink(LinkInterface* link, mavlink_message_t message)
 /// @return Direct usb connection link to board if one, NULL if none
 LinkInterface* Vehicle::priorityLink(void)
 {
-#ifndef __ios__
+#ifndef NO_SERIAL_LINK
     foreach (LinkInterface* link, _links) {
         if (link->isConnected()) {
             SerialLink* pSerialLink = qobject_cast<SerialLink*>(link);
@@ -2109,23 +2107,17 @@ VehicleGPSFactGroup::VehicleGPSFactGroup(QObject* parent)
     _courseOverGroundFact.setRawValue(std::numeric_limits<float>::quiet_NaN());
 }
 
-//-----------------------------------------------------------------------------
-void
-Vehicle::startMavlinkLog()
+void Vehicle::startMavlinkLog()
 {
     doCommandLong(defaultComponentId(), MAV_CMD_LOGGING_START);
 }
 
-//-----------------------------------------------------------------------------
-void
-Vehicle::stopMavlinkLog()
+void Vehicle::stopMavlinkLog()
 {
     doCommandLong(defaultComponentId(), MAV_CMD_LOGGING_STOP);
 }
 
-//-----------------------------------------------------------------------------
-void
-Vehicle::_ackMavlinkLogData(uint16_t sequence)
+void Vehicle::_ackMavlinkLogData(uint16_t sequence)
 {
     mavlink_message_t msg;
     mavlink_logging_ack_t ack;
@@ -2141,9 +2133,7 @@ Vehicle::_ackMavlinkLogData(uint16_t sequence)
     sendMessageOnLink(priorityLink(), msg);
 }
 
-//-----------------------------------------------------------------------------
-void
-Vehicle::_handleMavlinkLoggingData(mavlink_message_t& message)
+void Vehicle::_handleMavlinkLoggingData(mavlink_message_t& message)
 {
     mavlink_logging_data_t log;
     mavlink_msg_logging_data_decode(&message, &log);
@@ -2151,15 +2141,19 @@ Vehicle::_handleMavlinkLoggingData(mavlink_message_t& message)
         log.first_message_offset, QByteArray((const char*)log.data, log.length), false);
 }
 
-//-----------------------------------------------------------------------------
-void
-Vehicle::_handleMavlinkLoggingDataAcked(mavlink_message_t& message)
+void Vehicle::_handleMavlinkLoggingDataAcked(mavlink_message_t& message)
 {
-    mavlink_logging_data_t log;
-    mavlink_msg_logging_data_decode(&message, &log);
+    mavlink_logging_data_acked_t log;
+    mavlink_msg_logging_data_acked_decode(&message, &log);
     _ackMavlinkLogData(log.sequence);
     emit mavlinkLogData(this, log.target_system, log.target_component, log.sequence,
         log.first_message_offset, QByteArray((const char*)log.data, log.length), true);
+}
+
+void Vehicle::setFirmwarePluginInstanceData(QObject* firmwarePluginInstanceData)
+{
+    firmwarePluginInstanceData->setParent(this);
+    _firmwarePluginInstanceData = firmwarePluginInstanceData;
 }
 
 //-----------------------------------------------------------------------------

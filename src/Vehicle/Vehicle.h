@@ -17,6 +17,8 @@
 #include <QObject>
 #include <QGeoCoordinate>
 #include <QElapsedTimer>
+#include <QGeoPositionInfo>
+#include <QGeoPositionInfoSource>
 
 #include "FactGroup.h"
 #include "LinkInterface.h"
@@ -178,13 +180,6 @@ public:
     static const char* _countFactName;
     static const char* _lockFactName;
 
-private slots:
-    void _setSatelliteCount(double val, QString);
-    void _setSatRawHDOP(double val);
-    void _setSatRawVDOP(double val);
-    void _setSatRawCOG(double val);
-    void _setSatLoc(UASInterface*, int fix);
-
 private:
     Vehicle*    _vehicle;
     Fact        _hdopFact;
@@ -278,7 +273,6 @@ public:
     Q_PROPERTY(QmlObjectListModel*  trajectoryPoints        READ trajectoryPoints                                       CONSTANT)
     Q_PROPERTY(float                latitude                READ latitude                                               NOTIFY coordinateChanged)
     Q_PROPERTY(float                longitude               READ longitude                                              NOTIFY coordinateChanged)
-    Q_PROPERTY(QString              currentState            READ currentState                                           NOTIFY currentStateChanged)
     Q_PROPERTY(bool                 messageTypeNone         READ messageTypeNone                                        NOTIFY messageTypeChanged)
     Q_PROPERTY(bool                 messageTypeNormal       READ messageTypeNormal                                      NOTIFY messageTypeChanged)
     Q_PROPERTY(bool                 messageTypeWarning      READ messageTypeWarning                                     NOTIFY messageTypeChanged)
@@ -474,8 +468,9 @@ public:
     double onboard_control_sensors_health(void);
     double onboard_control_sensors_present(void);
 
-    /// Returns the highest quality link available to the Vehicle
-    LinkInterface* priorityLink(void);
+    /// Returns the highest quality link available to the Vehicle. If you need to hold a refernce to this link use
+    /// LinkManager::sharedLinkInterfaceForGet to get QSharedPointer for link.
+    LinkInterface* priorityLink(void) { return _priorityLink.data(); }
 
     /// Sends a message to the specified link
     /// @return true: message sent, false: Link no longer connected
@@ -564,7 +559,6 @@ public:
     float           latitude                () { return _coordinate.latitude(); }
     float           longitude               () { return _coordinate.longitude(); }
     bool            mavPresent              () { return _mav != NULL; }
-    QString         currentState            () { return _currentState; }
     int             rcRSSI                  () { return _rcRSSI; }
     bool            px4Firmware             () const { return _firmwareType == MAV_AUTOPILOT_PX4; }
     bool            apmFirmware             () const { return _firmwareType == MAV_AUTOPILOT_ARDUPILOTMEGA; }
@@ -605,7 +599,13 @@ public:
     static const int cMaxRcChannels = 18;
 
     bool containsLink(LinkInterface* link) { return _links.contains(link); }
-    void doCommandLong(int component, MAV_CMD command, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f, float param6 = 0.0f, float param7 = 0.0f);
+
+    /// Sends the specified MAV_CMD to the vehicle. If no Ack is received command will be retried. If a sendMavCommand is already in progress
+    /// the command will be queued and sent when the previous command completes.
+    ///     @param component Component to send to
+    ///     @param command MAV_CMD to send
+    ///     @param showError true: Display error to user if command failed, false:  no error shown
+    void sendMavCommand(int component, MAV_CMD command, bool showError, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f, float param6 = 0.0f, float param7 = 0.0f);
 
     int firmwareMajorVersion(void) const { return _firmwareMajorVersion; }
     int firmwareMinorVersion(void) const { return _firmwareMinorVersion; }
@@ -661,7 +661,6 @@ signals:
     void flyingChanged(bool flying);
     void guidedModeChanged(bool guidedMode);
     void prearmErrorChanged(const QString& prearmError);
-    void commandLongAck(uint8_t compID, uint16_t command, uint8_t result);
     void soloFirmwareChanged(bool soloFirmware);
     void unhealthySensorsChanged(void);
 
@@ -685,7 +684,6 @@ signals:
     void latestErrorChanged     ();
     void longitudeChanged       ();
     void currentConfigChanged   ();
-    void currentStateChanged    ();
     void flowImageIndexChanged  ();
     void rcRSSIChanged          (int rcRSSI);
 
@@ -710,6 +708,14 @@ signals:
     // Mavlink Log Download
     void mavlinkLogData (Vehicle* vehicle, uint8_t target_system, uint8_t target_component, uint16_t sequence, uint8_t first_message, QByteArray data, bool acked);
 
+    /// Signalled in response to usage of sendMavCommand
+    ///     @param vehicleId Vehicle which command was sent to
+    ///     @param component Component which command was sent to
+    ///     @param command MAV_CMD Command which was sent
+    ///     @param result MAV_RESULT returned in ack
+    ///     @param noResponseFromVehicle true: vehicle did not respond to command, false: vehicle responsed, MAV_RESULT in result
+    void mavCommandResult(int vehicleId, int component, int command, int result, bool noReponseFromVehicle);
+
 private slots:
     void _mavlinkMessageReceived(LinkInterface* link, mavlink_message_t message);
     void _linkInactiveOrDeleted(LinkInterface* link);
@@ -727,18 +733,14 @@ private slots:
     void _updateAttitude                    (UASInterface* uas, double roll, double pitch, double yaw, quint64 timestamp);
     /** @brief Attitude from one specific component / redundant autopilot */
     void _updateAttitude                    (UASInterface* uas, int component, double roll, double pitch, double yaw, quint64 timestamp);
-    void _updateSpeed                       (UASInterface* uas, double _groundSpeed, double _airSpeed, quint64 timestamp);
-    void _updateAltitude                    (UASInterface* uas, double _altitudeAMSL, double _altitudeRelative, double _climbRate, quint64 timestamp);
-    void _updateNavigationControllerErrors  (UASInterface* uas, double altitudeError, double speedError, double xtrackError);
-    void _updateNavigationControllerData    (UASInterface *uas, float navRoll, float navPitch, float navBearing, float targetBearing, float targetDistance);
-    void _checkUpdate                       ();
-    void _updateState                       (UASInterface* system, QString name, QString description);
     /** @brief A new camera image has arrived */
     void _imageReady                        (UASInterface* uas);
     void _connectionLostTimeout(void);
     void _prearmErrorTimeout(void);
     void _newMissionItemsAvailable(void);
     void _newGeoFenceAvailable(void);
+    void _sendMavCommandAgain(void);
+    void _setGPSHomeLocation(QGeoPositionInfo geoPositionInfo);
 
 private:
     bool _containsLink(LinkInterface* link);
@@ -760,6 +762,10 @@ private:
     void _handleCommandAck(mavlink_message_t& message);
     void _handleAutopilotVersion(LinkInterface* link, mavlink_message_t& message);
     void _handleHilActuatorControls(mavlink_message_t& message);
+    void _handleGpsRawInt(mavlink_message_t& message);
+    void _handleGlobalPositionInt(mavlink_message_t& message);
+    void _handleAltitude(mavlink_message_t& message);
+    void _handleVfrHud(mavlink_message_t& message);
     void _missionManagerError(int errorCode, const QString& errorMsg);
     void _geoFenceManagerError(int errorCode, const QString& errorMsg);
     void _rallyPointManagerError(int errorCode, const QString& errorMsg);
@@ -771,6 +777,8 @@ private:
     void _handleMavlinkLoggingData(mavlink_message_t& message);
     void _handleMavlinkLoggingDataAcked(mavlink_message_t& message);
     void _ackMavlinkLogData(uint16_t sequence);
+    void _sendNextQueuedMavCommand(void);
+    void _updatePriorityLink(void);
 
 private:
     int     _id;                    ///< Mavlink system id
@@ -806,12 +814,6 @@ private:
     int             _currentNormalCount;
     MessageType_t   _currentMessageType;
     QString         _latestError;
-    float           _navigationAltitudeError;
-    float           _navigationSpeedError;
-    float           _navigationCrosstrackError;
-    float           _navigationTargetBearing;
-    QTimer*         _refreshTimer;
-    QString         _currentState;
     int             _updateCount;
     QString         _formatedMessage;
     int             _rcRSSI;
@@ -822,6 +824,21 @@ private:
     uint32_t        _onboardControlSensorsEnabled;
     uint32_t        _onboardControlSensorsHealth;
     uint32_t        _onboardControlSensorsUnhealthy;
+    bool            _gpsRawIntMessageAvailable;
+    bool            _globalPositionIntMessageAvailable;
+
+    typedef struct {
+        int     component;
+        MAV_CMD command;
+        float   rgParam[7];
+        bool    showError;
+    } MavCommandQueueEntry_t;
+
+    QList<MavCommandQueueEntry_t>   _mavCommandQueue;
+    QTimer                          _mavCommandAckTimer;
+    int                             _mavCommandRetryCount;
+    static const int                _mavCommandMaxRetryCount = 3;
+    static const int                _mavCommandAckTimeoutMSecs = 3000;
 
     QString             _prearmError;
     QTimer              _prearmErrorTimer;
@@ -895,6 +912,8 @@ private:
 
     static const int    _lowBatteryAnnounceRepeatMSecs; // Amount of time in between each low battery announcement
     QElapsedTimer       _lowBatteryAnnounceTimer;
+
+    SharedLinkInterfacePointer _priorityLink;  // We always keep a reference to the priority link to manage shutdown ordering
 
     // FactGroup facts
 

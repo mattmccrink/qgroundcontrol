@@ -14,6 +14,10 @@ QGCPositionManager::QGCPositionManager(QGCApplication* app) :
     _updateInterval(0),
     _currentSource(nullptr)
 {
+    if (qgetenv("QT_NMEA_SERIAL_PORT").isEmpty()){
+        qputenv("QT_NMEA_SERIAL_PORT","COM5");
+    }
+
     _defaultSource = QGeoPositionInfoSource::createDefaultSource(this);
     _simulatedSource = new SimulatedPosition();
 
@@ -34,7 +38,7 @@ QGCPositionManager::~QGCPositionManager()
 void QGCPositionManager::positionUpdated(const QGeoPositionInfo &update)
 {
 
-    QGeoCoordinate position(update.coordinate().latitude(), update.coordinate().longitude());
+    QGeoCoordinate position(update.coordinate().latitude(), update.coordinate().longitude(), update.coordinate().altitude());
 
     emit lastPositionUpdated(update.isValid(), QVariant::fromValue(position));
     emit positionInfoUpdated(update);

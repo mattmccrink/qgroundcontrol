@@ -26,6 +26,7 @@
 #include "FollowMe.h"
 #include "MissionCommandTree.h"
 #include "QGroundControlQmlGlobal.h"
+#include "PositionManager.h"
 
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
@@ -97,6 +98,8 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _onboardControlSensorsUnhealthy(0)
     , _gpsRawIntMessageAvailable(false)
     , _globalPositionIntMessageAvailable(false)
+    , _cruiseSpeed(QGroundControlQmlGlobal::offlineEditingCruiseSpeed()->rawValue().toDouble())
+    , _hoverSpeed(QGroundControlQmlGlobal::offlineEditingHoverSpeed()->rawValue().toDouble())
     , _connectionLost(false)
     , _connectionLostEnabled(true)
     , _missionManager(NULL)
@@ -156,7 +159,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     connect(_uas, &UAS::imageReady,                     this, &Vehicle::_imageReady);
     connect(this, &Vehicle::remoteControlRSSIChanged,   this, &Vehicle::_remoteControlRSSIChanged);
 
-    _firmwarePlugin     = _firmwarePluginManager->firmwarePluginForAutopilot(_firmwareType, _vehicleType);
+    _commonInit();
     _autopilotPlugin    = _firmwarePlugin->autopilotPlugin(this);
 
     // connect this vehicle to the follow me handle manager
@@ -189,20 +192,9 @@ Vehicle::Vehicle(LinkInterface*             link,
 
     _loadSettings();
 
-    _missionManager = new MissionManager(this);
-    connect(_missionManager, &MissionManager::error,                    this, &Vehicle::_missionManagerError);
-    connect(_missionManager, &MissionManager::newMissionItemsAvailable, this, &Vehicle::_newMissionItemsAvailable);
-
-    _parameterManager = new ParameterManager(this);
-    connect(_parameterManager, &ParameterManager::parametersReadyChanged, this, &Vehicle::_parametersReady);
-
-    // GeoFenceManager needs to access ParameterManager so make sure to create after
-    _geoFenceManager = _firmwarePlugin->newGeoFenceManager(this);
-    connect(_geoFenceManager, &GeoFenceManager::error, this, &Vehicle::_geoFenceManagerError);
-    connect(_geoFenceManager, &GeoFenceManager::loadComplete, this, &Vehicle::_newGeoFenceAvailable);
-
-    _rallyPointManager = _firmwarePlugin->newRallyPointManager(this);
-    connect(_rallyPointManager, &RallyPointManager::error, this, &Vehicle::_rallyPointManagerError);
+    // Resend home position if new location available
+    connect(qgcApp()->toolbox()->qgcPositionManager(),SIGNAL(positionInfoUpdated(QGeoPositionInfo)),
+            this,SLOT(_setGPSHomeLocation(QGeoPositionInfo)));
 
     // Ask the vehicle for firmware version info.
     sendMavCommand(MAV_COMP_ID_ALL,                         // Don't know default component id yet.
@@ -238,10 +230,6 @@ Vehicle::Vehicle(LinkInterface*             link,
     _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
     _addFactGroup(&_turbineFactGroup, _turbineFactGroupName);
 
-    _gpsFactGroup.setVehicle(this);
-    _batteryFactGroup.setVehicle(this);
-    _windFactGroup.setVehicle(this);
-    _vibrationFactGroup.setVehicle(this);
     _turbineFactGroup.setVehicle(this);
 }
 
@@ -283,6 +271,8 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _onboardControlSensorsUnhealthy(0)
     , _gpsRawIntMessageAvailable(false)
     , _globalPositionIntMessageAvailable(false)
+    , _cruiseSpeed(QGroundControlQmlGlobal::offlineEditingCruiseSpeed()->rawValue().toDouble())
+    , _hoverSpeed(QGroundControlQmlGlobal::offlineEditingHoverSpeed()->rawValue().toDouble())
     , _connectionLost(false)
     , _connectionLostEnabled(true)
     , _missionManager(NULL)
@@ -327,8 +317,13 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _onboard_control_sensors_enabled(0)
     , _onboard_control_sensors_health(0)
 {
-    _firmwarePlugin = _firmwarePluginManager->firmwarePluginForAutopilot(_firmwareType, _vehicleType);
+    _commonInit();
     _firmwarePlugin->initializeVehicle(this);
+}
+
+void Vehicle::_commonInit(void)
+{
+    _firmwarePlugin = _firmwarePluginManager->firmwarePluginForAutopilot(_firmwareType, _vehicleType);
 
     _missionManager = new MissionManager(this);
     connect(_missionManager, &MissionManager::error, this, &Vehicle::_missionManagerError);
@@ -342,6 +337,12 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     _rallyPointManager = _firmwarePlugin->newRallyPointManager(this);
     connect(_rallyPointManager, &RallyPointManager::error, this, &Vehicle::_rallyPointManagerError);
 
+    // Offline editing vehicle tracks settings changes for offline editing settings
+    connect(QGroundControlQmlGlobal::offlineEditingFirmwareType(),  &Fact::rawValueChanged, this, &Vehicle::_offlineFirmwareTypeSettingChanged);
+    connect(QGroundControlQmlGlobal::offlineEditingVehicleType(),   &Fact::rawValueChanged, this, &Vehicle::_offlineVehicleTypeSettingChanged);
+    connect(QGroundControlQmlGlobal::offlineEditingCruiseSpeed(),   &Fact::rawValueChanged, this, &Vehicle::_offlineCruiseSpeedSettingChanged);
+    connect(QGroundControlQmlGlobal::offlineEditingHoverSpeed(),    &Fact::rawValueChanged, this, &Vehicle::_offlineHoverSpeedSettingChanged);
+
     // Build FactGroup object model
 
     _addFact(&_rollFact,                _rollFactName);
@@ -353,16 +354,12 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     _addFact(&_altitudeRelativeFact,    _altitudeRelativeFactName);
     _addFact(&_altitudeAMSLFact,        _altitudeAMSLFactName);
 
-    _addFactGroup(&_gpsFactGroup,       _gpsFactGroupName);
-    _addFactGroup(&_batteryFactGroup,   _batteryFactGroupName);
-    _addFactGroup(&_windFactGroup,      _windFactGroupName);
-    _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
-    _addFactGroup(&_turbineFactGroup,   _turbineFactGroupName);
+//    _addFactGroup(&_gpsFactGroup,       _gpsFactGroupName);
+//    _addFactGroup(&_batteryFactGroup,   _batteryFactGroupName);
+//    _addFactGroup(&_windFactGroup,      _windFactGroupName);
+//    _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
+//    _addFactGroup(&_turbineFactGroup,   _turbineFactGroupName);
 
-    _gpsFactGroup.setVehicle(NULL);
-    _batteryFactGroup.setVehicle(NULL);
-    _windFactGroup.setVehicle(NULL);
-    _vibrationFactGroup.setVehicle(NULL);
     _turbineFactGroup.setVehicle(NULL);
 }
 
@@ -381,8 +378,59 @@ Vehicle::~Vehicle()
 
 }
 
-void
-Vehicle::resetCounters()
+void Vehicle::_offlineFirmwareTypeSettingChanged(QVariant value)
+{
+    _firmwareType = static_cast<MAV_AUTOPILOT>(value.toInt());
+    emit firmwareTypeChanged();
+}
+
+void Vehicle::_offlineVehicleTypeSettingChanged(QVariant value)
+{
+    _vehicleType = static_cast<MAV_TYPE>(value.toInt());
+    emit vehicleTypeChanged();
+}
+
+void Vehicle::_offlineCruiseSpeedSettingChanged(QVariant value)
+{
+    _cruiseSpeed = value.toDouble();
+    emit cruiseSpeedChanged(_cruiseSpeed);
+}
+
+void Vehicle::_offlineHoverSpeedSettingChanged(QVariant value)
+{
+    _hoverSpeed = value.toDouble();
+    emit hoverSpeedChanged(_hoverSpeed);
+}
+
+QString Vehicle::firmwareTypeString(void) const
+{
+    if (px4Firmware()) {
+        return QStringLiteral("PX4 Pro");
+    } else if (apmFirmware()) {
+        return QStringLiteral("ArduPilot");
+    } else {
+        return tr("MAVLink Generic");
+    }
+}
+
+QString Vehicle::vehicleTypeString(void) const
+{
+    if (fixedWing()) {
+        return tr("Fixed Wing");
+    } else if (multiRotor()) {
+        return tr("Multi-Rotor");
+    } else if (vtol()) {
+        return tr("VTOL");
+    } else if (rover()) {
+        return tr("Rover");
+    } else if (sub()) {
+        return tr("Sub");
+    } else {
+        return tr("Unknown");
+    }
+}
+
+void Vehicle::resetCounters()
 {
     _messagesReceived   = 0;
     _messagesSent       = 0;
@@ -1029,9 +1077,9 @@ void Vehicle::_sendMessageOnLink(LinkInterface* link, mavlink_message_t message)
 
 void Vehicle::_updatePriorityLink(void)
 {
-#ifndef NO_SERIAL_LINK
     LinkInterface* newPriorityLink = NULL;
 
+#ifndef NO_SERIAL_LINK
     // Note that this routine specificallty does not clear _priorityLink when there are no links remaining.
     // By doing this we hold a reference on the last link as the Vehicle shuts down. Thus preventing shutdown
     // ordering NULL pointer crashes where priorityLink() is still called during shutdown sequence.
@@ -1054,6 +1102,7 @@ void Vehicle::_updatePriorityLink(void)
             }
         }
     }
+#endif
 
     if (!newPriorityLink && !_priorityLink.data() && _links.count()) {
         newPriorityLink = _links[0];
@@ -1062,7 +1111,30 @@ void Vehicle::_updatePriorityLink(void)
     if (newPriorityLink) {
         _priorityLink = qgcApp()->toolbox()->linkManager()->sharedLinkInterfacePointerForLink(newPriorityLink);
     }
-#endif
+}
+
+void Vehicle::_setGPSHomeLocation(QGeoPositionInfo geoPositionInfo)
+{
+    if (geoPositionInfo.isValid() && !isnan(geoPositionInfo.coordinate().altitude()))
+    {
+        QGeoCoordinate newHomePosition (geoPositionInfo.coordinate().latitude(),
+                                        geoPositionInfo.coordinate().longitude(),
+                                        geoPositionInfo.coordinate().altitude());
+
+        QGeoCoordinate vehicleposition (_coordinate.latitude(),
+                                        _coordinate.longitude(),
+                                        _coordinate.altitude());
+
+        qCDebug(FollowMeLog)<<"Sending new home location"<<newHomePosition;
+        qCDebug(FollowMeLog)<<"Distance from target"<<geoPositionInfo.coordinate().distanceTo(vehicleposition);
+        _homePosition = newHomePosition;
+        sendMavCommand(defaultComponentId(), MAV_CMD_DO_SET_HOME, 0.0,0.0,0.0,0.0,0.0,_homePosition.latitude(),_homePosition.longitude(),_homePosition.altitude());
+
+    }
+    else
+    {
+        qCDebug(FollowMeLog)<<"Bad data"<<geoPositionInfo.coordinate().latitude()<<geoPositionInfo.coordinate().longitude()<<geoPositionInfo.coordinate().altitude();
+    }
 }
 
 void Vehicle::setLatitude(double latitude)
@@ -1410,6 +1482,8 @@ void Vehicle::setFlightMode(const QString& flightMode)
 {
     uint8_t     base_mode;
     uint32_t    custom_mode;
+
+    qDebug() << flightMode;
 
     if (_firmwarePlugin->setFlightMode(flightMode, &base_mode, &custom_mode)) {
         // setFlightMode will only set MAV_MODE_FLAG_CUSTOM_MODE_ENABLED in base_mode, we need to move back in the existing
@@ -2147,7 +2221,6 @@ const char* VehicleGPSFactGroup::_lockFactName =                "lock";
 
 VehicleGPSFactGroup::VehicleGPSFactGroup(QObject* parent)
     : FactGroup(1000, ":/json/Vehicle/GPSFact.json", parent)
-    , _vehicle(NULL)
     , _hdopFact             (0, _hdopFactName,              FactMetaData::valueTypeDouble)
     , _vdopFact             (0, _vdopFactName,              FactMetaData::valueTypeDouble)
     , _courseOverGroundFact (0, _courseOverGroundFactName,  FactMetaData::valueTypeDouble)
@@ -2214,13 +2287,23 @@ void Vehicle::setFirmwarePluginInstanceData(QObject* firmwarePluginInstanceData)
     _firmwarePluginInstanceData = firmwarePluginInstanceData;
 }
 
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-
-void VehicleGPSFactGroup::setVehicle(Vehicle* vehicle)
+QString Vehicle::missionFlightMode(void) const
 {
-    _vehicle = vehicle;
+    return _firmwarePlugin->missionFlightMode();
 }
+
+QString Vehicle::rtlFlightMode(void) const
+{
+    return _firmwarePlugin->rtlFlightMode();
+}
+
+QString Vehicle::takeControlFlightMode(void) const
+{
+    return _firmwarePlugin->takeControlFlightMode();
+}
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 const char* VehicleBatteryFactGroup::_voltageFactName =                     "voltage";
 const char* VehicleBatteryFactGroup::_percentRemainingFactName =            "percentRemaining";
@@ -2240,7 +2323,6 @@ const int    VehicleBatteryFactGroup::_cellCountUnavailable =         -1.0;
 
 VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
     : FactGroup(1000, ":/json/Vehicle/BatteryFact.json", parent)
-    , _vehicle(NULL)
     , _voltageFact                  (0, _voltageFactName,                   FactMetaData::valueTypeDouble)
     , _percentRemainingFact         (0, _percentRemainingFactName,          FactMetaData::valueTypeInt32)
     , _mahConsumedFact              (0, _mahConsumedFactName,               FactMetaData::valueTypeInt32)
@@ -2264,18 +2346,12 @@ VehicleBatteryFactGroup::VehicleBatteryFactGroup(QObject* parent)
     _cellCountFact.setRawValue          (_cellCountUnavailable);
 }
 
-void VehicleBatteryFactGroup::setVehicle(Vehicle* vehicle)
-{
-    _vehicle = vehicle;
-}
-
 const char* VehicleWindFactGroup::_directionFactName =      "direction";
 const char* VehicleWindFactGroup::_speedFactName =          "speed";
 const char* VehicleWindFactGroup::_verticalSpeedFactName =  "verticalSpeed";
 
 VehicleWindFactGroup::VehicleWindFactGroup(QObject* parent)
     : FactGroup(1000, ":/json/Vehicle/WindFact.json", parent)
-    , _vehicle(NULL)
     , _directionFact    (0, _directionFactName,     FactMetaData::valueTypeDouble)
     , _speedFact        (0, _speedFactName,         FactMetaData::valueTypeDouble)
     , _verticalSpeedFact(0, _verticalSpeedFactName, FactMetaData::valueTypeDouble)
@@ -2288,11 +2364,6 @@ VehicleWindFactGroup::VehicleWindFactGroup(QObject* parent)
     _directionFact.setRawValue      (std::numeric_limits<float>::quiet_NaN());
     _speedFact.setRawValue          (std::numeric_limits<float>::quiet_NaN());
     _verticalSpeedFact.setRawValue  (std::numeric_limits<float>::quiet_NaN());
-}
-
-void VehicleWindFactGroup::setVehicle(Vehicle* vehicle)
-{
-    _vehicle = vehicle;
 }
 
 const char* TurbineFactGroup::_RPMFactName              = "RPM";
@@ -2342,7 +2413,6 @@ const char* VehicleVibrationFactGroup::_clipCount3FactName = "clipCount3";
 
 VehicleVibrationFactGroup::VehicleVibrationFactGroup(QObject* parent)
     : FactGroup(1000, ":/json/Vehicle/VibrationFact.json", parent)
-    , _vehicle(NULL)
     , _xAxisFact        (0, _xAxisFactName,         FactMetaData::valueTypeDouble)
     , _yAxisFact        (0, _yAxisFactName,         FactMetaData::valueTypeDouble)
     , _zAxisFact        (0, _zAxisFactName,         FactMetaData::valueTypeDouble)
@@ -2361,9 +2431,4 @@ VehicleVibrationFactGroup::VehicleVibrationFactGroup(QObject* parent)
     _xAxisFact.setRawValue(std::numeric_limits<float>::quiet_NaN());
     _yAxisFact.setRawValue(std::numeric_limits<float>::quiet_NaN());
     _zAxisFact.setRawValue(std::numeric_limits<float>::quiet_NaN());
-}
-
-void VehicleVibrationFactGroup::setVehicle(Vehicle* vehicle)
-{
-    _vehicle = vehicle;
 }

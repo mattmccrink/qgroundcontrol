@@ -23,7 +23,6 @@
 
 #include "UAS.h"
 #include "LinkInterface.h"
-#include "HomePositionManager.h"
 #include "QGC.h"
 #include "GAudioOutput.h"
 #include "MAVLinkProtocol.h"
@@ -417,22 +416,8 @@ void UAS::receiveMessage(mavlink_message_t message)
             _vehicle->airSpeed()->setRawValue(attitude.airspeed/(double)1000.0);
             _vehicle->setLatitude(attitude.x/(double)1E7);
             _vehicle->setLongitude(attitude.y/(double)1E7);
-            _vehicle->groundSpeed()->setRawValue(qSqrt(speedX*speedX+speedY*speedY));
             _vehicle->altitudeAMSL()->setRawValue(attitude.z/(double)1000.0);
-
-//            setAirSpeed(attitude.airspeed/(double)1000.0);
-
-//            setLatitude(attitude.x/(double)1E7);
-//            setLongitude(attitude.y/(double)1E7);
-//            setAltitudeRelative(attitude.z/(double)1000.0);
-
-//            emit globalPositionChanged(this, getLatitude(), getLongitude(), getAltitudeAMSL(), time);
-//            emit altitudeChanged(this, altitudeAMSL, altitudeRelative, -speedZ, time);
-//            // We had some frame mess here, global and local axes were mixed.
-//            emit velocityChanged_NED(this, speedX, speedY, speedZ, time);
-
-//            setGroundSpeed(qSqrt(speedX*speedX+speedY*speedY));
-//            emit speedChanged(this, groundSpeed, airSpeed, time);
+            _vehicle->groundSpeed()->setRawValue(qSqrt(speedX*speedX+speedY*speedY));
 
 //            globalEstimatorActive = true;
 

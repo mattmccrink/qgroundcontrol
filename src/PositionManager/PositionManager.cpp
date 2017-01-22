@@ -15,7 +15,7 @@ QGCPositionManager::QGCPositionManager(QGCApplication* app) :
     _currentSource(nullptr)
 {
     if (qgetenv("QT_NMEA_SERIAL_PORT").isEmpty()){
-        qputenv("QT_NMEA_SERIAL_PORT","COM5");
+        qputenv("QT_NMEA_SERIAL_PORT","COM12");
     }
 
     _defaultSource = QGeoPositionInfoSource::createDefaultSource(this);

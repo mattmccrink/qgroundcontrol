@@ -74,10 +74,9 @@ UAS::UAS(MAVLinkProtocol* protocol, Vehicle* vehicle, FirmwarePluginManager * fi
     roll(0.0),
     pitch(0.0),
     yaw(0.0),
-
-    speedX(0),
-    speedY(0),
-    speedZ(0),
+    speedX(0.0),
+    speedY(0.0),
+    speedZ(0.0),
 
     imagePackets(0),    // We must initialize to 0, otherwise extended data packets maybe incorrectly thought to be images
 
@@ -419,14 +418,6 @@ void UAS::receiveMessage(mavlink_message_t message)
             _vehicle->setLongitude(attitude.y/(double)1E7);
             _vehicle->altitudeAMSL()->setRawValue(attitude.z/(double)1000.0);
             _vehicle->groundSpeed()->setRawValue(qSqrt(speedX*speedX+speedY*speedY));
-
-//            emit globalPositionChanged(this, getLatitude(), getLongitude(), getAltitudeAMSL(), time);
-//            emit altitudeChanged(this, altitudeAMSL, altitudeRelative, -speedZ, time);
-//            // We had some frame mess here, global and local axes were mixed.
-//            emit velocityChanged_NED(this, speedX, speedY, speedZ, time);
-
-//            setGroundSpeed(qSqrt(speedX*speedX+speedY*speedY));
-//            emit speedChanged(this, groundSpeed, airSpeed, time);
 
 //            globalEstimatorActive = true;
 

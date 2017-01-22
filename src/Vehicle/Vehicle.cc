@@ -354,11 +354,11 @@ void Vehicle::_commonInit(void)
     _addFact(&_altitudeRelativeFact,    _altitudeRelativeFactName);
     _addFact(&_altitudeAMSLFact,        _altitudeAMSLFactName);
 
-    _addFactGroup(&_gpsFactGroup,       _gpsFactGroupName);
-    _addFactGroup(&_batteryFactGroup,   _batteryFactGroupName);
-    _addFactGroup(&_windFactGroup,      _windFactGroupName);
-    _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
-    _addFactGroup(&_turbineFactGroup,   _turbineFactGroupName);
+//    _addFactGroup(&_gpsFactGroup,       _gpsFactGroupName);
+//    _addFactGroup(&_batteryFactGroup,   _batteryFactGroupName);
+//    _addFactGroup(&_windFactGroup,      _windFactGroupName);
+//    _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
+//    _addFactGroup(&_turbineFactGroup,   _turbineFactGroupName);
 
     _turbineFactGroup.setVehicle(NULL);
 }
@@ -1130,6 +1130,10 @@ void Vehicle::_setGPSHomeLocation(QGeoPositionInfo geoPositionInfo)
         _homePosition = newHomePosition;
         sendMavCommand(defaultComponentId(), MAV_CMD_DO_SET_HOME, 0.0,0.0,0.0,0.0,0.0,_homePosition.latitude(),_homePosition.longitude(),_homePosition.altitude());
 
+    }
+    else
+    {
+        qCDebug(FollowMeLog)<<"Bad data"<<geoPositionInfo.coordinate().latitude()<<geoPositionInfo.coordinate().longitude()<<geoPositionInfo.coordinate().altitude();
     }
 }
 

@@ -41,6 +41,9 @@ const char* Vehicle::_settingsGroup =               "Vehicle%1";        // %1 re
 const char* Vehicle::_joystickModeSettingsKey =     "JoystickMode";
 const char* Vehicle::_joystickEnabledSettingsKey =  "JoystickEnabled";
 
+//Asymmetric mods
+const char* Vehicle::_LeadDistFactName =            "leaddist";
+
 const char* Vehicle::_rollFactName =                "roll";
 const char* Vehicle::_pitchFactName =               "pitch";
 const char* Vehicle::_headingFactName =             "heading";
@@ -128,6 +131,10 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _firmwareMinorVersion(versionNotSetValue)
     , _firmwarePatchVersion(versionNotSetValue)
     , _firmwareVersionType(FIRMWARE_VERSION_TYPE_OFFICIAL)
+
+    //Asymmetric mods
+    , _LeadDistFact         (0, _LeadDistFactName,          FactMetaData::valueTypeDouble)
+
     , _rollFact             (0, _rollFactName,              FactMetaData::valueTypeDouble)
     , _pitchFact            (0, _pitchFactName,             FactMetaData::valueTypeDouble)
     , _headingFact          (0, _headingFactName,           FactMetaData::valueTypeDouble)
@@ -215,7 +222,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     _lowBatteryAnnounceTimer.invalidate();
 
     // Build FactGroup object model
-
+    _addFact(&_LeadDistFact,            _LeadDistFactName);
     _addFact(&_rollFact,                _rollFactName);
     _addFact(&_pitchFact,               _pitchFactName);
     _addFact(&_headingFact,             _headingFactName);
@@ -300,6 +307,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _firmwareMajorVersion(versionNotSetValue)
     , _firmwareMinorVersion(versionNotSetValue)
     , _firmwarePatchVersion(versionNotSetValue)
+    , _LeadDistFact         (0, _LeadDistFactName,          FactMetaData::valueTypeDouble)
     , _rollFact             (0, _rollFactName,              FactMetaData::valueTypeDouble)
     , _pitchFact            (0, _pitchFactName,             FactMetaData::valueTypeDouble)
     , _headingFact          (0, _headingFactName,           FactMetaData::valueTypeDouble)
@@ -346,7 +354,7 @@ void Vehicle::_commonInit(void)
     connect(QGroundControlQmlGlobal::offlineEditingHoverSpeed(),    &Fact::rawValueChanged, this, &Vehicle::_offlineHoverSpeedSettingChanged);
 
     // Build FactGroup object model
-
+    _addFact(&_LeadDistFact,            _LeadDistFactName);
     _addFact(&_rollFact,                _rollFactName);
     _addFact(&_pitchFact,               _pitchFactName);
     _addFact(&_headingFact,             _headingFactName);
@@ -1116,24 +1124,33 @@ void Vehicle::_updatePriorityLink(void)
 }
 
 void Vehicle::_setGPSHomeLocation(QGeoPositionInfo geoPositionInfo)
+
 {
-    if (geoPositionInfo.isValid() && !isnan(geoPositionInfo.coordinate().altitude()))
+    if ((this->leaddist()->rawValue().toDouble() != 0.0) &&
+            ((!strcmp(this->flightMode().toLocal8Bit().data(),"Mission"))))
     {
-        QGeoCoordinate newHomePosition (geoPositionInfo.coordinate().latitude(),
-                                        geoPositionInfo.coordinate().longitude(),
-                                        geoPositionInfo.coordinate().altitude());
+        if (geoPositionInfo.isValid() && !isnan(geoPositionInfo.coordinate().altitude()))
+        {
+            QGeoCoordinate vehicleposition (_coordinate.latitude(),
+                                            _coordinate.longitude(),
+                                            _coordinate.altitude());
+            const double Vehicle_Distance = geoPositionInfo.coordinate().distanceTo(vehicleposition);
+            qCDebug(FollowMeLog)<<"Distance from target"<<Vehicle_Distance;
 
-        QGeoCoordinate vehicleposition (_coordinate.latitude(),
-                                        _coordinate.longitude(),
-                                        _coordinate.altitude());
-
-        qCDebug(FollowMeLog)<<"Sending new home location"<<newHomePosition;
-        qCDebug(FollowMeLog)<<"Distance from target"<<geoPositionInfo.coordinate().distanceTo(vehicleposition);
-        _homePosition = newHomePosition;
-        sendMavCommand(defaultComponentId(), MAV_CMD_DO_SET_HOME, 0.0,0.0,0.0,0.0,0.0,_homePosition.latitude(),_homePosition.longitude(),_homePosition.altitude());
-
-    }
-    else
+            if (Vehicle_Distance-1 > this->leaddist()->rawValue().toDouble() && !Hold)
+            {//Hold
+                qCDebug(FollowMeLog)<<"Holding";
+                Hold = true;
+                sendMavCommand(defaultComponentId(), MAV_CMD_OVERRIDE_GOTO, true,0.0,2.0,0.0,0.0,0.0,0.0,0.0);
+            }
+            else if ((Vehicle_Distance < this->leaddist()->rawValue().toDouble()) && Hold)
+            {//Continue
+                Hold = false;
+                qCDebug(FollowMeLog)<<"Continue";
+                sendMavCommand(defaultComponentId(), MAV_CMD_OVERRIDE_GOTO, true,1.0,2.0,0.0,0.0,0.0,0.0,0.0);
+            }
+        }
+    } else
     {
         qCDebug(FollowMeLog)<<"Bad data"<<geoPositionInfo.coordinate().latitude()<<geoPositionInfo.coordinate().longitude()<<geoPositionInfo.coordinate().altitude();
     }

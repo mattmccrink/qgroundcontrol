@@ -330,6 +330,8 @@ public:
     Q_PROPERTY(ParameterManager* parameterManager READ parameterManager CONSTANT)
 
     // FactGroup object model properties
+    //Asymmetric changes
+    Q_PROPERTY(Fact* leaddist           READ leaddist           CONSTANT)
 
     Q_PROPERTY(Fact* roll               READ roll               CONSTANT)
     Q_PROPERTY(Fact* pitch              READ pitch              CONSTANT)
@@ -576,6 +578,8 @@ public:
     QString         firmwareTypeString      () const;
     QString         vehicleTypeString      () const;
 
+    Fact* leaddist          (void) { return &_LeadDistFact;}
+
     Fact* roll              (void) { return &_rollFact; }
     Fact* heading           (void) { return &_headingFact; }
     Fact* pitch             (void) { return &_pitchFact; }
@@ -793,6 +797,8 @@ private:
     bool    _active;
     bool    _offlineEditingVehicle; ///< This Vehicle is a "disconnected" vehicle for ui use while offline editing
 
+    bool Hold;
+
     MAV_AUTOPILOT       _firmwareType;
     MAV_TYPE            _vehicleType;
     FirmwarePlugin*     _firmwarePlugin;
@@ -927,6 +933,8 @@ private:
 
     // FactGroup facts
 
+    Fact _LeadDistFact;
+
     Fact _rollFact;
     Fact _pitchFact;
     Fact _headingFact;
@@ -941,6 +949,8 @@ private:
     VehicleWindFactGroup        _windFactGroup;
     VehicleVibrationFactGroup   _vibrationFactGroup;
     TurbineFactGroup            _turbineFactGroup;
+
+    static const char* _LeadDistFactName;
 
     static const char* _rollFactName;
     static const char* _pitchFactName;

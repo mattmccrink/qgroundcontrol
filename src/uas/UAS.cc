@@ -1086,20 +1086,20 @@ void UAS::setExternalControlSetpoint(float roll, float pitch, float yaw, float t
     if (countSinceLastTransmission++ >= 5) {
         sendCommand = true;
         countSinceLastTransmission = 0;
-    } else if ((!qIsNaN(roll) && roll != manualRollAngle) || (!qIsNaN(pitch) && pitch != manualPitchAngle) ||
+    } /*else if ((!qIsNaN(roll) && roll != manualRollAngle) || (!qIsNaN(pitch) && pitch != manualPitchAngle) ||
              (!qIsNaN(yaw) && yaw != manualYawAngle) || (!qIsNaN(thrust) && thrust != manualThrust) ||
              buttons != manualButtons) {
         sendCommand = true;
 
         // Ensure that another message will be sent the next time this function is called
         countSinceLastTransmission = 10;
-    }
+    }*/
 
     // Now if we should trigger an update, let's do that
     if (sendCommand) {
         // Save the new manual control inputs
         manualRollAngle = roll;
-        manualPitchAngle = pitch;
+//        manualPitchAngle = pitch;
         manualYawAngle = yaw;
         manualThrust = thrust;
         manualButtons = buttons;
@@ -1218,7 +1218,7 @@ void UAS::setExternalControlSetpoint(float roll, float pitch, float yaw, float t
 
             // Save the new manual control inputs
             manualRollAngle = roll;
-            manualPitchAngle = pitch;
+//            manualPitchAngle = pitch;
             manualYawAngle = yaw;
             manualThrust = thrust;
             manualButtons = buttons;
@@ -1236,12 +1236,66 @@ void UAS::setExternalControlSetpoint(float roll, float pitch, float yaw, float t
             //qDebug() << newRollCommand << newPitchCommand << newYawCommand << newThrustCommand;
 
             // Send the MANUAL_COMMAND message
-            mavlink_msg_manual_control_pack_chan(mavlink->getSystemId(),
+//            mavlink_msg_manual_control_pack_chan(mavlink->getSystemId(),
+//                                                 mavlink->getComponentId(),
+//                                                 _vehicle->priorityLink()->mavlinkChannel(),
+//                                                 &message,
+//                                                 this->uasId,
+//                                                 newPitchCommand, newRollCommand, newThrustCommand, newYawCommand, buttons);
+
+            if (qAbs(pitch)>0.05)
+            {
+                manualPitchAngle += pitch/10;
+            }
+            if (manualPitchAngle > 0.5)
+            {
+                manualPitchAngle = 0.5;
+            } else if (manualPitchAngle < -1) {
+                manualPitchAngle = -1;
+            }
+
+            qCDebug(JoystickManagerLog)<<"manual pitch angle"<<manualPitchAngle;
+
+            mavlink_msg_command_long_pack_chan(mavlink->getSystemId(),
                                                  mavlink->getComponentId(),
                                                  _vehicle->priorityLink()->mavlinkChannel(),
                                                  &message,
                                                  this->uasId,
-                                                 newPitchCommand, newRollCommand, newThrustCommand, newYawCommand, buttons);
+                                                 mavlink->getComponentId(),
+                                     MAV_CMD_DO_MOUNT_CONTROL,     // command id
+                                     true,                              // showError
+                                     manualPitchAngle*180,                                 // gyro cal
+                                     roll*180,                                 // mag cal
+                                     yaw*180,                                 // ground pressure
+                                     0.0,                                 // radio cal
+                                     0.0,                                 // accel cal
+                                     0.0,                                 // airspeed cal
+                                     MAV_MOUNT_MODE_MAVLINK_TARGETING);                                // unused
+
+//            _vehicle->sendMessageOnLink(_vehicle->priorityLink(), message);
+
+//            _vehicle->sendMavCommand(_vehicle->defaultComponentId(),
+//                                     MAV_CMD_DO_MOUNT_CONTROL,
+//                                     true,
+//                                     (pitch*500.0+1500.0),
+//                                     (roll*500.0+1500.0),
+//                                     0.0,
+//                                     0.0,
+//                                     0.0,
+//                                     0.0,
+//                                     0.0
+//                                     );
+            qCDebug(JoystickManagerLog)<<"Sending gimbal"<<(pitch*180)<<(roll*180)<<yaw*180;
+//            mavlink_msg_rc_channels_override_pack_chan(mavlink->getSystemId()
+//                                                       mavlink->getComponentId(),
+//                                                       _vehicle->priorityLink()->mavlinkChannel(),
+//                                                       &message,
+//                                                       this->uasId,
+//                                                       mavlink->getComponentId(),
+//                                                       qint16(0),qint16(0),qint16(0),qint16(0),
+//                                                       qint16(0),qint16(0),qint16(pitch*500+1500),qint16(roll*500+1500)
+//                                                       );
+
         }
 
         _vehicle->sendMessageOnLink(_vehicle->priorityLink(), message);

@@ -149,6 +149,7 @@ void VideoReceiver::start()
     GstElement*     demux       = NULL;
     GstElement*     parser      = NULL;
     GstElement*     decoder     = NULL;
+    GstElement*     video       = NULL;
 
     do {
         if ((_pipeline = gst_pipeline_new("receiver")) == NULL) {
@@ -196,14 +197,19 @@ void VideoReceiver::start()
             break;
         }
 
-        gst_bin_add_many(GST_BIN(_pipeline), dataSource, demux, parser, decoder, _videoSink, NULL);
+        if ((video = gst_element_factory_make("videoconvert", "colorspace")) == NULL) {
+            qCritical() << "VideoReceiver::start() failed. Error with gst_element_factory_make('videoconvert')";
+            break;
+        }
+
+        gst_bin_add_many(GST_BIN(_pipeline), dataSource, demux, parser, decoder, video, _videoSink, NULL);
 
         gboolean res = FALSE;
 
         if(isUdp) {
-            res = gst_element_link_many(dataSource, demux, parser, decoder, _videoSink, NULL);
+            res = gst_element_link_many(dataSource, demux, parser, decoder, video, _videoSink, NULL);
         } else {
-            res = gst_element_link_many(demux, parser, decoder, _videoSink, NULL);
+            res = gst_element_link_many(demux, parser, decoder, video, _videoSink, NULL);
         }
 
         if (!res) {
@@ -211,7 +217,7 @@ void VideoReceiver::start()
             break;
         }
 
-        dataSource = demux = parser = decoder = NULL;
+        dataSource = demux = parser = decoder = video =NULL;
 
         GstBus* bus = NULL;
 
@@ -236,6 +242,11 @@ void VideoReceiver::start()
         if (decoder != NULL) {
             gst_object_unref(decoder);
             decoder = NULL;
+        }
+
+        if (video != NULL) {
+            gst_object_unref(video);
+            video = NULL;
         }
 
         if (parser != NULL) {

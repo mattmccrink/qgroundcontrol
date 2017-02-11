@@ -39,6 +39,14 @@ QGCView {
 
     QGCPalette { id: qgcPal }
 
+    FileDialog {
+        id: fileDialog
+        title: "Choose a location to save video files."
+        folder: shortcuts.home
+        selectFolder: true
+        onAccepted: QGroundControl.videoManager.setVideoSavePathByUrl(fileDialog.fileUrl)
+    }
+
     QGCViewPanel {
         id:             panel
         anchors.fill:   parent
@@ -145,6 +153,7 @@ QGCView {
                         //-----------------------------------------------------------------
                         //-- Base UI Font Point Size
                         Row {
+                            visible: QGroundControl.corePlugin.options.defaultFontPointSize < 1.0
                             spacing: ScreenTools.defaultFontPixelWidth
                             QGCLabel {
                                 id:     baseFontLabel
@@ -284,6 +293,33 @@ QGCView {
                             checked:    QGroundControl.virtualTabletJoystick
                             onClicked:  QGroundControl.virtualTabletJoystick = checked
                             visible:    QGroundControl.corePlugin.options.enableVirtualJoystick
+                        }
+                        //-----------------------------------------------------------------
+                        //-- AutoLoad
+                        Row {
+                            spacing: ScreenTools.defaultFontPixelWidth
+                            QGCCheckBox {
+                                id:                     autoLoadCheckbox
+                                anchors.verticalCenter: parent.verticalCenter
+                                text:                   qsTr("AutoLoad mission directory:")
+                                checked:                QGroundControl.missionAutoLoadDir != ""
+
+                                onClicked: {
+                                    autoLoadDir.enabled = checked
+                                    if (!checked) {
+                                        QGroundControl.missionAutoLoadDir = ""
+                                        autoLoadDir.text = ""
+                                    }
+                                }
+                            }
+                            QGCTextField {
+                                id:                     autoLoadDir
+                                width:                  _editFieldWidth
+                                enabled:                autoLoadCheckbox.checked
+                                anchors.verticalCenter: parent.verticalCenter
+                                text:                   QGroundControl.missionAutoLoadDir
+                                onEditingFinished:      QGroundControl.missionAutoLoadDir = text
+                            }
                         }
                         //-----------------------------------------------------------------
                         //-- Map Providers
@@ -495,6 +531,25 @@ QGCView {
                                 onEditingFinished: {
                                     QGroundControl.videoManager.rtspURL = text
                                 }
+                            }
+                        }
+                        Row {
+                            spacing:    ScreenTools.defaultFontPixelWidth
+                            visible:    QGroundControl.videoManager.isGStreamer && QGroundControl.videoManager.recordingEnabled
+                            QGCLabel {
+                                anchors.baseline:   pathField.baseline
+                                text:               qsTr("Save Path:")
+                                width:              _labelWidth
+                            }
+                            QGCTextField {
+                                id:                 pathField
+                                width:              _editFieldWidth
+                                readOnly:           true
+                                text:               QGroundControl.videoManager.videoSavePath
+                            }
+                            Button {
+                                text: "Browse"
+                                onClicked: fileDialog.visible = true
                             }
                         }
                     }

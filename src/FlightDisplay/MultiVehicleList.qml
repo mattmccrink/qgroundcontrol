@@ -52,8 +52,8 @@ QGCListView {
 
             QGCCompassWidget {
                 size:       _widgetHeight
-                active:     true
                 heading:    _vehicle.heading.rawValue
+                vehicle:    _vehicle
             }
 
             QGCAttitudeWidget {
@@ -77,10 +77,10 @@ QGCListView {
                 color:              _textColor
             }
 
-            QGCLabel {
-                text:               _vehicle.flightMode
-                font.pointSize:     ScreenTools.largeFontPointSize
-                color:              _textColor
+            FlightModeMenu {
+                font.pointSize: ScreenTools.largeFontPointSize
+                color:          _textColor
+                activeVehicle:  _vehicle
             }
         }
 

@@ -54,5 +54,13 @@
     "type":             "double",
     "decimalPlaces":    1,
     "units":            "m"
+},
+{
+    "name":             "leaddist",
+    "shortDescription": "Lead distance",
+    "type":             "double",
+    "decimalPlaces":    1,
+    "units":            "m"
 }
+
 ]

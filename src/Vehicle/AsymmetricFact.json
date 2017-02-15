@@ -1,0 +1,13 @@
+{
+    "version": 1,
+
+    "properties": [
+        {
+            "name":             "LeadDist",
+            "shortDescription": "Out in front distance",
+            "type":             "float",
+            "decimalPlaces":    0,
+            "units":            "m"
+        }
+    ]
+}

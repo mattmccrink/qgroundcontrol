@@ -21,6 +21,7 @@ include(QGCCommon.pri)
 
 TARGET   = QGroundControl
 TEMPLATE = app
+QGCROOT  = $$PWD
 
 DebugBuild {
     DESTDIR  = $${OUT_PWD}/debug
@@ -485,7 +486,6 @@ HEADERS += \
     src/uas/UAS.h \
     src/uas/UASInterface.h \
     src/uas/UASMessageHandler.h \
-    src/ui/toolbar/MainToolBarController.h \
 
 DebugBuild {
 HEADERS += \
@@ -646,7 +646,6 @@ SOURCES += \
     src/main.cc \
     src/uas/UAS.cc \
     src/uas/UASMessageHandler.cc \
-    src/ui/toolbar/MainToolBarController.cc \
 
 DebugBuild {
 SOURCES += \

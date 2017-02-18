@@ -64,7 +64,6 @@
 #include "QGroundControlQmlGlobal.h"
 #include "FlightMapSettings.h"
 #include "CoordinateVector.h"
-#include "MainToolBarController.h"
 #include "MissionController.h"
 #include "GeoFenceController.h"
 #include "RallyPointController.h"
@@ -378,7 +377,6 @@ void QGCApplication::_initCommon(void)
     qmlRegisterType<ParameterEditorController>          ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
     qmlRegisterType<ESP8266ComponentController>         ("QGroundControl.Controllers", 1, 0, "ESP8266ComponentController");
     qmlRegisterType<ScreenToolsController>              ("QGroundControl.Controllers", 1, 0, "ScreenToolsController");
-    qmlRegisterType<MainToolBarController>              ("QGroundControl.Controllers", 1, 0, "MainToolBarController");
     qmlRegisterType<MissionController>                  ("QGroundControl.Controllers", 1, 0, "MissionController");
     qmlRegisterType<GeoFenceController>                 ("QGroundControl.Controllers", 1, 0, "GeoFenceController");
     qmlRegisterType<RallyPointController>               ("QGroundControl.Controllers", 1, 0, "RallyPointController");
@@ -429,8 +427,8 @@ bool QGCApplication::_initForNormalAppBoot(void)
     // Load known link configurations
     toolbox()->linkManager()->loadLinkConfigurationList();
 
-    // Probe for joysticks - TODO: manage on a timer or use events to deal with hotplug
-    toolbox()->joystickManager()->discoverJoysticks();
+    // Probe for joysticks
+    toolbox()->joystickManager()->init();
 
     if (_settingsUpgraded) {
         settings.clear();
@@ -438,6 +436,9 @@ bool QGCApplication::_initForNormalAppBoot(void)
         showMessage("The format for QGroundControl saved settings has been modified. "
                     "Your saved settings have been reset to defaults.");
     }
+
+    // Connect links with flag AutoconnectLink
+    toolbox()->linkManager()->startAutoConnectedLinks();
 
     if (getQGCMapEngine()->wasCacheReset()) {
         showMessage("The Offline Map Cache database has been upgraded. "

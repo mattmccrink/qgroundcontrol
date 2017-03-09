@@ -8,12 +8,12 @@
  ****************************************************************************/
 
 
-import QtQuick                  2.4
-import QtQuick.Controls         1.3
-import QtQuick.Controls.Styles  1.2
+import QtQuick                  2.3
+import QtQuick.Controls         1.2
+import QtQuick.Controls.Styles  1.4
 import QtQuick.Dialogs          1.2
 import QtLocation               5.3
-import QtPositioning            5.2
+import QtPositioning            5.3
 
 import QGroundControl                           1.0
 import QGroundControl.ScreenTools               1.0
@@ -63,22 +63,25 @@ Item {
                 break;
             }
         } else {
-            var useAlternateInstruments = QGroundControl.virtualTabletJoystick || ScreenTools.isTinyScreen
+            var useAlternateInstruments = QGroundControl.settingsManager.appSettings.virtualJoystick.value || ScreenTools.isTinyScreen
             if(useAlternateInstruments) {
                 instrumentsLoader.source = "qrc:/qml/QGCInstrumentWidgetAlternate.qml"
                 instrumentsLoader.state  = "topMode"
             } else {
                 instrumentsLoader.source = "qrc:/qml/QGCInstrumentWidget.qml"
-                instrumentsLoader.state  = "centerMode"
+                instrumentsLoader.state  = QGroundControl.settingsManager.appSettings.showLargeCompass.value == 1 ? "centerMode" : "topMode"
             }
         }
     }
 
     Connections {
-        target: QGroundControl
-        onVirtualTabletJoystickChanged: {
-            _setInstrumentWidget()
-        }
+        target:         QGroundControl.settingsManager.appSettings.virtualJoystick
+        onValueChanged: _setInstrumentWidget()
+    }
+
+    Connections {
+        target:         QGroundControl.settingsManager.appSettings.showLargeCompass
+        onValueChanged: _setInstrumentWidget()
     }
 
     Component.onCompleted: {
@@ -202,7 +205,7 @@ Item {
             interval:       7000
             running:        true
             onTriggered: {
-                if (ScreenTools.isShortScreen) {
+                if (ScreenTools.isTinyScreen) {
                     _guidedModeBar.state = "Hidden"
                 }
             }
@@ -218,6 +221,7 @@ Item {
         readonly property int confirmGoTo:          8
         readonly property int confirmRetask:        9
         readonly property int confirmOrbit:         10
+        readonly property int confirmAbort:         11
 
         property int    confirmActionCode
         property real   _showMargin:    _margins
@@ -264,6 +268,9 @@ Item {
                 _activeVehicle.guidedModeOrbit()
                 //-- Center on current flight map position and orbit with a 50m radius (velocity/direction controlled by the RC)
                 //_activeVehicle.guidedModeOrbit(QGroundControl.flightMapPosition, 50.0)
+                break;
+            case confirmAbort:
+                _activeVehicle.abortLanding(50)     // hardcoded value for climbOutAltitude that is currently ignored
                 break;
             default:
                 console.warn(qsTr("Internal error: unknown confirmActionCode"), confirmActionCode)
@@ -315,6 +322,9 @@ Item {
                 break;
             case confirmOrbit:
                 guidedModeConfirm.confirmText = qsTr("enter orbit mode")
+                break;
+            case confirmAbort:
+                guidedModeConfirm.confirmText = qsTr("abort landing")
                 break;
             }
             _guidedModeBar.visible = false
@@ -381,6 +391,13 @@ Item {
                     text:       qsTr("Orbit")
                     visible:    (_activeVehicle && _activeVehicle.flying) && _activeVehicle.orbitModeSupported && _activeVehicle.armed
                     onClicked:  _guidedModeBar.confirmAction(_guidedModeBar.confirmOrbit)
+                }
+
+                QGCButton {
+                    pointSize:  _guidedModeBar._fontPointSize
+                    text:       qsTr("Abort")
+                    visible:    _activeVehicle && _activeVehicle.flying && _activeVehicle.fixedWing
+                    onClicked:  _guidedModeBar.confirmAction(_guidedModeBar.confirmAbort)
                 }
 
             } // Row

@@ -290,6 +290,7 @@ INCLUDEPATH += \
     src/QmlControls \
     src/QtLocationPlugin \
     src/QtLocationPlugin/QMLControl \
+    src/Settings \
     src/VehicleSetup \
     src/ViewWidgets \
     src/audio \
@@ -429,6 +430,7 @@ HEADERS += \
     src/LogCompressor.h \
     src/MG.h \
     src/MissionManager/ComplexMissionItem.h \
+    src/MissionManager/FixedWingLandingComplexItem.h \
     src/MissionManager/GeoFenceController.h \
     src/MissionManager/GeoFenceManager.h \
     src/MissionManager/MissionCommandList.h \
@@ -472,6 +474,12 @@ HEADERS += \
     src/QmlControls/RCChannelMonitorController.h \
     src/QmlControls/ScreenToolsController.h \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.h \
+    src/Settings/AppSettings.h \
+    src/Settings/AutoConnectSettings.h \
+    src/Settings/SettingsGroup.h \
+    src/Settings/SettingsManager.h \
+    src/Settings/UnitsSettings.h \
+    src/Settings/VideoSettings.h \
     src/Vehicle/MAVLinkLogManager.h \
     src/VehicleSetup/JoystickConfigController.h \
     src/audio/QGCAudioWorker.h \
@@ -592,6 +600,7 @@ SOURCES += \
     src/JsonHelper.cc \
     src/LogCompressor.cc \
     src/MissionManager/ComplexMissionItem.cc \
+    src/MissionManager/FixedWingLandingComplexItem.cc \
     src/MissionManager/GeoFenceController.cc \
     src/MissionManager/GeoFenceManager.cc \
     src/MissionManager/MissionCommandList.cc \
@@ -633,6 +642,12 @@ SOURCES += \
     src/QmlControls/RCChannelMonitorController.cc \
     src/QmlControls/ScreenToolsController.cc \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.cc \
+    src/Settings/AppSettings.cc \
+    src/Settings/AutoConnectSettings.cc \
+    src/Settings/SettingsGroup.cc \
+    src/Settings/SettingsManager.cc \
+    src/Settings/UnitsSettings.cc \
+    src/Settings/VideoSettings.cc \
     src/Vehicle/MAVLinkLogManager.cc \
     src/VehicleSetup/JoystickConfigController.cc \
     src/audio/QGCAudioWorker.cpp \
@@ -735,9 +750,11 @@ HEADERS+= \
     src/AutoPilotPlugins/AutoPilotPlugin.h \
     src/AutoPilotPlugins/Common/ESP8266Component.h \
     src/AutoPilotPlugins/Common/ESP8266ComponentController.h \
+    src/AutoPilotPlugins/Common/MixersComponent.h \
     src/AutoPilotPlugins/Common/MotorComponent.h \
     src/AutoPilotPlugins/Common/RadioComponentController.h \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.h \
+    src/FirmwarePlugin/CameraMetaData.h \
     src/FirmwarePlugin/FirmwarePlugin.h \
     src/FirmwarePlugin/FirmwarePluginManager.h \
     src/Vehicle/MultiVehicleManager.h \
@@ -756,9 +773,11 @@ SOURCES += \
     src/AutoPilotPlugins/AutoPilotPlugin.cc \
     src/AutoPilotPlugins/Common/ESP8266Component.cc \
     src/AutoPilotPlugins/Common/ESP8266ComponentController.cc \
+    src/AutoPilotPlugins/Common/MixersComponent.cc \
     src/AutoPilotPlugins/Common/MotorComponent.cc \
     src/AutoPilotPlugins/Common/RadioComponentController.cc \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.cc \
+    src/FirmwarePlugin/CameraMetaData.cc \
     src/FirmwarePlugin/FirmwarePlugin.cc \
     src/FirmwarePlugin/FirmwarePluginManager.cc \
     src/Vehicle/MultiVehicleManager.cc \

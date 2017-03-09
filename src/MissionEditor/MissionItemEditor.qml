@@ -1,6 +1,6 @@
-import QtQuick                  2.2
+import QtQuick                  2.3
 import QtQuick.Controls         1.2
-import QtQuick.Controls.Styles  1.2
+import QtQuick.Controls.Styles  1.4
 import QtQuick.Dialogs          1.2
 
 import QGroundControl.ScreenTools   1.0
@@ -42,7 +42,6 @@ Rectangle {
 
     MouseArea {
         anchors.fill:   parent
-        visible:        !missionItem.isCurrentItem
         onClicked:      _root.clicked()
     }
 
@@ -67,50 +66,57 @@ Rectangle {
         visible:                missionItem.isCurrentItem && missionItem.sequenceNumber != 0
         color:                  qgcPal.windowShade
 
-        MouseArea {
-            anchors.fill:   parent
-            onClicked:      hamburgerMenu.popup()
+    }
 
-            Menu {
-                id: hamburgerMenu
+    MouseArea {
+        // The MouseArea for the hamburger is larger than the hamburger image itself in order to provide a larger
+        // touch area on mobile
+        anchors.top:        parent.top
+        anchors.bottom:     editorLoader.top
+        anchors.leftMargin: -hamburger.anchors.rightMargin
+        anchors.left:       hamburger.left
+        anchors.right:      parent.right
+        onClicked:          hamburgerMenu.popup()
 
-                MenuItem {
-                    text:           qsTr("Insert")
-                    onTriggered:    insert()
-                }
+        Menu {
+            id: hamburgerMenu
 
-                MenuItem {
-                    text:           qsTr("Delete")
-                    onTriggered:    remove()
-                }
+            MenuItem {
+                text:           qsTr("Insert")
+                onTriggered:    insert()
+            }
 
-                MenuItem {
-                    text:           "Change command..."
-                    onTriggered:    commandPicker.clicked()
-                }
+            MenuItem {
+                text:           qsTr("Delete")
+                onTriggered:    remove()
+            }
 
-                MenuSeparator {
-                    visible: missionItem.isSimpleItem
-                }
+            MenuItem {
+                text:           "Change command..."
+                onTriggered:    commandPicker.clicked()
+            }
 
-                MenuItem {
-                    text:       qsTr("Show all values")
-                    checkable:  true
-                    checked:    missionItem.isSimpleItem ? missionItem.rawEdit : false
-                    visible:    missionItem.isSimpleItem
+            MenuSeparator {
+                visible: missionItem.isSimpleItem
+            }
 
-                    onTriggered:    {
-                        if (missionItem.rawEdit) {
-                            if (missionItem.friendlyEditAllowed) {
-                                missionItem.rawEdit = false
-                            } else {
-                                qgcView.showMessage(qsTr("Mission Edit"), qsTr("You have made changes to the mission item which cannot be shown in Simple Mode"), StandardButton.Ok)
-                            }
+            MenuItem {
+                text:       qsTr("Show all values")
+                checkable:  true
+                checked:    missionItem.isSimpleItem ? missionItem.rawEdit : false
+                visible:    missionItem.isSimpleItem
+
+                onTriggered:    {
+                    if (missionItem.rawEdit) {
+                        if (missionItem.friendlyEditAllowed) {
+                            missionItem.rawEdit = false
                         } else {
-                            missionItem.rawEdit = true
+                            qgcView.showMessage(qsTr("Mission Edit"), qsTr("You have made changes to the mission item which cannot be shown in Simple Mode"), StandardButton.Ok)
                         }
-                        checked = missionItem.rawEdit
+                    } else {
+                        missionItem.rawEdit = true
                     }
+                    checked = missionItem.rawEdit
                 }
             }
         }
@@ -141,9 +147,7 @@ Rectangle {
         anchors.fill:       commandPicker
         visible:            missionItem.sequenceNumber == 0 || !missionItem.isCurrentItem || !missionItem.isSimpleItem
         verticalAlignment:  Text.AlignVCenter
-        text:               missionItem.sequenceNumber == 0 ?
-                                qsTr("Mission Settings") :
-                                (missionItem.isSimpleItem ? missionItem.commandName : qsTr("Survey"))
+        text:               missionItem.sequenceNumber == 0 ? qsTr("Mission Settings") : missionItem.commandName
         color:              _outerTextColor
     }
 
@@ -154,7 +158,7 @@ Rectangle {
         anchors.left:       parent.left
         anchors.top:        commandPicker.bottom
         height:             item ? item.height : 0
-        source:             missionItem.sequenceNumber == 0 ? "qrc:/qml/MissionSettingsEditor.qml" : (missionItem.isSimpleItem ? "qrc:/qml/SimpleItemEditor.qml" : "qrc:/qml/SurveyItemEditor.qml")
+        source:             missionItem.sequenceNumber == 0 ? "qrc:/qml/MissionSettingsEditor.qml" : missionItem.editorQml
 
         onLoaded: {
             item.visible = Qt.binding(function() { return _currentItem; })

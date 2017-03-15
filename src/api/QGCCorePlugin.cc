@@ -10,6 +10,8 @@
 #include "QGCCorePlugin.h"
 #include "QGCOptions.h"
 #include "QGCSettings.h"
+#include "FactMetaData.h"
+#include "SettingsManager.h"
 
 #include <QtQml>
 #include <QQmlEngine>
@@ -126,6 +128,11 @@ QVariantList &QGCCorePlugin::settings()
     return _p->settingsList;
 }
 
+int QGCCorePlugin::defaultSettings()
+{
+    return 0;
+}
+
 QGCOptions* QGCCorePlugin::options()
 {
     if(!_p->defaultOptions) {
@@ -134,3 +141,26 @@ QGCOptions* QGCCorePlugin::options()
     return _p->defaultOptions;
 }
 
+bool QGCCorePlugin::overrideSettingsGroupVisibility(QString name)
+{
+    Q_UNUSED(name);
+
+    // Always show all
+    return true;
+}
+
+bool QGCCorePlugin::adjustSettingMetaData(FactMetaData& metaData)
+{
+    if (metaData.name() == AppSettings::indoorPaletteName) {
+        // Set up correct default for palette setting
+        QVariant outdoorPalette;
+#if defined (__mobile__)
+        outdoorPalette = 0;
+#else
+        outdoorPalette = 1;
+#endif
+        metaData.setRawDefaultValue(outdoorPalette);
+    }
+
+    return true;        // Show setting in ui
+}

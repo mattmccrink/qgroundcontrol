@@ -8,9 +8,9 @@
  ****************************************************************************/
 
 
-import QtQuick          2.5
+import QtQuick          2.3
 import QtQuick.Controls 1.2
-import QtPositioning    5.2
+import QtPositioning    5.3
 
 import QGroundControl               1.0
 import QGroundControl.Palette       1.0
@@ -35,8 +35,8 @@ Rectangle {
     QGCPalette { id: qgcPal }
 
     Component.onCompleted: {
-        //-- Default to General Settings
-        __rightPanel.source = "GeneralSettings.qml"
+        //-- Default Settings
+        __rightPanel.source = QGroundControl.corePlugin.settings[QGroundControl.corePlugin.defaultSettings].url
     }
 
     QGCFlickable {

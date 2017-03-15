@@ -11,8 +11,8 @@
 /// @file
 ///     @author Don Gagne <don@thegagnes.com>
 
-import QtQuick                  2.5
-import QtQuick.Controls         1.3
+import QtQuick                  2.3
+import QtQuick.Controls         1.2
 import QtQuick.Dialogs          1.2
 
 import QGroundControl               1.0
@@ -56,6 +56,17 @@ QGCView {
             anchors.right:  parent.right
             spacing:        ScreenTools.defaultFontPixelWidth
 
+            Timer {
+                id:         clearTimer
+                interval:   100;
+                running:    false;
+                repeat:     false
+                onTriggered: {
+                    searchText.text = ""
+                    controller.searchText = ""
+                }
+            }
+
             QGCLabel {
                 anchors.baseline:   clearButton.baseline
                 text:               qsTr("Search:")
@@ -71,7 +82,12 @@ QGCView {
             QGCButton {
                 id:         clearButton
                 text:       qsTr("Clear")
-                onClicked:  searchText.text = ""
+                onClicked: {
+                    if(ScreenTools.isMobile) {
+                        Qt.inputMethod.hide();
+                    }
+                    clearTimer.start()
+                }
             }
         } // Row - Header
 

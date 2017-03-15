@@ -11,6 +11,7 @@
         { "vendorID": 9900, "productID": 18,        "boardClass": "Pixhawk",    "name": "PX4 FMU V4" },
         { "vendorID": 9900, "productID": 22,        "boardClass": "Pixhawk",    "name": "PX4 FMU V2",           "comment": "Bootloader on older Pixhawk V2 boards" },
         { "vendorID": 9900, "productID": 4097,      "boardClass": "Pixhawk",    "name": "AeroCore" },
+        { "vendorID": 9900, "productID": 33,        "boardClass": "Pixhawk",    "name": "AUAV X2.1 FMU V2" },
         { "vendorID": 9900, "productID": 48,        "boardClass": "Pixhawk",    "name": "MindPX FMU V2" },
         { "vendorID": 9900, "productID": 64,        "boardClass": "Pixhawk",    "name": "TAP V1" },
         { "vendorID": 9900, "productID": 65,        "boardClass": "Pixhawk",    "name": "ASC V1" },
@@ -19,6 +20,7 @@
 
         { "vendorID": 1027, "productID": 24597,     "boardClass": "SiK Radio",  "name": "SiK Radio",            "comment": "3DR Radio" },
         { "vendorID": 4292, "productID": 60000,     "boardClass": "SiK Radio",  "name": "SiK Radio",            "comment": "SILabs Radio" },
+        { "vendorID": 1027, "productID": 24577,     "boardClass": "SiK Radio",  "name": "SiK Radio",            "comment": "SILabs Radio" },
 
         { "vendorID": 5446, "productID": 424,        "boardClass": "RTK GPS",    "name": "RTK GPS",              "comment": "Ublox RTK GPS" },
 
@@ -35,7 +37,6 @@
         { "regExp": "^PX4 BL FMU v2.x$",    "boardClass": "Pixhawk" },
         { "regExp": "^PX4 FMU v1.x$",       "boardClass": "Pixhawk" },
         { "regExp": "^PX4 BL FMU v1.x$",    "boardClass": "Pixhawk" },
-        { "regExp": "^MindPX FMU v2.x$",    "boardClass": "Pixhawk" },
         { "regExp": "^MindPX FMU v2.x$",    "boardClass": "Pixhawk" },
         { "regExp": "^MindPX BL FMU v2.x$", "boardClass": "Pixhawk" },
         { "regExp": "^PX4 TAP v1.x$",       "boardClass": "Pixhawk" },

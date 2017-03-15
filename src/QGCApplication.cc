@@ -64,7 +64,6 @@
 #include "QGroundControlQmlGlobal.h"
 #include "FlightMapSettings.h"
 #include "CoordinateVector.h"
-#include "MainToolBarController.h"
 #include "MissionController.h"
 #include "GeoFenceController.h"
 #include "RallyPointController.h"
@@ -80,6 +79,7 @@
 #include "MissionCommandTree.h"
 #include "QGCMapPolygon.h"
 #include "ParameterManager.h"
+#include "SettingsManager.h"
 
 #ifndef NO_SERIAL_LINK
     #include "SerialLink.h"
@@ -116,9 +116,6 @@ const char* QGCApplication::telemetryFileExtension =     "tlog";
 
 const char* QGCApplication::_deleteAllSettingsKey           = "DeleteAllSettingsNextBoot";
 const char* QGCApplication::_settingsVersionKey             = "SettingsVersion";
-const char* QGCApplication::_promptFlightDataSave           = "PromptFLightDataSave";
-const char* QGCApplication::_promptFlightDataSaveNotArmed   = "PromptFLightDataSaveNotArmed";
-const char* QGCApplication::_styleKey                       = "StyleIsDark";
 const char* QGCApplication::_lastKnownHomePositionLatKey    = "LastKnownHomePositionLat";
 const char* QGCApplication::_lastKnownHomePositionLonKey    = "LastKnownHomePositionLon";
 const char* QGCApplication::_lastKnownHomePositionAltKey    = "LastKnownHomePositionAlt";
@@ -169,11 +166,6 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     : QApplication(argc, argv)
 #endif
     , _runningUnitTests(unitTesting)
-#if defined (__mobile__)
-    , _styleIsDark(false)
-#else
-    , _styleIsDark(true)
-#endif
     , _fakeMobile(false)
     , _settingsUpgraded(false)
 #ifdef QT_DEBUG
@@ -291,28 +283,27 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
 
     if (fClearSettingsOptions) {
         // User requested settings to be cleared on command line
-
         settings.clear();
-        settings.setValue(_settingsVersionKey, QGC_SETTINGS_VERSION);
 
         // Clear parameter cache
         QDir paramDir(ParameterManager::parameterCacheDir());
         paramDir.removeRecursively();
         paramDir.mkpath(paramDir.absolutePath());
     } else {
-        // Determine if upgrade message for settings version bump is required. Check must happen before toolbox is started since
+        // Determine if upgrade message for settings version bump is required. Check and clear must happen before toolbox is started since
         // that will write some settings.
         if (settings.contains(_settingsVersionKey)) {
             if (settings.value(_settingsVersionKey).toInt() != QGC_SETTINGS_VERSION) {
+                settings.clear();
                 _settingsUpgraded = true;
             }
         } else if (settings.allKeys().count()) {
             // Settings version key is missing and there are settings. This is an upgrade scenario.
+            settings.clear();
             _settingsUpgraded = true;
-        } else {
-            settings.setValue(_settingsVersionKey, QGC_SETTINGS_VERSION);
         }
     }
+    settings.setValue(_settingsVersionKey, QGC_SETTINGS_VERSION);
 
     // Set up our logging filters
     QGCLoggingCategoryRegister::instance()->setFilterRulesFromSettings(loggingOptions);
@@ -337,8 +328,12 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     _toolbox->setChildToolboxes();
 }
 
-QGCApplication::~QGCApplication()
+void QGCApplication::_shutdown(void)
 {
+    // This code is specifically not in the destructor since the application object may not be available in the destructor.
+    // This cause problems for deleting object like settings which are in the toolbox which may have qml references. By
+    // moving them here and having main.cc call this prior to deleting the app object we make sure app object is still
+    // around while these things are shutting down.
 #ifndef __mobile__
     MainWindow* mainWindow = MainWindow::instance();
     if (mainWindow) {
@@ -347,6 +342,11 @@ QGCApplication::~QGCApplication()
 #endif
     shutdownVideoStreaming();
     delete _toolbox;
+}
+
+QGCApplication::~QGCApplication()
+{
+    // Place shutdown code in _shutdown
 }
 
 void QGCApplication::_initCommon(void)
@@ -378,7 +378,6 @@ void QGCApplication::_initCommon(void)
     qmlRegisterType<ParameterEditorController>          ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
     qmlRegisterType<ESP8266ComponentController>         ("QGroundControl.Controllers", 1, 0, "ESP8266ComponentController");
     qmlRegisterType<ScreenToolsController>              ("QGroundControl.Controllers", 1, 0, "ScreenToolsController");
-    qmlRegisterType<MainToolBarController>              ("QGroundControl.Controllers", 1, 0, "MainToolBarController");
     qmlRegisterType<MissionController>                  ("QGroundControl.Controllers", 1, 0, "MissionController");
     qmlRegisterType<GeoFenceController>                 ("QGroundControl.Controllers", 1, 0, "GeoFenceController");
     qmlRegisterType<RallyPointController>               ("QGroundControl.Controllers", 1, 0, "RallyPointController");
@@ -404,8 +403,7 @@ bool QGCApplication::_initForNormalAppBoot(void)
 {
     QSettings settings;
 
-    _styleIsDark = settings.value(_styleKey, _styleIsDark).toBool();
-    _loadCurrentStyle();
+    _loadCurrentStyleSheet();
 
     // Exit main application when last window is closed
     connect(this, &QGCApplication::lastWindowClosed, this, QGCApplication::quit);
@@ -429,15 +427,16 @@ bool QGCApplication::_initForNormalAppBoot(void)
     // Load known link configurations
     toolbox()->linkManager()->loadLinkConfigurationList();
 
-    // Probe for joysticks - TODO: manage on a timer or use events to deal with hotplug
-    toolbox()->joystickManager()->discoverJoysticks();
+    // Probe for joysticks
+    toolbox()->joystickManager()->init();
 
     if (_settingsUpgraded) {
-        settings.clear();
-        settings.setValue(_settingsVersionKey, QGC_SETTINGS_VERSION);
         showMessage("The format for QGroundControl saved settings has been modified. "
                     "Your saved settings have been reset to defaults.");
     }
+
+    // Connect links with flag AutoconnectLink
+    toolbox()->linkManager()->startAutoConnectedLinks();
 
     if (getQGCMapEngine()->wasCacheReset()) {
         showMessage("The Offline Map Cache database has been upgraded. "
@@ -463,32 +462,6 @@ void QGCApplication::clearDeleteAllSettingsNextBoot(void)
 {
     QSettings settings;
     settings.remove(_deleteAllSettingsKey);
-}
-
-bool QGCApplication::promptFlightDataSave(void)
-{
-    QSettings settings;
-
-    return settings.value(_promptFlightDataSave, true).toBool();
-}
-
-bool QGCApplication::promptFlightDataSaveNotArmed(void)
-{
-    QSettings settings;
-
-    return settings.value(_promptFlightDataSaveNotArmed, false).toBool();
-}
-
-void QGCApplication::setPromptFlightDataSave(bool promptForSave)
-{
-    QSettings settings;
-    settings.setValue(_promptFlightDataSave, promptForSave);
-}
-
-void QGCApplication::setPromptFlightDataSaveNotArmed(bool promptForSave)
-{
-    QSettings settings;
-    settings.setValue(_promptFlightDataSaveNotArmed, promptForSave);
 }
 
 /// @brief Returns the QGCApplication object singleton.
@@ -554,17 +527,7 @@ void QGCApplication::saveTempFlightDataLogOnMainThread(QString tempLogfile)
 }
 #endif
 
-void QGCApplication::setStyle(bool styleIsDark)
-{
-    QSettings settings;
-
-    settings.setValue(_styleKey, styleIsDark);
-    _styleIsDark = styleIsDark;
-    _loadCurrentStyle();
-    emit styleChanged(_styleIsDark);
-}
-
-void QGCApplication::_loadCurrentStyle()
+void QGCApplication::_loadCurrentStyleSheet(void)
 {
 #ifndef __mobile__
     bool success = true;
@@ -580,7 +543,7 @@ void QGCApplication::_loadCurrentStyle()
         success = false;
     }
 
-    if (success && !_styleIsDark) {
+    if (success && !_toolbox->settingsManager()->appSettings()->indoorPalette()->rawValue().toBool()) {
         // Load the slave light stylesheet.
         QFile styleSheet(_lightStyleFile);
         if (styleSheet.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -598,8 +561,6 @@ void QGCApplication::_loadCurrentStyle()
         setStyle("plastique");
     }
 #endif
-
-    QGCPalette::setGlobalTheme(_styleIsDark ? QGCPalette::Dark : QGCPalette::Light);
 }
 
 void QGCApplication::reportMissingParameter(int componentId, const QString& name)

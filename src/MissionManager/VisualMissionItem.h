@@ -78,6 +78,8 @@ public:
     Q_PROPERTY(bool     specifiesCoordinate     READ specifiesCoordinate                                NOTIFY specifiesCoordinateChanged)      ///< Item is associated with a coordinate position
     Q_PROPERTY(bool     isStandaloneCoordinate  READ isStandaloneCoordinate                             NOTIFY isStandaloneCoordinateChanged)   ///< Waypoint line does not go through item
     Q_PROPERTY(bool     isSimpleItem            READ isSimpleItem                                       NOTIFY isSimpleItemChanged)             ///< Simple or Complex MissionItem
+    Q_PROPERTY(QString  editorQml               MEMBER _editorQml                                       CONSTANT)                               ///< Qml code for editing this item
+    Q_PROPERTY(QString  mapVisualQML            READ mapVisualQML                                       CONSTANT)                               ///< QMl code for map visuals
 
     /// List of child mission items. Child mission item are subsequent mision items which do not specify a coordinate. They
     /// are shown next to the exitCoordinate indidcator in the ui.
@@ -127,6 +129,9 @@ public:
     ///     @param saveObject Save the item to this json object
     virtual void save(QJsonObject& saveObject) const = 0;
 
+    /// @return The QML resource file which contains the control which visualizes the item on the map.
+    virtual QString mapVisualQML(void) const = 0;
+
     static const char* jsonTypeKey;                 ///< Json file attribute which specifies the item type
     static const char* jsonTypeSimpleItemValue;     ///< Item type is MISSION_ITEM
     static const char* jsonTypeComplexItemValue;    ///< Item type is Complex Item
@@ -161,6 +166,7 @@ protected:
     double      _altPercent;                ///< Percent of total altitude change in mission
     double      _azimuth;                   ///< Azimuth to previous waypoint
     double      _distance;                  ///< Distance to previous waypoint
+    QString     _editorQml;                 ///< Qml resource for editing item
 
     /// This is used to reference any subsequent mission items which do not specify a coordinate.
     QmlObjectListModel  _childItems;

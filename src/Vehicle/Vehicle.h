@@ -39,6 +39,7 @@ class RallyPointManager;
 class ParameterManager;
 class JoystickManager;
 class UASMessage;
+class SettingsManager;
 
 Q_DECLARE_LOGGING_CATEGORY(VehicleLog)
 
@@ -227,6 +228,35 @@ private:
     Fact            _cellCountFact;
 };
 
+class VehicleTemperatureFactGroup : public FactGroup
+{
+    Q_OBJECT
+
+public:
+    VehicleTemperatureFactGroup(QObject* parent = NULL);
+
+    Q_PROPERTY(Fact* temperature1       READ temperature1       CONSTANT)
+    Q_PROPERTY(Fact* temperature2       READ temperature2       CONSTANT)
+    Q_PROPERTY(Fact* temperature3       READ temperature3       CONSTANT)
+
+    Fact* temperature1 (void) { return &_temperature1Fact; }
+    Fact* temperature2 (void) { return &_temperature2Fact; }
+    Fact* temperature3 (void) { return &_temperature3Fact; }
+
+    static const char* _temperature1FactName;
+    static const char* _temperature2FactName;
+    static const char* _temperature3FactName;
+
+    static const char* _settingsGroup;
+
+    static const double _temperatureUnavailable;
+
+private:
+    Fact            _temperature1Fact;
+    Fact            _temperature2Fact;
+    Fact            _temperature3Fact;
+};
+
 class Vehicle : public FactGroup
 {
     Q_OBJECT
@@ -234,6 +264,7 @@ class Vehicle : public FactGroup
 public:
     Vehicle(LinkInterface*          link,
             int                     vehicleId,
+            int                     defaultComponentId,
             MAV_AUTOPILOT           firmwareType,
             MAV_TYPE                vehicleType,
             FirmwarePluginManager*  firmwarePluginManager,
@@ -294,6 +325,8 @@ public:
     Q_PROPERTY(bool        supportsThrottleModeCenterZero   READ supportsThrottleModeCenterZero                         CONSTANT)
     Q_PROPERTY(bool                 supportsJSButton        READ supportsJSButton                                       CONSTANT)
     Q_PROPERTY(bool                 supportsRadio           READ supportsRadio                                          CONSTANT)
+    Q_PROPERTY(bool               supportsCalibratePressure READ supportsCalibratePressure                              CONSTANT)
+    Q_PROPERTY(bool               supportsMotorInterference READ supportsMotorInterference                              CONSTANT)
     Q_PROPERTY(bool                 autoDisconnect          MEMBER _autoDisconnect                                      NOTIFY autoDisconnectChanged)
     Q_PROPERTY(QString              prearmError             READ prearmError            WRITE setPrearmError            NOTIFY prearmErrorChanged)
     Q_PROPERTY(int                  motorCount              READ motorCount                                             CONSTANT)
@@ -307,6 +340,18 @@ public:
     Q_PROPERTY(QString              takeControlFlightMode   READ takeControlFlightMode                                  CONSTANT)
     Q_PROPERTY(QString              firmwareTypeString      READ firmwareTypeString                                     NOTIFY firmwareTypeChanged)
     Q_PROPERTY(QString              vehicleTypeString       READ vehicleTypeString                                      NOTIFY vehicleTypeChanged)
+    Q_PROPERTY(QString              vehicleImageOpaque      READ vehicleImageOpaque                                     CONSTANT)
+    Q_PROPERTY(QString              vehicleImageOutline     READ vehicleImageOutline                                    CONSTANT)
+    Q_PROPERTY(QString              vehicleImageCompass     READ vehicleImageCompass                                    CONSTANT)
+    Q_PROPERTY(int                  telemetryRRSSI          READ telemetryRRSSI                                         NOTIFY telemetryRRSSIChanged)
+    Q_PROPERTY(int                  telemetryLRSSI          READ telemetryLRSSI                                         NOTIFY telemetryLRSSIChanged)
+    Q_PROPERTY(unsigned int         telemetryRXErrors       READ telemetryRXErrors                                      NOTIFY telemetryRXErrorsChanged)
+    Q_PROPERTY(unsigned int         telemetryFixed          READ telemetryFixed                                         NOTIFY telemetryFixedChanged)
+    Q_PROPERTY(unsigned int         telemetryTXBuffer       READ telemetryTXBuffer                                      NOTIFY telemetryTXBufferChanged)
+    Q_PROPERTY(unsigned int         telemetryLNoise         READ telemetryLNoise                                        NOTIFY telemetryLNoiseChanged)
+    Q_PROPERTY(unsigned int         telemetryRNoise         READ telemetryRNoise                                        NOTIFY telemetryRNoiseChanged)
+    Q_PROPERTY(QVariantList         toolBarIndicators       READ toolBarIndicators                                      CONSTANT)
+    Q_PROPERTY(QVariantList         cameraList              READ cameraList                                             CONSTANT)
 
     Q_PROPERTY(double onboard_control_sensors_enabled          READ onboard_control_sensors_enabled NOTIFY sensorsEnabledChanged)
     Q_PROPERTY(double onboard_control_sensors_health           READ onboard_control_sensors_health NOTIFY sensorsHealthChanged)
@@ -341,11 +386,12 @@ public:
     Q_PROPERTY(Fact* climbRate          READ climbRate          CONSTANT)
     Q_PROPERTY(Fact* altitudeRelative   READ altitudeRelative   CONSTANT)
     Q_PROPERTY(Fact* altitudeAMSL       READ altitudeAMSL       CONSTANT)
+    Q_PROPERTY(FactGroup* gps         READ gpsFactGroup         CONSTANT)
+    Q_PROPERTY(FactGroup* battery     READ batteryFactGroup     CONSTANT)
+    Q_PROPERTY(FactGroup* wind        READ windFactGroup        CONSTANT)
+    Q_PROPERTY(FactGroup* vibration   READ vibrationFactGroup   CONSTANT)
+    Q_PROPERTY(FactGroup* temperature READ temperatureFactGroup CONSTANT)
 
-    Q_PROPERTY(FactGroup* gps       READ gpsFactGroup       CONSTANT)
-    Q_PROPERTY(FactGroup* battery   READ batteryFactGroup   CONSTANT)
-    Q_PROPERTY(FactGroup* wind      READ windFactGroup      CONSTANT)
-    Q_PROPERTY(FactGroup* vibration READ vibrationFactGroup CONSTANT)
     Q_PROPERTY(FactGroup* turbine   READ turbineFactGroup   CONSTANT)
 
     Q_PROPERTY(int firmwareMajorVersion READ firmwareMajorVersion NOTIFY firmwareMajorVersionChanged)
@@ -353,6 +399,7 @@ public:
     Q_PROPERTY(int firmwarePatchVersion READ firmwarePatchVersion NOTIFY firmwarePatchVersionChanged)
     Q_PROPERTY(int firmwareVersionType READ firmwareVersionType NOTIFY firmwareVersionTypeChanged)
     Q_PROPERTY(QString firmwareVersionTypeString READ firmwareVersionTypeString NOTIFY firmwareVersionTypeChanged)
+    Q_PROPERTY(QString gitHash READ gitHash NOTIFY gitHashChanged)
 
     /// Resets link status counters
     Q_INVOKABLE void resetCounters  ();
@@ -402,6 +449,9 @@ public:
     /// Command vehicle to kill all motors no matter what state
     Q_INVOKABLE void emergencyStop(void);
 
+    /// Command vehicle to abort landing
+    Q_INVOKABLE void abortLanding(double climbOutAltitude);
+
     /// Alter the current mission item on the vehicle
     Q_INVOKABLE void setCurrentMissionSequence(int seq);
 
@@ -410,6 +460,8 @@ public:
 
     /// Clear Messages
     Q_INVOKABLE void clearMessages();
+
+    Q_INVOKABLE void triggerCamera(void);
 
 #if 0
     // Temporarily removed, waiting for new command implementation
@@ -514,6 +566,8 @@ public:
     bool supportsThrottleModeCenterZero(void) const;
     bool supportsRadio(void) const;
     bool supportsJSButton(void) const;
+    bool supportsCalibratePressure(void) const;
+    bool supportsMotorInterference(void) const;
 
     void setFlying(bool flying);
     void setGuidedMode(bool guidedMode);
@@ -576,7 +630,14 @@ public:
     double          cruiseSpeed             () const { return _cruiseSpeed; }
     double          hoverSpeed              () const { return _hoverSpeed; }
     QString         firmwareTypeString      () const;
-    QString         vehicleTypeString      () const;
+    QString         vehicleTypeString       () const;
+    int             telemetryRRSSI          () { return _telemetryRRSSI; }
+    int             telemetryLRSSI          () { return _telemetryLRSSI; }
+    unsigned int    telemetryRXErrors       () { return _telemetryRXErrors; }
+    unsigned int    telemetryFixed          () { return _telemetryFixed; }
+    unsigned int    telemetryTXBuffer       () { return _telemetryTXBuffer; }
+    unsigned int    telemetryLNoise         () { return _telemetryLNoise; }
+    unsigned int    telemetryRNoise         () { return _telemetryRNoise; }
 
     Fact* leaddist          (void) { return &_LeadDistFact;}
 
@@ -593,6 +654,8 @@ public:
     FactGroup* batteryFactGroup     (void) { return &_batteryFactGroup; }
     FactGroup* windFactGroup        (void) { return &_windFactGroup; }
     FactGroup* vibrationFactGroup   (void) { return &_vibrationFactGroup; }
+    FactGroup* temperatureFactGroup (void) { return &_temperatureFactGroup; }
+
     FactGroup* turbineFactGroup     (void) { return &_turbineFactGroup; }
 
     void setConnectionLostEnabled(bool connectionLostEnabled);
@@ -619,10 +682,15 @@ public:
     void setFirmwareVersion(int majorVersion, int minorVersion, int patchVersion, FIRMWARE_VERSION_TYPE versionType = FIRMWARE_VERSION_TYPE_OFFICIAL);
     static const int versionNotSetValue = -1;
 
+    QString gitHash(void) const { return _gitHash; }
+
     bool soloFirmware(void) const { return _soloFirmware; }
     void setSoloFirmware(bool soloFirmware);
 
-    int defaultComponentId(void);
+    int defaultComponentId(void) { return _defaultComponentId; }
+
+    /// Sets the default component id for an offline editing vehicle
+    void setOfflineEditingDefaultComponentId(int defaultComponentId);
 
     /// @return -1 = Unknown, Number of motors on vehicle
     int motorCount(void);
@@ -640,9 +708,20 @@ public:
     /// and destroyed when the vehicle goes away.
     void setFirmwarePluginInstanceData(QObject* firmwarePluginInstanceData);
 
+    QString vehicleImageOpaque  () const;
+    QString vehicleImageOutline () const;
+    QString vehicleImageCompass () const;
+
+    const QVariantList& toolBarIndicators   ();
+    const QVariantList& cameraList          (void) const;
+
+
 public slots:
-    void setLatitude(double latitude);
-    void setLongitude(double longitude);
+    /// Sets the firmware plugin instance data associated with this Vehicle. This object will be parented to the Vehicle
+    /// and destroyed when the vehicle goes away.
+    void setLatitude    (double latitude);
+    void setLongitude   (double longitude);
+    void setAltitude    (double altitude);
 
 signals:
     void allLinksInactive(Vehicle* vehicle);
@@ -684,21 +763,30 @@ signals:
     /// Used internally to move sendMessage call to main thread
     void _sendMessageOnLinkOnThread(LinkInterface* link, mavlink_message_t message);
 
-    void messageTypeChanged     ();
-    void newMessageCountChanged ();
-    void messageCountChanged    ();
-    void formatedMessagesChanged();
-    void formatedMessageChanged ();
-    void latestErrorChanged     ();
-    void longitudeChanged       ();
-    void currentConfigChanged   ();
-    void flowImageIndexChanged  ();
-    void rcRSSIChanged          (int rcRSSI);
+    void messageTypeChanged         ();
+    void newMessageCountChanged     ();
+    void messageCountChanged        ();
+    void formatedMessagesChanged    ();
+    void formatedMessageChanged     ();
+    void latestErrorChanged         ();
+    void longitudeChanged           ();
+    void currentConfigChanged       ();
+    void flowImageIndexChanged      ();
+    void rcRSSIChanged              (int rcRSSI);
+    void telemetryRRSSIChanged      (int value);
+    void telemetryLRSSIChanged      (int value);
+    void telemetryRXErrorsChanged   (unsigned int value);
+    void telemetryFixedChanged      (unsigned int value);
+    void telemetryTXBufferChanged   (unsigned int value);
+    void telemetryLNoiseChanged     (unsigned int value);
+    void telemetryRNoiseChanged     (unsigned int value);
 
     void firmwareMajorVersionChanged(int major);
     void firmwareMinorVersionChanged(int minor);
     void firmwarePatchVersionChanged(int patch);
     void firmwareVersionTypeChanged(int type);
+
+    void gitHashChanged(QString hash);
 
     /// New RC channel values
     ///     @param channelCount Number of available channels, cMaxRcChannels max
@@ -726,6 +814,7 @@ signals:
 
 private slots:
     void _mavlinkMessageReceived(LinkInterface* link, mavlink_message_t message);
+    void _telemetryChanged(LinkInterface* link, unsigned rxerrors, unsigned fixed, int rssi, int remrssi, unsigned txbuf, unsigned noise, unsigned remnoise);
     void _linkInactiveOrDeleted(LinkInterface* link);
     void _sendMessageOnLink(LinkInterface* link, mavlink_message_t message);
     void _sendMessageMultipleNext(void);
@@ -754,6 +843,8 @@ private slots:
     void _sendMavCommandAgain(void);
     void _setGPSHomeLocation(QGeoPositionInfo geoPositionInfo);
 
+    void _activeJoystickChanged(void);
+
 private:
     bool _containsLink(LinkInterface* link);
     void _addLink(LinkInterface* link);
@@ -778,6 +869,9 @@ private:
     void _handleGlobalPositionInt(mavlink_message_t& message);
     void _handleAltitude(mavlink_message_t& message);
     void _handleVfrHud(mavlink_message_t& message);
+    void _handleScaledPressure(mavlink_message_t& message);
+    void _handleScaledPressure2(mavlink_message_t& message);
+    void _handleScaledPressure3(mavlink_message_t& message);
     void _missionManagerError(int errorCode, const QString& errorMsg);
     void _geoFenceManagerError(int errorCode, const QString& errorMsg);
     void _rallyPointManagerError(int errorCode, const QString& errorMsg);
@@ -794,6 +888,7 @@ private:
     void _commonInit(void);
 
     int     _id;                    ///< Mavlink system id
+    int     _defaultComponentId;
     bool    _active;
     bool    _offlineEditingVehicle; ///< This Vehicle is a "disconnected" vehicle for ui use while offline editing
 
@@ -806,6 +901,7 @@ private:
     AutoPilotPlugin*    _autopilotPlugin;
     MAVLinkProtocol*    _mavlink;
     bool                _soloFirmware;
+    SettingsManager*    _settingsManager;
 
     QList<LinkInterface*> _links;
 
@@ -842,6 +938,13 @@ private:
     bool            _globalPositionIntMessageAvailable;
     double          _cruiseSpeed;
     double          _hoverSpeed;
+    int             _telemetryRRSSI;
+    int             _telemetryLRSSI;
+    uint32_t        _telemetryRXErrors;
+    uint32_t        _telemetryFixed;
+    uint32_t        _telemetryTXBuffer;
+    uint32_t        _telemetryLNoise;
+    uint32_t        _telemetryRNoise;
 
     typedef struct {
         int     component;
@@ -926,6 +1029,8 @@ private:
     int _firmwarePatchVersion;
     FIRMWARE_VERSION_TYPE _firmwareVersionType;
 
+    QString _gitHash;
+
     static const int    _lowBatteryAnnounceRepeatMSecs; // Amount of time in between each low battery announcement
     QElapsedTimer       _lowBatteryAnnounceTimer;
 
@@ -948,8 +1053,9 @@ private:
     VehicleBatteryFactGroup     _batteryFactGroup;
     VehicleWindFactGroup        _windFactGroup;
     VehicleVibrationFactGroup   _vibrationFactGroup;
-    TurbineFactGroup            _turbineFactGroup;
+    VehicleTemperatureFactGroup _temperatureFactGroup;
 
+    TurbineFactGroup            _turbineFactGroup;
     static const char* _LeadDistFactName;
 
     static const char* _rollFactName;
@@ -965,6 +1071,8 @@ private:
     static const char* _batteryFactGroupName;
     static const char* _windFactGroupName;
     static const char* _vibrationFactGroupName;
+    static const char* _temperatureFactGroupName;
+
     static const char* _turbineFactGroupName;
 
     static const int _vehicleUIUpdateRateMSecs = 100;

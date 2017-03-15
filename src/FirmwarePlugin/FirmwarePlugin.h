@@ -22,6 +22,7 @@
 
 #include <QList>
 #include <QString>
+#include <QVariantList>
 
 class Vehicle;
 
@@ -142,6 +143,10 @@ public:
     /// @return -1: reserver all buttons, >0 number of buttons to reserve
     virtual int manualControlReservedButtonCount(void);
 
+    /// Default tx mode to apply to joystick axes
+    /// TX modes are as outlined here: http://www.rc-airplane-world.com/rc-transmitter-modes.html
+    virtual int defaultJoystickTXMode(void);
+
     /// Returns true if the vehicle and firmware supports the use of a throttle joystick that
     /// is zero when centered. Typically not supported on vehicles that have bidirectional
     /// throttle.
@@ -158,6 +163,14 @@ public:
     /// Returns true if the firmware supports the AP_JSButton library, which allows joystick buttons
     /// to be assigned via parameters in firmware. Default is false.
     virtual bool supportsJSButton(void);
+
+    /// Returns true if the firmware supports calibrating the pressure sensor so the altitude will read
+    /// zero at the current pressure. Default is false.
+    virtual bool supportsCalibratePressure(void);
+
+    /// Returns true if the firmware supports calibrating motor interference offsets for the compass
+    /// (CompassMot). Default is true.
+    virtual bool supportsMotorInterference(void);
 
     /// Called before any mavlink message is processed by Vehicle such that the firmwre plugin
     /// can adjust any message characteristics. This is handy to adjust or differences in mavlink
@@ -182,9 +195,6 @@ public:
     ///             it, it may or may not return a home position back in position 0.
     ///     false: Do not send first item to vehicle, sequence numbers must be adjusted
     virtual bool sendHomePositionToVehicle(void);
-
-    /// Returns the parameter that is used to identify the default component
-    virtual QString getDefaultComponentIdParam(void) const { return QString(); }
 
     /// Returns the parameter which is used to identify the version number of parameter set
     virtual QString getVersionParam(void) { return QString(); }
@@ -238,8 +248,29 @@ public:
     /// Return the resource file which contains the brand image for the vehicle.
     virtual QString brandImage(const Vehicle* vehicle) const { Q_UNUSED(vehicle) return QString(); }
 
+    /// Return the resource file which contains the vehicle icon used in the flight view when the view is dark (Satellite for instance)
+    virtual QString vehicleImageOpaque(const Vehicle* vehicle) const;
+
+    /// Return the resource file which contains the vehicle icon used in the flight view when the view is light (Map for instance)
+    virtual QString vehicleImageOutline(const Vehicle* vehicle) const;
+
+    /// Return the resource file which contains the vehicle icon used in the compass
+    virtual QString vehicleImageCompass(const Vehicle* vehicle) const;
+
+    /// Allows the core plugin to override the toolbar indicators
+    /// @return A list of QUrl with the indicators (see MainToolBarIndicators.qml)
+    virtual const QVariantList& toolBarIndicators(const Vehicle* vehicle);
+
+    /// Returns a list of CameraMetaData objects for available cameras on the vehicle.
+    virtual const QVariantList& cameraList(const Vehicle* vehicle);
+
     // FIXME: Hack workaround for non pluginize FollowMe support
     static const char* px4FollowMeFlightMode;
+
+private:
+    QVariantList _toolBarIndicatorList;
+    static QVariantList _cameraList;    ///< Standard QGC camera list
+
 };
 
 class FirmwarePluginFactory : public QObject
@@ -255,8 +286,11 @@ public:
     /// @return Singleton FirmwarePlugin instance for the specified MAV_AUTOPILOT.
     virtual FirmwarePlugin* firmwarePluginForAutopilot(MAV_AUTOPILOT autopilotType, MAV_TYPE vehicleType) = 0;
 
-    /// @return List of autopilot types this plugin supports.
-    virtual QList<MAV_AUTOPILOT> knownFirmwareTypes(void) const = 0;
+    /// @return List of firmware types this plugin supports.
+    virtual QList<MAV_AUTOPILOT> supportedFirmwareTypes(void) const = 0;
+
+    /// @return List of vehicle types this plugin supports.
+    virtual QList<MAV_TYPE> supportedVehicleTypes(void) const;
 };
 
 class FirmwarePluginFactoryRegister : public QObject

@@ -1,0 +1,40 @@
+[
+{
+    "name":             "PlannedHomePositionLatitude",
+    "shortDescription": "Planned home position latitude",
+    "type":             "double",
+    "decimalPlaces":    7,
+    "defaultValue":     37.803784
+},
+{
+    "name":             "PlannedHomePositionLongitude",
+    "shortDescription": "Planned home position longitude",
+    "type":             "double",
+    "decimalPlaces":    7,
+    "defaultValue":     -122.462276
+},
+{
+    "name":             "PlannedHomePositionAltitude",
+    "shortDescription": "Planned home position altitude",
+    "type":             "double",
+    "units":            "m",
+    "decimalPlaces":    1,
+    "defaultValue":     0
+},
+{
+    "name":             "FlightSpeed",
+    "shortDescription": "Flight speed for mission.",
+    "type":             "double",
+    "units":            "m/s",
+    "min":              0,
+    "decimalPlaces":    1
+},
+{
+    "name":             "MissionEndAction",
+    "shortDescription": "The action to take when the mission completed.",
+    "type":             "uint32",
+    "enumStrings":      "No action on mission completion,Loiter after mission completes,RTL after mission completes,Land after mission completes",
+    "enumValues":       "0,1,2,3",
+    "defaultValue":     0
+}
+]

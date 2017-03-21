@@ -27,6 +27,8 @@
 #include "QmlObjectListModel.h"
 #include "Vehicle.h"
 
+class MissionItem;
+
 // Abstract base class for all Simple and Complex visual mission objects.
 class VisualMissionItem : public QObject
 {
@@ -39,6 +41,9 @@ public:
     ~VisualMissionItem();
 
     const VisualMissionItem& operator=(const VisualMissionItem& other);
+
+    Q_PROPERTY(bool homePosition        READ homePosition                                   CONSTANT)                       ///< true: This item is being used as a home position indicator
+    Q_PROPERTY(bool showHomePosition    READ showHomePosition   WRITE setShowHomePosition   NOTIFY showHomePositionChanged)
 
     // The following properties are calculated/set by the MissionController recalc methods
 
@@ -87,6 +92,11 @@ public:
 
     // Property accesors
 
+    bool homePosition               (void) const { return _homePositionSpecialCase; }
+    bool showHomePosition           (void) const { return _showHomePosition; }
+    void setHomePositionSpecialCase (bool homePositionSpecialCase) { _homePositionSpecialCase = homePositionSpecialCase; }
+    void setShowHomePosition        (bool showHomePosition);
+
     double altDifference    (void) const { return _altDifference; }
     double altPercent       (void) const { return _altPercent; }
     double azimuth          (void) const { return _azimuth; }
@@ -124,19 +134,26 @@ public:
     virtual void setDirty           (bool dirty) = 0;
     virtual void setCoordinate      (const QGeoCoordinate& coordinate) = 0;
     virtual void setSequenceNumber  (int sequenceNumber) = 0;
+    virtual int  lastSequenceNumber (void) const = 0;
 
     /// Save the item(s) in Json format
-    ///     @param saveObject Save the item to this json object
-    virtual void save(QJsonObject& saveObject) const = 0;
+    ///     @param missionItems Current set of mission items, new items should be appended to the end
+    virtual void save(QJsonArray&  missionItems) = 0;
 
     /// @return The QML resource file which contains the control which visualizes the item on the map.
     virtual QString mapVisualQML(void) const = 0;
+
+    /// Returns the mission items associated with the complex item. Caller is responsible for freeing.
+    ///     @param items List to append to
+    ///     @param missionItemParent Parent object for newly created MissionItems
+    virtual void appendMissionItems(QList<MissionItem*>& items, QObject* missionItemParent) = 0;
 
     static const char* jsonTypeKey;                 ///< Json file attribute which specifies the item type
     static const char* jsonTypeSimpleItemValue;     ///< Item type is MISSION_ITEM
     static const char* jsonTypeComplexItemValue;    ///< Item type is Complex Item
 
 signals:
+    void showHomePositionChanged        (bool showHomePosition);
     void altDifferenceChanged           (double altDifference);
     void altPercentChanged              (double altPercent);
     void azimuthChanged                 (double azimuth);
@@ -153,6 +170,7 @@ signals:
     void specifiesCoordinateChanged     (void);
     void isStandaloneCoordinateChanged  (void);
     void flightSpeedChanged             (double flightSpeed);
+    void lastSequenceNumberChanged      (int sequenceNumber);
 
     void coordinateHasRelativeAltitudeChanged       (bool coordinateHasRelativeAltitude);
     void exitCoordinateHasRelativeAltitudeChanged   (bool exitCoordinateHasRelativeAltitude);
@@ -162,6 +180,8 @@ protected:
     Vehicle*    _vehicle;
     bool        _isCurrentItem;
     bool        _dirty;
+    bool        _homePositionSpecialCase;   ///< true: This item is being used as a ui home position indicator
+    bool        _showHomePosition;
     double      _altDifference;             ///< Difference in altitude from previous waypoint
     double      _altPercent;                ///< Percent of total altitude change in mission
     double      _azimuth;                   ///< Azimuth to previous waypoint

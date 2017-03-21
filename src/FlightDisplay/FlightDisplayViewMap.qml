@@ -27,6 +27,10 @@ FlightMap {
     anchors.fill:   parent
     mapName:        _mapName
 
+    gesture.acceptedGestures: _followVehicle ?
+                                          MapGestureArea.PinchGesture :
+                                          MapGestureArea.PinchGesture | MapGestureArea.PanGesture | MapGestureArea.FlickGesture
+
     property alias  missionController: missionController
     property var    flightWidgets
     property var    rightPanelWidth
@@ -38,6 +42,8 @@ FlightMap {
     property var    _gotoHereCoordinate:            QtPositioning.coordinate()
     property int    _retaskSequence:                0
     property real   _toolButtonTopMargin:           parent.height - ScreenTools.availableHeight + (ScreenTools.defaultFontPixelHeight / 2)
+
+    property bool   followVehicleConnection:        _followVehicle  ///< Only use to create connection on
 
     Component.onCompleted: {
         QGroundControl.flightMapPosition = center
@@ -204,9 +210,13 @@ FlightMap {
         }
     }
 
-    // Add the mission items to the map
-    MissionItemView {
+    // Add the mission item visuals to the map
+    Repeater {
         model: _mainIsMap ? missionController.visualItems : 0
+
+        delegate: MissionItemMapVisual {
+            map: flightMap
+        }
     }
 
     // Add lines between waypoints
@@ -293,7 +303,7 @@ FlightMap {
                     flightWidgets.guidedModeBar.state = "Shown"
                 } else {
                     if (flightWidgets.gotoEnabled) {
-                        _gotoHereCoordinate = flightMap.toCoordinate(Qt.point(mouse.x, mouse.y))
+                        _gotoHereCoordinate = flightMap.toCoordinate(Qt.point(mouse.x, mouse.y), false /* clipToViewPort */)
                         flightWidgets.guidedModeBar.confirmAction(flightWidgets.guidedModeBar.confirmGoTo)
                     }
                 }

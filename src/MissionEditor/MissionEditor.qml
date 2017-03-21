@@ -382,7 +382,7 @@ QGCView {
                             return
                         }
 
-                        var coordinate = editorMap.toCoordinate(Qt.point(mouse.x, mouse.y))
+                        var coordinate = editorMap.toCoordinate(Qt.point(mouse.x, mouse.y), false /* clipToViewPort */)
                         coordinate.latitude = coordinate.latitude.toFixed(_decimalPlaces)
                         coordinate.longitude = coordinate.longitude.toFixed(_decimalPlaces)
                         coordinate.altitude = coordinate.altitude.toFixed(_decimalPlaces)
@@ -429,7 +429,7 @@ QGCView {
                     function liveDrag() {
                         if (!itemDragger.preventCoordinateBindingLoop && Drag.active) {
                             var point = Qt.point(itemDragger.x + (itemDragger.width  / 2), itemDragger.y + (itemDragger.height / 2))
-                            var coordinate = editorMap.toCoordinate(point)
+                            var coordinate = editorMap.toCoordinate(point, false /* clipToViewPort */)
                             coordinate.altitude = itemDragger.coordinateItem.coordinate.altitude
                             itemDragger.preventCoordinateBindingLoop = true
                             itemDragger.coordinateItem.coordinate = coordinate
@@ -579,12 +579,13 @@ QGCView {
                         spacing:        _margin / 2
                         orientation:    ListView.Vertical
                         model:          missionController.visualItems
-                        cacheBuffer:    height * 2
+                        cacheBuffer:    Math.max(height * 2, 0)
                         clip:           true
                         currentIndex:   _currentMissionIndex
                         highlightMoveDuration: 250
 
                         delegate: MissionItemEditor {
+                            map:            editorMap
                             missionItem:    object
                             width:          parent.width
                             readOnly:       false
@@ -601,8 +602,7 @@ QGCView {
                                 setCurrentItem(removeIndex)
                             }
 
-                            onInsert:               insertSimpleMissionItem(editorMap.center, index)
-                            onMoveHomeToMapCenter:  _visualItems.get(0).coordinate = editorMap.center
+                            onInsert: insertSimpleMissionItem(editorMap.center, index)
                         }
                     } // QGCListView
                 } // Item - Mission Item editor
@@ -718,6 +718,7 @@ QGCView {
                     z:                  QGroundControl.zOrderWidgets
                     showAlternateIcon:  [ false, false, _syncDropDownController.dirty, false, false, false, false ]
                     rotateImage:        [ false, false, _syncDropDownController.syncInProgress, false, false, false, false ]
+                    animateImage:       [ false, false, _syncDropDownController.dirty, false, false, false, false ]
                     buttonEnabled:      [ true, true, !_syncDropDownController.syncInProgress, true, true, true, true ]
                     buttonVisible:      [ true, true, true, true, true, _showZoom, _showZoom ]
                     maxHeight:          mapScale.y - toolStrip.y

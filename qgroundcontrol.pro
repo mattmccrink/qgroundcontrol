@@ -254,12 +254,31 @@ include(src/QtLocationPlugin/QGCLocationPlugin.pri)
 include(QGCExternalLibs.pri)
 
 #
-# Main QGroundControl portion of project file
+# Resources (custom code can replace them)
 #
 
-RESOURCES += \
-    qgroundcontrol.qrc \
-    qgcresources.qrc
+CustomBuild {
+    exists($$PWD/custom/qgroundcontrol.qrc) {
+        message("Using custom qgroundcontrol.qrc")
+        RESOURCES += $$PWD/custom/qgroundcontrol.qrc
+    } else {
+        RESOURCES += $$PWD/qgroundcontrol.qrc
+    }
+    exists($$PWD/custom/qgcresources.qrc) {
+        message("Using custom qgcresources.qrc")
+        RESOURCES += $$PWD/custom/qgcresources.qrc
+    } else {
+        RESOURCES += $$PWD/qgcresources.qrc
+    }
+} else {
+    RESOURCES += \
+        $$PWD/qgroundcontrol.qrc \
+        $$PWD/qgcresources.qrc
+}
+
+#
+# Main QGroundControl portion of project file
+#
 
 DebugBuild {
     # Unit Test resources
@@ -429,6 +448,7 @@ HEADERS += \
     src/JsonHelper.h \
     src/LogCompressor.h \
     src/MG.h \
+    src/MissionManager/CameraSection.h \
     src/MissionManager/ComplexMissionItem.h \
     src/MissionManager/FixedWingLandingComplexItem.h \
     src/MissionManager/GeoFenceController.h \
@@ -439,6 +459,7 @@ HEADERS += \
     src/MissionManager/MissionController.h \
     src/MissionManager/MissionItem.h \
     src/MissionManager/MissionManager.h \
+    src/MissionManager/MissionSettingsComplexItem.h \
     src/MissionManager/PlanElementController.h \
     src/MissionManager/QGCMapPolygon.h \
     src/MissionManager/RallyPoint.h \
@@ -495,6 +516,12 @@ HEADERS += \
     src/uas/UAS.h \
     src/uas/UASInterface.h \
     src/uas/UASMessageHandler.h \
+    src/AnalyzeView/LogDownloadController.h \
+
+AndroidBuild {
+HEADERS += \
+	src/Joystick/JoystickAndroid.h \
+}
 
 DebugBuild {
 HEADERS += \
@@ -525,7 +552,6 @@ HEADERS += \
 !MobileBuild {
 HEADERS += \
     src/AnalyzeView/GeoTagController.h \
-    src/AnalyzeView/LogDownloadController.h \
     src/GPS/Drivers/src/gps_helper.h \
     src/GPS/Drivers/src/ubx.h \
     src/GPS/GPSManager.h \
@@ -586,6 +612,7 @@ iOSBuild {
 
 AndroidBuild {
     SOURCES += src/MobileScreenMgr.cc \
+	src/Joystick/JoystickAndroid.cc \
 }
 
 SOURCES += \
@@ -600,6 +627,7 @@ SOURCES += \
     src/Joystick/JoystickManager.cc \
     src/JsonHelper.cc \
     src/LogCompressor.cc \
+    src/MissionManager/CameraSection.cc \
     src/MissionManager/ComplexMissionItem.cc \
     src/MissionManager/FixedWingLandingComplexItem.cc \
     src/MissionManager/GeoFenceController.cc \
@@ -610,6 +638,7 @@ SOURCES += \
     src/MissionManager/MissionController.cc \
     src/MissionManager/MissionItem.cc \
     src/MissionManager/MissionManager.cc \
+    src/MissionManager/MissionSettingsComplexItem.cc \
     src/MissionManager/PlanElementController.cc \
     src/MissionManager/QGCMapPolygon.cc \
     src/MissionManager/RallyPoint.cc \
@@ -663,6 +692,7 @@ SOURCES += \
     src/main.cc \
     src/uas/UAS.cc \
     src/uas/UASMessageHandler.cc \
+    src/AnalyzeView/LogDownloadController.cc \
 
 DebugBuild {
 SOURCES += \
@@ -685,7 +715,6 @@ contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
 !MobileBuild {
 SOURCES += \
     src/AnalyzeView/GeoTagController.cc \
-    src/AnalyzeView/LogDownloadController.cc \
     src/GPS/Drivers/src/gps_helper.cpp \
     src/GPS/Drivers/src/ubx.cpp \
     src/GPS/GPSManager.cc \

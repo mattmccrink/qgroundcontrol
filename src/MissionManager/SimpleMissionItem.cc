@@ -50,8 +50,8 @@ static const struct EnumInfo_s _rgMavFrameInfo[] = {
 SimpleMissionItem::SimpleMissionItem(Vehicle* vehicle, QObject* parent)
     : VisualMissionItem(vehicle, parent)
     , _rawEdit(false)
-    , _homePositionSpecialCase(false)
-    , _showHomePosition(false)
+    , _dirty(false)
+    , _cameraSection(NULL)
     , _commandTree(qgcApp()->toolbox()->missionCommandTree())
     , _altitudeRelativeToHomeFact   (0, "Altitude is relative to home", FactMetaData::valueTypeUint32)
     , _supportedCommandFact         (0, "Command:",                     FactMetaData::valueTypeUint32)
@@ -71,10 +71,15 @@ SimpleMissionItem::SimpleMissionItem(Vehicle* vehicle, QObject* parent)
 
     _setupMetaData();
     _connectSignals();
+    _updateCameraSection();
 
     setDefaultsForCommand();
 
     connect(&_missionItem, &MissionItem::flightSpeedChanged, this, &SimpleMissionItem::flightSpeedChanged);
+
+    connect(this, &SimpleMissionItem::sequenceNumberChanged,    this, &SimpleMissionItem::lastSequenceNumberChanged);
+    connect(this, &SimpleMissionItem::cameraSectionChanged,     this, &SimpleMissionItem::_setDirtyFromSignal);
+    connect(this, &SimpleMissionItem::cameraSectionChanged,     this, &SimpleMissionItem::_updateLastSequenceNumber);
 }
 
 SimpleMissionItem::SimpleMissionItem(Vehicle* vehicle, const MissionItem& missionItem, QObject* parent)
@@ -82,8 +87,7 @@ SimpleMissionItem::SimpleMissionItem(Vehicle* vehicle, const MissionItem& missio
     , _missionItem(missionItem)
     , _rawEdit(false)
     , _dirty(false)
-    , _homePositionSpecialCase(false)
-    , _showHomePosition(false)
+    , _cameraSection(NULL)
     , _commandTree(qgcApp()->toolbox()->missionCommandTree())
     , _altitudeRelativeToHomeFact   (0, "Altitude is relative to home", FactMetaData::valueTypeUint32)
     , _supportedCommandFact         (0, "Command:",                     FactMetaData::valueTypeUint32)
@@ -103,6 +107,7 @@ SimpleMissionItem::SimpleMissionItem(Vehicle* vehicle, const MissionItem& missio
 
     _setupMetaData();
     _connectSignals();
+    _updateCameraSection();
 
     _syncFrameToAltitudeRelativeToHome();
 }
@@ -112,8 +117,7 @@ SimpleMissionItem::SimpleMissionItem(const SimpleMissionItem& other, QObject* pa
     , _missionItem(other._vehicle)
     , _rawEdit(false)
     , _dirty(false)
-    , _homePositionSpecialCase(false)
-    , _showHomePosition(false)
+    , _cameraSection(NULL)
     , _commandTree(qgcApp()->toolbox()->missionCommandTree())
     , _altitudeRelativeToHomeFact   (0, "Altitude is relative to home", FactMetaData::valueTypeUint32)
     , _supportedCommandFact         (0, "Command:",                     FactMetaData::valueTypeUint32)
@@ -128,6 +132,7 @@ SimpleMissionItem::SimpleMissionItem(const SimpleMissionItem& other, QObject* pa
 
     _setupMetaData();
     _connectSignals();
+    _updateCameraSection();
 
     *this = other;
 }
@@ -246,9 +251,19 @@ SimpleMissionItem::~SimpleMissionItem()
 {    
 }
 
-void SimpleMissionItem::save(QJsonObject& saveObject) const
+void SimpleMissionItem::save(QJsonArray&  missionItems)
 {
-    _missionItem.save(saveObject);
+    QList<MissionItem*> items;
+
+    appendMissionItems(items, this);
+
+    for (int i=0; i<items.count(); i++) {
+        MissionItem* item = items[i];
+        QJsonObject saveObject;
+        item->save(saveObject);
+        missionItems.append(saveObject);
+        item->deleteLater();
+    }
 }
 
 bool SimpleMissionItem::load(QTextStream &loadStream)
@@ -493,13 +508,10 @@ void SimpleMissionItem::setRawEdit(bool rawEdit)
 
 void SimpleMissionItem::setDirty(bool dirty)
 {
-    if (!_homePositionSpecialCase || !dirty) {
-        // Home position never affects dirty bit
-
+    if (!_homePositionSpecialCase || (_dirty != dirty)) {
         _dirty = dirty;
-        // We want to emit dirtyChanged even if _dirty didn't change. This can be handy signal for
-        // any value within the item changing.
-        emit dirtyChanged(_dirty);
+        _cameraSection->setDirty(false);
+        emit dirtyChanged(dirty);
     }
 }
 
@@ -584,18 +596,11 @@ QString SimpleMissionItem::category(void) const
     return _commandTree->getUIInfo(_vehicle, (MAV_CMD)command())->category();
 }
 
-void SimpleMissionItem::setShowHomePosition(bool showHomePosition)
-{
-    if (showHomePosition != _showHomePosition) {
-        _showHomePosition = showHomePosition;
-        emit showHomePositionChanged(_showHomePosition);
-    }
-}
-
 void SimpleMissionItem::setCommand(MavlinkQmlSingleton::Qml_MAV_CMD command)
 {
     if ((MAV_CMD)command != _missionItem.command()) {
         _missionItem.setCommand((MAV_CMD)command);
+        _updateCameraSection();
     }
 }
 
@@ -619,4 +624,65 @@ void SimpleMissionItem::setSequenceNumber(int sequenceNumber)
 double SimpleMissionItem::flightSpeed(void)
 {
     return missionItem().flightSpeed();
+}
+
+void SimpleMissionItem::scanForSections(QmlObjectListModel* visualItems, int scanIndex, Vehicle* vehicle)
+{
+    Q_UNUSED(vehicle);
+
+    qDebug() << "SimpleMissionItem::scanForSections" << scanIndex << _cameraSection->available();
+
+    if (_cameraSection->available()) {
+        bool sectionFound = _cameraSection->scanForCameraSection(visualItems, scanIndex);
+        qDebug() << sectionFound;
+    }
+}
+
+void SimpleMissionItem::_updateCameraSection(void)
+{
+    if (_cameraSection) {
+        // Remove previous section
+        _cameraSection->deleteLater();
+        _cameraSection = NULL;
+    }
+
+    // Add new section
+    _cameraSection = new CameraSection(this);
+    const MissionCommandUIInfo* uiInfo = _commandTree->getUIInfo(_vehicle, (MAV_CMD)command());
+    if (uiInfo && uiInfo->cameraSection()) {
+        _cameraSection->setAvailable(true);
+    }
+
+    connect(_cameraSection, &CameraSection::dirtyChanged,               this, &SimpleMissionItem::_cameraSectionDirtyChanged);
+    connect(_cameraSection, &CameraSection::availableChanged,           this, &SimpleMissionItem::_updateLastSequenceNumber);
+    connect(_cameraSection, &CameraSection::missionItemCountChanged,    this, &SimpleMissionItem::_updateLastSequenceNumber);
+
+    emit cameraSectionChanged(_cameraSection);
+}
+
+int SimpleMissionItem::lastSequenceNumber(void) const
+{
+    return sequenceNumber() + (_cameraSection ? _cameraSection->missionItemCount() : 0);
+}
+
+void SimpleMissionItem::_updateLastSequenceNumber(void)
+{
+    emit lastSequenceNumberChanged(lastSequenceNumber());
+}
+
+void SimpleMissionItem::_cameraSectionDirtyChanged(bool dirty)
+{
+    if (dirty) {
+        setDirty(true);
+    }
+}
+
+void SimpleMissionItem::appendMissionItems(QList<MissionItem*>& items, QObject* missionItemParent)
+{
+    int seqNum = sequenceNumber();
+
+    items.append(new MissionItem(missionItem(), missionItemParent));
+    seqNum++;
+
+    _cameraSection->appendMissionItems(items, missionItemParent, seqNum);
 }

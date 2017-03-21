@@ -108,15 +108,16 @@ SurveyMissionItem::SurveyMissionItem(Vehicle* vehicle, QObject* parent)
     connect(&_cameraTriggerDistanceFact,    &Fact::valueChanged, this, &SurveyMissionItem::_generateGrid);
     connect(&_gridAltitudeFact,             &Fact::valueChanged, this, &SurveyMissionItem::_updateCoordinateAltitude);
 
-    // Signal to Qml when camera value changes to it can recalc
-    connect(&_groundResolutionFact,         &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
-    connect(&_frontalOverlapFact,           &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
-    connect(&_sideOverlapFact,              &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
-    connect(&_cameraSensorWidthFact,        &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
-    connect(&_cameraSensorHeightFact,       &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
-    connect(&_cameraResolutionWidthFact,    &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
-    connect(&_cameraResolutionHeightFact,   &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
-    connect(&_cameraFocalLengthFact,        &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
+    // Signal to Qml when camera value changes so it can recalc
+    connect(&_groundResolutionFact,             &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
+    connect(&_frontalOverlapFact,               &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
+    connect(&_sideOverlapFact,                  &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
+    connect(&_cameraSensorWidthFact,            &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
+    connect(&_cameraSensorHeightFact,           &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
+    connect(&_cameraResolutionWidthFact,        &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
+    connect(&_cameraResolutionHeightFact,       &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
+    connect(&_cameraFocalLengthFact,            &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
+    connect(&_cameraOrientationLandscapeFact,   &Fact::valueChanged, this, &SurveyMissionItem::_cameraValueChanged);
 
     connect(&_cameraTriggerFact,            &Fact::valueChanged, this, &SurveyMissionItem::_cameraTriggerChanged);
 
@@ -293,8 +294,10 @@ void SurveyMissionItem::setDirty(bool dirty)
     }
 }
 
-void SurveyMissionItem::save(QJsonObject& saveObject) const
+void SurveyMissionItem::save(QJsonArray&  missionItems)
 {
+    QJsonObject saveObject;
+
     saveObject[JsonHelper::jsonVersionKey] =                    3;
     saveObject[VisualMissionItem::jsonTypeKey] =                VisualMissionItem::jsonTypeComplexItemValue;
     saveObject[ComplexMissionItem::jsonComplexItemTypeKey] =    jsonComplexItemTypeValue;
@@ -344,6 +347,8 @@ void SurveyMissionItem::save(QJsonObject& saveObject) const
     }
 
     saveObject[_jsonPolygonObjectKey] = polygonArray;
+
+    missionItems.append(saveObject);
 }
 
 void SurveyMissionItem::setSequenceNumber(int sequenceNumber)
@@ -817,11 +822,10 @@ void SurveyMissionItem::_gridGenerator(const QList<QPointF>& polygonPoints,  QLi
     }
 }
 
-QmlObjectListModel* SurveyMissionItem::getMissionItems(void) const
+void SurveyMissionItem::appendMissionItems(QList<MissionItem*>& items, QObject* missionItemParent)
 {
-    QmlObjectListModel* pMissionItems = new QmlObjectListModel;
-
     int seqNum = _sequenceNumber;
+
     for (int i=0; i<_gridPoints.count(); i++) {
         QGeoCoordinate coord = _gridPoints[i].value<QGeoCoordinate>();
         double altitude = _gridAltitudeFact.rawValue().toDouble();
@@ -835,8 +839,8 @@ QmlObjectListModel* SurveyMissionItem::getMissionItems(void) const
                                             altitude,
                                             true,                           // autoContinue
                                             false,                          // isCurrentItem
-                                            pMissionItems);                 // parent - allow delete on pMissionItems to delete everthing
-        pMissionItems->append(item);
+                                            missionItemParent);
+        items.append(item);
 
         if (_cameraTriggerFact.rawValue().toBool() && i == 0) {
             // Turn on camera
@@ -847,8 +851,8 @@ QmlObjectListModel* SurveyMissionItem::getMissionItems(void) const
                                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,   // param 2-7
                                                 true,                           // autoContinue
                                                 false,                          // isCurrentItem
-                                                pMissionItems);                 // parent - allow delete on pMissionItems to delete everthing
-            pMissionItems->append(item);
+                                                missionItemParent);
+            items.append(item);
         }
     }
 
@@ -861,11 +865,9 @@ QmlObjectListModel* SurveyMissionItem::getMissionItems(void) const
                                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0,   // param 2-7
                                             true,                           // autoContinue
                                             false,                          // isCurrentItem
-                                            pMissionItems);                 // parent - allow delete on pMissionItems to delete everthing
-        pMissionItems->append(item);
+                                            missionItemParent);
+        items.append(item);
     }
-
-    return pMissionItems;
 }
 
 void SurveyMissionItem::_cameraTriggerChanged(void)

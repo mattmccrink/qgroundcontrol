@@ -74,9 +74,9 @@ Rectangle {
             console.log("easter egg click", ++_clickCount)
             eggTimer.restart()
             if (_clickCount == 5) {
-                QGroundControl.showAdvancedUI = true
+                QGroundControl.corePlugin.showAdvancedUI = true
             } else if (_clickCount == 7) {
-                QGroundControl.showTouchAreas = true
+                QGroundControl.corePlugin.showTouchAreas = true
             }
         }
 
@@ -230,17 +230,6 @@ Rectangle {
             anchors.top:        parent.top
             anchors.bottom:     parent.bottom
             Layout.fillWidth:   true
-            visible:            _activeVehicle
-        }
-
-        QGCLabel {
-            id:                     waitForVehicle
-            anchors.verticalCenter: parent.verticalCenter
-            text:                   qsTr("Waiting For Vehicle Connection")
-            font.pointSize:         ScreenTools.mediumFontPointSize
-            font.family:            ScreenTools.demiboldFontFamily
-            color:                  colorRed
-            visible:                !_activeVehicle
         }
     }
 

@@ -33,13 +33,19 @@ public:
     QGCCorePlugin(QGCApplication* app);
     ~QGCCorePlugin();
 
-    Q_PROPERTY(QVariantList settings            READ settings           CONSTANT)
+    Q_PROPERTY(QVariantList settingsPages       READ settingsPages      NOTIFY settingsPagesChanged)
     Q_PROPERTY(int          defaultSettings     READ defaultSettings    CONSTANT)
     Q_PROPERTY(QGCOptions*  options             READ options            CONSTANT)
 
+    Q_PROPERTY(bool         showTouchAreas      MEMBER _showTouchAreas  NOTIFY showTouchAreasChanged)
+    Q_PROPERTY(bool         showAdvancedUI      MEMBER _showAdvancedUI  NOTIFY showAdvancedUIChanged)
+
+    Q_PROPERTY(QString      brandImageIndoor    READ brandImageIndoor   CONSTANT)
+    Q_PROPERTY(QString      brandImageOutdoor   READ brandImageIndoor   CONSTANT)
+
     /// The list of settings under the Settings Menu
     /// @return A list of QGCSettings
-    virtual QVariantList&           settings            ();
+    virtual QVariantList&           settingsPages       ();
 
     /// The default settings panel to show
     /// @return The settings index
@@ -59,8 +65,24 @@ public:
     /// @return true: Setting should be visible in ui, false: Setting should not be shown in ui
     virtual bool adjustSettingMetaData                  (FactMetaData& metaData);
 
+    /// Return the resource file which contains the brand image for for Indoor theme.
+    virtual QString brandImageIndoor(void) const { return QString(); }
+
+    /// Return the resource file which contains the brand image for for Outdoor theme.
+    virtual QString brandImageOutdoor(void) const { return QString(); }
+
     // Override from QGCTool
     void                            setToolbox          (QGCToolbox *toolbox);
+
+signals:
+    void settingsPagesChanged   (void);
+    void showTouchAreasChanged  (bool showTouchAreas);
+    void showAdvancedUIChanged  (bool showAdvancedUI);
+
+protected:
+    bool                _showTouchAreas;
+    bool                _showAdvancedUI;
+
 private:
-    QGCCorePlugin_p* _p;
+    QGCCorePlugin_p*    _p;
 };

@@ -48,7 +48,7 @@ public:
     Q_PROPERTY(QGCCorePlugin*       corePlugin          READ corePlugin             CONSTANT)
     Q_PROPERTY(SettingsManager*     settingsManager     READ settingsManager        CONSTANT)
 
-    Q_PROPERTY(int      supportedFirmwareCount          READ supportedFirmwareCount             CONSTANT)
+    Q_PROPERTY(int      supportedFirmwareCount          READ supportedFirmwareCount CONSTANT)
 
     Q_PROPERTY(qreal                zOrderTopMost       READ zOrderTopMost          CONSTANT) ///< z order for top most items, toolbar, main window sub view
     Q_PROPERTY(qreal                zOrderWidgets       READ zOrderWidgets          CONSTANT) ///< z order value to widgets, for example: zoom controls, hud widgetss
@@ -71,10 +71,8 @@ public:
     Q_PROPERTY(QString appSettingsDistanceUnitsString READ appSettingsDistanceUnitsString CONSTANT)
     Q_PROPERTY(QString appSettingsAreaUnitsString READ appSettingsAreaUnitsString CONSTANT)
 
-    Q_PROPERTY(QString qgcVersion READ qgcVersion CONSTANT)
-
-    Q_PROPERTY(bool showTouchAreas MEMBER _showTouchAreas NOTIFY showTouchAreasChanged)
-    Q_PROPERTY(bool showAdvancedUI MEMBER _showAdvancedUI NOTIFY showAdvancedUIChanged)
+    Q_PROPERTY(QString qgcVersion       READ qgcVersion         CONSTANT)
+    Q_PROPERTY(bool    skipSetupPage    READ skipSetupPage      WRITE setSkipSetupPage NOTIFY skipSetupPageChanged)
 
     Q_INVOKABLE void    saveGlobalSetting       (const QString& key, const QString& value);
     Q_INVOKABLE QString loadGlobalSetting       (const QString& key, const QString& defaultValue);
@@ -145,7 +143,9 @@ public:
 
     QGeoCoordinate lastKnownHomePosition() { return qgcApp()->lastKnownHomePosition(); }
 
-    int     supportedFirmwareCount      ();
+    int     supportedFirmwareCount  ();
+    bool    skipSetupPage           () { return _skipSetupPage; }
+    void    setSkipSetupPage        (bool skip);
 
     void    setIsVersionCheckEnabled    (bool enable);
     void    setMavlinkSystemID          (int  id);
@@ -156,8 +156,6 @@ public:
 
     QString qgcVersion(void) const { return qgcApp()->applicationVersion(); }
 
-    bool showTouchAreas(void) const { return _showTouchAreas; } ///< Show visible extents of touch areas
-    bool showAdvancedUI(void) const { return _showAdvancedUI; } ///< Show hidden advanced UI
 
     // Overrides from QGCTool
     virtual void setToolbox(QGCToolbox* toolbox);
@@ -168,8 +166,7 @@ signals:
     void mavlinkSystemIDChanged         (int id);
     void flightMapPositionChanged       (QGeoCoordinate flightMapPosition);
     void flightMapZoomChanged           (double flightMapZoom);
-    void showTouchAreasChanged          (bool showTouchAreas);
-    void showAdvancedUIChanged          (bool showAdvancedUI);
+    void skipSetupPageChanged           ();
 
 private:
     FlightMapSettings*      _flightMapSettings;
@@ -186,9 +183,7 @@ private:
 
     QGeoCoordinate          _flightMapPosition;
     double                  _flightMapZoom;
-
-    bool                    _showTouchAreas;
-    bool                    _showAdvancedUI;
+    bool                    _skipSetupPage;
 };
 
 #endif

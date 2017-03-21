@@ -92,15 +92,11 @@ QGCView {
     MapFitFunctions {
         id:                         mapFitFunctions
         map:                        editorMap
-        mapFitViewport:             Qt.rect(leftToolWidth, toolbarHeight, editorMap.width - leftToolWidth - rightPanelWidth, editorMap.height - toolbarHeight)
+        mapFitViewport:             editorMap.centerViewport
         usePlannedHomePosition:     true
         mapGeoFenceController:      geoFenceController
         mapMissionController:       missionController
         mapRallyPointController:    rallyPointController
-
-        property real toolbarHeight:    qgcView.height - ScreenTools.availableHeight
-        property real rightPanelWidth:  _rightPanelWidth
-        property real leftToolWidth:    toolStrip.x + toolStrip.width
     }
 
     MissionController {
@@ -138,7 +134,9 @@ QGCView {
         }
 
         onNewItemsFromVehicle: {
-            mapFitFunctions.fitMapViewportToMissionItems()
+            if (_visualItems && _visualItems.count != 1) {
+                mapFitFunctions.fitMapViewportToMissionItems()
+            }
             setCurrentItem(0)
             _firstMissionLoadComplete = true
             checkFirstLoadComplete()
@@ -248,6 +246,8 @@ QGCView {
         id: _mapTypeButtonsExclusiveGroup
     }
 
+    /// Sets a new current mission item
+    ///     @param sequenceNumber - index for new item, -1 to clear current item
     function setCurrentItem(sequenceNumber) {
         if (sequenceNumber !== _currentMissionIndex) {
             _currentMissionItem = undefined
@@ -263,6 +263,15 @@ QGCView {
                 }
             }
         }
+    }
+
+    /// Inserts a new simple mission item
+    ///     @param coordinate Location to insert item
+    ///     @param index Insert item at this index
+    function insertSimpleMissionItem(coordinate, index) {
+        setCurrentItem(-1)
+        var sequenceNumber = missionController.insertSimpleMissionItem(coordinate, index)
+        setCurrentItem(sequenceNumber)
     }
 
     property int _moveDialogMissionItemIndex
@@ -341,6 +350,13 @@ QGCView {
                 anchors.right:  parent.right
                 mapName:        "MissionEditor"
 
+                // This is the center rectangle of the map which is not obscured by tools
+                property rect centerViewport: Qt.rect(_leftToolWidth, _toolbarHeight, editorMap.width - _leftToolWidth - _rightPanelWidth, editorMap.height - _statusHeight - _toolbarHeight)
+
+                property real _toolbarHeight:   qgcView.height - ScreenTools.availableHeight
+                property real _leftToolWidth:   toolStrip.x + toolStrip.width
+                property real _statusHeight:    waypointValuesDisplay.visible ? editorMap.height - waypointValuesDisplay.y : 0
+
                 readonly property real animationDuration: 500
 
                 // Initial map position duplicates Fly view position
@@ -374,8 +390,7 @@ QGCView {
                         switch (_editingLayer) {
                         case _layerMission:
                             if (_addWaypointOnClick) {
-                                var sequenceNumber = missionController.insertSimpleMissionItem(coordinate, missionController.visualItems.count)
-                                setCurrentItem(sequenceNumber)
+                                insertSimpleMissionItem(coordinate, missionController.visualItems.count)
                             }
                             break
                         case _layerGeoFence:
@@ -465,7 +480,7 @@ QGCView {
                         vehicle:        object
                         coordinate:     object.coordinate
                         isSatellite:    editorMap.isSatelliteMap
-                        size:           ScreenTools.defaultFontPixelHeight * 5
+                        size:           ScreenTools.defaultFontPixelHeight * 3
                         z:              QGroundControl.zOrderMapItems - 1
                     }
                 }
@@ -586,12 +601,8 @@ QGCView {
                                 setCurrentItem(removeIndex)
                             }
 
-                            onInsert: {
-                                var sequenceNumber = missionController.insertSimpleMissionItem(editorMap.center, index)
-                                setCurrentItem(sequenceNumber)
-                            }
-
-                            onMoveHomeToMapCenter: _visualItems.get(0).coordinate = editorMap.center
+                            onInsert:               insertSimpleMissionItem(editorMap.center, index)
+                            onMoveHomeToMapCenter:  _visualItems.get(0).coordinate = editorMap.center
                         }
                     } // QGCListView
                 } // Item - Mission Item editor

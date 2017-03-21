@@ -30,10 +30,6 @@
 #include "SettingsManager.h"
 
 #include "PositionManager.h"
-<<<<<<< HEAD
-
-=======
->>>>>>> 9c230ebece28495a111de4228cf012f0e8641776
 
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
@@ -169,21 +165,12 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _vibrationFactGroup(this)
     , _temperatureFactGroup(this)
 
-<<<<<<< HEAD
     // Mods
     , _turbineFactGroup(this)
     , _onboard_control_sensors_present(0)
     , _onboard_control_sensors_enabled(0)
     , _onboard_control_sensors_health(0)
-=======
-        // Mods
-        , _turbineFactGroup(this)
-        , _onboard_control_sensors_present(0)
-        , _onboard_control_sensors_enabled(0)
-        , _onboard_control_sensors_health(0)
 
-
->>>>>>> 9c230ebece28495a111de4228cf012f0e8641776
 {
     _addLink(link);
 
@@ -348,10 +335,6 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _firmwareMajorVersion(versionNotSetValue)
     , _firmwareMinorVersion(versionNotSetValue)
     , _firmwarePatchVersion(versionNotSetValue)
-<<<<<<< HEAD
-=======
-    , _LeadDistFact         (0, _LeadDistFactName,          FactMetaData::valueTypeDouble)
->>>>>>> 9c230ebece28495a111de4228cf012f0e8641776
     , _gitHash(versionNotSetValue)
     , _rollFact             (0, _rollFactName,              FactMetaData::valueTypeDouble)
     , _pitchFact            (0, _pitchFactName,             FactMetaData::valueTypeDouble)
@@ -414,15 +397,8 @@ void Vehicle::_commonInit(void)
     _addFactGroup(&_batteryFactGroup,   _batteryFactGroupName);
     _addFactGroup(&_windFactGroup,      _windFactGroupName);
     _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
-<<<<<<< HEAD
-    _addFactGroup(&_temperatureFactGroup, _temperatureFactGroupName);    
-
-    _turbineFactGroup.setVehicle(NULL);
-
-=======
     _addFactGroup(&_temperatureFactGroup, _temperatureFactGroupName);
     _turbineFactGroup.setVehicle(NULL);
->>>>>>> 9c230ebece28495a111de4228cf012f0e8641776
 }
 
 Vehicle::~Vehicle()

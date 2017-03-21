@@ -200,7 +200,6 @@
         <file alias="FWLandingPattern.FactMetaData.json">src/MissionManager/FWLandingPattern.FactMetaData.json</file>
         <file alias="USBBoardInfo.json">src/comm/USBBoardInfo.json</file>
         <file>src/Vehicle/AsymmetricFact.json</file>
-<<<<<<< HEAD
         <file alias="CameraSection.FactMetaData.json">src/MissionManager/CameraSection.FactMetaData.json</file>
         <file alias="MissionSettings.FactMetaData.json">src/MissionManager/MissionSettings.FactMetaData.json</file>
         <file alias="Vehicle/VehicleFact.json">src/Vehicle/VehicleFact.json</file>
@@ -208,8 +207,6 @@
         <file alias="Vehicle/GPSFact.json">src/Vehicle/GPSFact.json</file>
         <file alias="Vehicle/WindFact.json">src/Vehicle/WindFact.json</file>
         <file alias="Vehicle/VibrationFact.json">src/Vehicle/VibrationFact.json</file>
-=======
->>>>>>> 9c230ebece28495a111de4228cf012f0e8641776
         <file alias="Vehicle/TemperatureFact.json">src/Vehicle/TemperatureFact.json</file>
     </qresource>
     <qresource prefix="/MockLink">

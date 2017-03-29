@@ -87,13 +87,15 @@ public:
     bool            isSimpleItem            (void) const final { return true; }
     bool            isStandaloneCoordinate  (void) const final;
     bool            specifiesCoordinate     (void) const final;
+    bool            specifiesAltitudeOnly   (void) const final;
     QString         commandDescription      (void) const final;
     QString         commandName             (void) const final;
     QString         abbreviation            (void) const final;
     QGeoCoordinate  coordinate              (void) const final { return _missionItem.coordinate(); }
     QGeoCoordinate  exitCoordinate          (void) const final { return coordinate(); }
     int             sequenceNumber          (void) const final { return _missionItem.sequenceNumber(); }
-    double          flightSpeed             (void) final;
+    double          specifiedFlightSpeed    (void) final;
+    double          specifiedGimbalYaw      (void) final;
     QString         mapVisualQML            (void) const final { return QStringLiteral("SimpleItemMapVisual.qml"); }
     void            appendMissionItems      (QList<MissionItem*>& items, QObject* missionItemParent) final;
 
@@ -141,6 +143,7 @@ private:
     MissionItem _missionItem;
     bool        _rawEdit;
     bool        _dirty;
+    bool        _ignoreDirtyChangeSignals;
 
     CameraSection* _cameraSection;
 

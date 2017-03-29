@@ -148,6 +148,7 @@ QGCView {
                 anchors.fill:       parent
                 flightWidgets:      flightDisplayViewWidgets
                 rightPanelWidth:    ScreenTools.defaultFontPixelHeight * 9
+                qgcView:            root
             }
         }
 
@@ -246,6 +247,7 @@ QGCView {
             anchors.bottom:     parent.bottom
             qgcView:            root
             useLightColors:     isBackgroundDark
+            missionController:  _flightMap.missionController
             visible:            singleVehicleView.checked
         }
 

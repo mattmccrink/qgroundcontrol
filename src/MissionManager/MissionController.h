@@ -16,11 +16,14 @@
 #include "Vehicle.h"
 #include "QGCLoggingCategory.h"
 #include "MavlinkQmlSingleton.h"
-#include "VisualMissionItem.h"
 
 #include <QHash>
 
 class CoordinateVector;
+class VisualMissionItem;
+class MissionItem;
+class MissionSettingsItem;
+class AppSettings;
 
 Q_DECLARE_LOGGING_CATEGORY(MissionControllerLog)
 
@@ -34,19 +37,33 @@ public:
     MissionController(QObject* parent = NULL);
     ~MissionController();
 
-    // Mission settings
-    Q_PROPERTY(QGeoCoordinate       plannedHomePosition     READ plannedHomePosition    NOTIFY plannedHomePositionChanged)
-    Q_PROPERTY(QmlObjectListModel*  visualItems             READ visualItems            NOTIFY visualItemsChanged)
-    Q_PROPERTY(QmlObjectListModel*  waypointLines           READ waypointLines          NOTIFY waypointLinesChanged)
-    Q_PROPERTY(QStringList          complexMissionItemNames MEMBER _complexMissionItemNames CONSTANT)
+    typedef struct {
+        double maxTelemetryDistance;
+        double totalDistance;
+        double totalTime;
+        double hoverDistance;
+        double hoverTime;
+        double cruiseDistance;
+        double cruiseTime;
+        double cruiseSpeed;
+        double hoverSpeed;
+        double vehicleSpeed;    //</ Either cruise or hover speed based on vehicle type and vtol state
+        double gimbalYaw;       ///< NaN signals yaw was never changed
+    } MissionFlightStatus_t;
 
-    Q_PROPERTY(double               missionDistance         READ missionDistance        NOTIFY missionDistanceChanged)
-    Q_PROPERTY(double               missionTime             READ missionTime            NOTIFY missionTimeChanged)
-    Q_PROPERTY(double               missionHoverDistance    READ missionHoverDistance   NOTIFY missionHoverDistanceChanged)
-    Q_PROPERTY(double               missionCruiseDistance   READ missionCruiseDistance  NOTIFY missionCruiseDistanceChanged)
-    Q_PROPERTY(double               missionHoverTime        READ missionHoverTime       NOTIFY missionHoverTimeChanged)
-    Q_PROPERTY(double               missionCruiseTime       READ missionCruiseTime      NOTIFY missionCruiseTimeChanged)
-    Q_PROPERTY(double               missionMaxTelemetry     READ missionMaxTelemetry    NOTIFY missionMaxTelemetryChanged)
+    Q_PROPERTY(QmlObjectListModel*  visualItems             READ visualItems                NOTIFY visualItemsChanged)
+    Q_PROPERTY(QmlObjectListModel*  waypointLines           READ waypointLines              NOTIFY waypointLinesChanged)
+    Q_PROPERTY(QStringList          complexMissionItemNames READ complexMissionItemNames    NOTIFY complexMissionItemNamesChanged)
+
+    Q_PROPERTY(bool                 missionInProgress       READ missionInProgress          NOTIFY missionInProgressChanged)        ///< true: Mission sequence is beyond first item
+
+    Q_PROPERTY(double               missionDistance         READ missionDistance            NOTIFY missionDistanceChanged)
+    Q_PROPERTY(double               missionTime             READ missionTime                NOTIFY missionTimeChanged)
+    Q_PROPERTY(double               missionHoverDistance    READ missionHoverDistance       NOTIFY missionHoverDistanceChanged)
+    Q_PROPERTY(double               missionCruiseDistance   READ missionCruiseDistance      NOTIFY missionCruiseDistanceChanged)
+    Q_PROPERTY(double               missionHoverTime        READ missionHoverTime           NOTIFY missionHoverTimeChanged)
+    Q_PROPERTY(double               missionCruiseTime       READ missionCruiseTime          NOTIFY missionCruiseTimeChanged)
+    Q_PROPERTY(double               missionMaxTelemetry     READ missionMaxTelemetry        NOTIFY missionMaxTelemetryChanged)
 
     Q_INVOKABLE void removeMissionItem(int index);
 
@@ -77,35 +94,33 @@ public:
     void startStaticActiveVehicle   (Vehicle* vehicle) final;
     void loadFromVehicle            (void) final;
     void sendToVehicle              (void) final;
-    void loadFromFilePicker         (void) final;
     void loadFromFile               (const QString& filename) final;
-    void saveToFilePicker           (void) final;
     void saveToFile                 (const QString& filename) final;
     void removeAll                  (void) final;
+    void removeAllFromVehicle       (void) final;
     bool syncInProgress             (void) const final;
     bool dirty                      (void) const final;
     void setDirty                   (bool dirty) final;
+    bool containsItems              (void) const final;
 
     QString fileExtension(void) const final;
 
     // Property accessors
 
-    QGeoCoordinate      plannedHomePosition (void);
-    QmlObjectListModel* visualItems         (void) { return _visualItems; }
-    QmlObjectListModel* waypointLines       (void) { return &_waypointLines; }
+    QmlObjectListModel* visualItems             (void) { return _visualItems; }
+    QmlObjectListModel* waypointLines           (void) { return &_waypointLines; }
+    QStringList         complexMissionItemNames (void) const;
+    bool                missionInProgress       (void) const;
 
-    double  missionDistance         (void) const { return _missionDistance; }
-    double  missionTime             (void) const { return _missionTime; }
-    double  missionHoverDistance    (void) const { return _missionHoverDistance; }
-    double  missionHoverTime        (void) const { return _missionHoverTime; }
-    double  missionCruiseDistance   (void) const { return _missionCruiseDistance; }
-    double  missionCruiseTime       (void) const { return _missionCruiseTime; }
-    double  missionMaxTelemetry     (void) const { return _missionMaxTelemetry; }
-    double  cruiseSpeed             (void) const;
-    double  hoverSpeed              (void) const;
+    double  missionDistance         (void) const { return _missionFlightStatus.totalDistance; }
+    double  missionTime             (void) const { return _missionFlightStatus.totalTime; }
+    double  missionHoverDistance    (void) const { return _missionFlightStatus.hoverDistance; }
+    double  missionHoverTime        (void) const { return _missionFlightStatus.hoverTime; }
+    double  missionCruiseDistance   (void) const { return _missionFlightStatus.cruiseDistance; }
+    double  missionCruiseTime       (void) const { return _missionFlightStatus.cruiseTime; }
+    double  missionMaxTelemetry     (void) const { return _missionFlightStatus.maxTelemetryDistance; }
 
 signals:
-    void plannedHomePositionChanged(QGeoCoordinate plannedHomePosition);
     void visualItemsChanged(void);
     void waypointLinesChanged(void);
     void newItemsFromVehicle(void);
@@ -116,21 +131,19 @@ signals:
     void missionCruiseDistanceChanged(double missionCruiseDistance);
     void missionCruiseTimeChanged(void);
     void missionMaxTelemetryChanged(double missionMaxTelemetry);
-    void cruiseDistanceChanged(double cruiseDistance);
-    void hoverDistanceChanged(double hoverDistance);
-    void cruiseSpeedChanged(double cruiseSpeed);
-    void hoverSpeedChanged(double hoverSpeed);
+    void complexMissionItemNamesChanged(void);
+    bool missionInProgressChanged(void);
 
 private slots:
-    void _newMissionItemsAvailableFromVehicle();
+    void _newMissionItemsAvailableFromVehicle(bool removeAllRequested);
     void _itemCommandChanged(void);
-    void _activeVehicleHomePositionAvailableChanged(bool homePositionAvailable);
     void _activeVehicleHomePositionChanged(const QGeoCoordinate& homePosition);
     void _inProgressChanged(bool inProgress);
     void _currentMissionItemChanged(int sequenceNumber);
     void _recalcWaypointLines(void);
-    void _recalcAltitudeRangeBearing(void);
-    void _homeCoordinateChanged(void);
+    void _recalcMissionFlightStatus(void);
+    void _updateContainsItems(void);
+    void _visualItemsDirtyChanged(bool dirty);
 
 private:
     void _init(void);
@@ -161,28 +174,25 @@ private:
     void _setMissionCruiseTime(double missionCruiseTime);
     void _setMissionMaxTelemetry(double missionMaxTelemetry);
     static void _scanForAdditionalSettings(QmlObjectListModel* visualItems, Vehicle* vehicle);
+    static bool _convertToMissionItems(QmlObjectListModel* visualMissionItems, QList<MissionItem*>& rgMissionItems, QObject* missionItemParent);
+    void _setPlannedHomePositionFromFirstCoordinate(void);
 
     // Overrides from PlanElementController
     void _activeVehicleBeingRemoved(void) final;
     void _activeVehicleSet(void) final;
 
 private:
-    QmlObjectListModel* _visualItems;
-    QmlObjectListModel  _waypointLines;
-    CoordVectHashTable  _linesTable;
-    bool                _firstItemsFromVehicle;
-    bool                _missionItemsRequested;
-    bool                _queuedSend;
-    double              _missionDistance;
-    double              _missionTime;
-    double              _missionHoverDistance;
-    double              _missionHoverTime;
-    double              _missionCruiseDistance;
-    double              _missionCruiseTime;
-    double              _missionMaxTelemetry;    
-    QString             _surveyMissionItemName;
-    QString             _fwLandingMissionItemName;
-    QStringList         _complexMissionItemNames;
+    QmlObjectListModel*     _visualItems;
+    MissionSettingsItem*    _settingsItem;
+    QmlObjectListModel      _waypointLines;
+    CoordVectHashTable      _linesTable;
+    bool                    _firstItemsFromVehicle;
+    bool                    _missionItemsRequested;
+    bool                    _queuedSend;
+    MissionFlightStatus_t   _missionFlightStatus;
+    QString                 _surveyMissionItemName;
+    QString                 _fwLandingMissionItemName;
+    AppSettings*            _appSettings;
 
     static const char*  _settingsGroup;
 

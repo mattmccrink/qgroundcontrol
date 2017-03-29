@@ -122,12 +122,6 @@ SurveyMissionItem::SurveyMissionItem(Vehicle* vehicle, QObject* parent)
     connect(&_cameraTriggerFact,            &Fact::valueChanged, this, &SurveyMissionItem::_cameraTriggerChanged);
 
     connect(&_cameraTriggerDistanceFact, &Fact::valueChanged, this, &SurveyMissionItem::timeBetweenShotsChanged);
-
-    // NULL check since object creation during unit testing passes NULL for vehicle
-    if (_vehicle) {
-        connect(_vehicle, &Vehicle::cruiseSpeedChanged, this, &SurveyMissionItem::timeBetweenShotsChanged);
-        connect(_vehicle, &Vehicle::hoverSpeedChanged,  this, &SurveyMissionItem::timeBetweenShotsChanged);
-    }
 }
 
 void SurveyMissionItem::_setSurveyDistance(double surveyDistance)
@@ -335,17 +329,8 @@ void SurveyMissionItem::save(QJsonArray&  missionItems)
     }
 
     // Polygon shape
-
     QJsonArray polygonArray;
-
-    for (int i=0; i<_polygonPath.count(); i++) {
-        const QVariant& polyVar = _polygonPath[i];
-
-        QJsonValue jsonValue;
-        JsonHelper::saveGeoCoordinate(polyVar.value<QGeoCoordinate>(), false /* writeAltitude */, jsonValue);
-        polygonArray += jsonValue;
-    }
-
+    JsonHelper::savePolygon(_polygonModel, polygonArray);
     saveObject[_jsonPolygonObjectKey] = polygonArray;
 
     missionItems.append(saveObject);
@@ -381,7 +366,7 @@ bool SurveyMissionItem::load(const QJsonObject& complexObject, int sequenceNumbe
 
     int version = v2Object[JsonHelper::jsonVersionKey].toInt();
     if (version != 2 && version != 3) {
-        errorString = tr("QGroundControl does not support this version of survey items");
+        errorString = tr("%1 does not support this version of survey items").arg(qgcApp()->applicationName());
         return false;
     }
     if (version == 2) {
@@ -411,7 +396,7 @@ bool SurveyMissionItem::load(const QJsonObject& complexObject, int sequenceNumbe
     QString itemType = v2Object[VisualMissionItem::jsonTypeKey].toString();
     QString complexType = v2Object[ComplexMissionItem::jsonComplexItemTypeKey].toString();
     if (itemType != VisualMissionItem::jsonTypeComplexItemValue || complexType != jsonComplexItemTypeValue) {
-        errorString = tr("QGroundControl does not support loading this complex mission item type: %1:2").arg(itemType).arg(complexType);
+        errorString = tr("%1 does not support loading this complex mission item type: %2:%3").arg(qgcApp()->applicationName()).arg(itemType).arg(complexType);
         return false;
     }
 
@@ -494,16 +479,12 @@ bool SurveyMissionItem::load(const QJsonObject& complexObject, int sequenceNumbe
 
     // Polygon shape
     QJsonArray polygonArray(v2Object[_jsonPolygonObjectKey].toArray());
-    for (int i=0; i<polygonArray.count(); i++) {
-        const QJsonValue& pointValue = polygonArray[i];
-
-        QGeoCoordinate pointCoord;
-        if (!JsonHelper::loadGeoCoordinate(pointValue, false /* altitudeRequired */, pointCoord, errorString)) {
-            _clear();
-            return false;
-        }
-        _polygonPath << QVariant::fromValue(pointCoord);
-        _polygonModel.append(new QGCQGeoCoordinate(pointCoord, this));
+    if (!JsonHelper::loadPolygon(polygonArray, _polygonModel, this, errorString)) {
+        _clear();
+        return false;
+    }
+    for (int i=0; i<_polygonModel.count(); i++) {
+        _polygonPath << QVariant::fromValue(_polygonModel.value<QGCQGeoCoordinate*>(i)->coordinate());
     }
 
     _generateGrid();
@@ -894,10 +875,11 @@ double SurveyMissionItem::timeBetweenShots(void) const
     return _cruiseSpeed == 0 ? 0 : _cameraTriggerDistanceFact.rawValue().toDouble() / _cruiseSpeed;
 }
 
-void SurveyMissionItem::setCruiseSpeed(double cruiseSpeed)
+void SurveyMissionItem::setMissionFlightStatus  (MissionController::MissionFlightStatus_t& missionFlightStatus)
 {
-    if (!qFuzzyCompare(_cruiseSpeed, cruiseSpeed)) {
-        _cruiseSpeed = cruiseSpeed;
+    ComplexMissionItem::setMissionFlightStatus(missionFlightStatus);
+    if (!qFuzzyCompare(_cruiseSpeed, missionFlightStatus.vehicleSpeed)) {
+        _cruiseSpeed = missionFlightStatus.vehicleSpeed;
         emit timeBetweenShotsChanged();
     }
 }

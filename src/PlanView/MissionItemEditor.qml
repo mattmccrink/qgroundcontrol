@@ -12,24 +12,24 @@ import QGroundControl.Palette       1.0
 
 /// Mission item edit control
 Rectangle {
-    id: _root
-
+    id:     _root
     height: editorLoader.y + editorLoader.height + (_margin * 2)
-    color:  _currentItem ? qgcPal.buttonHighlight : qgcPal.windowShade
+    color:  _currentItem ? qgcPal.primaryButton : qgcPal.windowShade
     radius: _radius
 
     property var    map             ///< Map control
     property var    missionItem     ///< MissionItem associated with this editor
     property bool   readOnly        ///< true: read only view, false: full editing view
+    property var    rootQgcView
 
     signal clicked
     signal remove
     signal insert
 
-    property bool   _currentItem:           missionItem.isCurrentItem
-    property color  _outerTextColor:        _currentItem ? "black" : qgcPal.text
-    property bool   _noMissionItemsAdded:   ListView.view.model.count == 1
-    property real   _sectionSpacer:         ScreenTools.defaultFontPixelWidth / 2  // spacing between section headings
+    property bool   _currentItem:               missionItem.isCurrentItem
+    property color  _outerTextColor:            _currentItem ? qgcPal.primaryButtonText : qgcPal.text
+    property bool   _noMissionItemsAdded:       ListView.view.model.count === 1
+    property real   _sectionSpacer:             ScreenTools.defaultFontPixelWidth / 2  // spacing between section headings
 
     readonly property real  _editFieldWidth:    Math.min(width - _margin * 2, ScreenTools.defaultFontPixelWidth * 12)
     readonly property real  _margin:            ScreenTools.defaultFontPixelWidth / 2
@@ -51,7 +51,7 @@ Rectangle {
         anchors.verticalCenter: commandPicker.verticalCenter
         anchors.leftMargin:     _margin
         anchors.left:           parent.left
-        text:                   missionItem.abbreviation
+        text:                   missionItem.abbreviation.charAt(0)
         color:                  _outerTextColor
     }
 

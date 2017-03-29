@@ -73,7 +73,7 @@ void MissionManager::writeMissionItems(const QList<MissionItem*>& missionItems)
             }
         }
     }
-    emit newMissionItemsAvailable();
+    emit newMissionItemsAvailable(missionItems.count() == 0);
 
     qCDebug(MissionManagerLog) << "writeMissionItems count:" << _missionItems.count();
     
@@ -306,7 +306,7 @@ void MissionManager::_readTransactionComplete(void)
     _vehicle->sendMessageOnLink(_dedicatedLink, message);
 
     _finishTransaction(true);
-    emit newMissionItemsAvailable();
+    emit newMissionItemsAvailable(false);
 }
 
 void MissionManager::_handleMissionCount(const mavlink_message_t& message)
@@ -405,7 +405,7 @@ void MissionManager::_handleMissionItem(const mavlink_message_t& message, bool m
         param4 =        missionItem.param4;
         param5 =        (double)missionItem.x / qPow(10.0, 7.0);
         param6 =        (double)missionItem.y / qPow(10.0, 7.0);
-        param7 =        (double)missionItem.z / qPow(10.0, 7.0);
+        param7 =        (double)missionItem.z;
         autoContinue =  missionItem.autocontinue;
         isCurrentItem = missionItem.current;
         seq =           missionItem.seq;
@@ -496,7 +496,7 @@ void MissionManager::_handleMissionRequest(const mavlink_message_t& message, boo
     }
     
     MissionItem* item = _missionItems[missionRequest.seq];
-    qCDebug(MissionManagerLog) << "_handleMissionRequest sequenceNumber:" << missionRequest.seq << item->command();
+    qCDebug(MissionManagerLog) << "_handleMissionRequest sequenceNumber:command" << missionRequest.seq << item->command();
 
     mavlink_message_t   messageOut;
     if (missionItemInt) {
@@ -513,7 +513,7 @@ void MissionManager::_handleMissionRequest(const mavlink_message_t& message, boo
         missionItem.param4 =            item->param4();
         missionItem.x =                 item->param5() * qPow(10.0, 7.0);
         missionItem.y =                 item->param6() * qPow(10.0, 7.0);
-        missionItem.z =                 item->param7() * qPow(10.0, 7.0);
+        missionItem.z =                 item->param7();
         missionItem.frame =             item->frame();
         missionItem.current =           missionRequest.seq == 0;
         missionItem.autocontinue =      item->autoContinue();
@@ -737,7 +737,7 @@ void MissionManager::_finishTransaction(bool success)
     if (!success && _readTransactionInProgress) {
         // Read from vehicle failed, clear partial list
         _missionItems.clear();
-        emit newMissionItemsAvailable();
+        emit newMissionItemsAvailable(false);
     }
 
     _itemIndicesToRead.clear();
@@ -766,4 +766,11 @@ void MissionManager::_handleMissionCurrent(const mavlink_message_t& message)
         _currentMissionItem = missionCurrent.seq;
         emit currentItemChanged(_currentMissionItem);
     }
+}
+
+void MissionManager::removeAll(void)
+{
+    QList<MissionItem*> emptyList;
+
+    writeMissionItems(emptyList);
 }

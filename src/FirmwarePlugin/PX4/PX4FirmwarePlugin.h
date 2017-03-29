@@ -40,10 +40,11 @@ public:
     void                pauseVehicle                    (Vehicle* vehicle) override;
     void                guidedModeRTL                   (Vehicle* vehicle) override;
     void                guidedModeLand                  (Vehicle* vehicle) override;
-    void                guidedModeTakeoff               (Vehicle* vehicle, double altitudeRel) override;
+    void                guidedModeTakeoff               (Vehicle* vehicle) override;
     void                guidedModeOrbit                 (Vehicle* vehicle, const QGeoCoordinate& centerCoord = QGeoCoordinate(), double radius = NAN, double velocity = NAN, double altitude = NAN) override;
     void                guidedModeGotoLocation          (Vehicle* vehicle, const QGeoCoordinate& gotoCoord) override;
     void                guidedModeChangeAltitude        (Vehicle* vehicle, double altitudeRel) override;
+    void                startMission                    (Vehicle* vehicle) override;
     bool                isGuidedMode                    (const Vehicle* vehicle) const override;
     int                 manualControlReservedButtonCount(void) override;
     bool                supportsManualControl           (void) override;
@@ -63,6 +64,7 @@ public:
     QString             missionFlightMode               (void) override;
     QString             rtlFlightMode                   (void) override;
     QString             takeControlFlightMode           (void) override;
+    bool                vehicleYawsToNextWaypointInMission(const Vehicle* vehicle) const override;
 
 protected:
     typedef struct {

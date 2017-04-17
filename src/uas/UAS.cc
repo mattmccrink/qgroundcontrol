@@ -418,6 +418,7 @@ void UAS::receiveMessage(mavlink_message_t message)
             _vehicle->setLongitude(attitude.y/(double)1E7);
             _vehicle->altitudeAMSL()->setRawValue(attitude.z/(double)1000.0);
             _vehicle->groundSpeed()->setRawValue(qSqrt(speedX*speedX+speedY*speedY));
+            _vehicle->_setCoordinateValid(true); //HACK for compact state estimates
 
 //            globalEstimatorActive = true;
 

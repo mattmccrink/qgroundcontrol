@@ -180,39 +180,81 @@ Rectangle {
         spacing:            _margin
 
         SectionHeader {
+            id:         cameraHeader
             text:       qsTr("Camera")
             showSpacer: false
         }
 
-        QGCComboBox {
-            id:             gridTypeCombo
+        Column {
             anchors.left:   parent.left
             anchors.right:  parent.right
-            model:          _cameraList
-            currentIndex:   -1
+            spacing:        _margin
+            visible:        cameraHeader.checked
 
-            onActivated: {
-                if (index == _gridTypeManual) {
-                    missionItem.manualGrid.value = true
-                } else if (index == _gridTypeCustomCamera) {
-                    missionItem.manualGrid.value = false
-                    missionItem.camera.value = gridTypeCombo.textAt(index)
-                    missionItem.cameraOrientationFixed = false
-                } else {
-                    missionItem.manualGrid.value = false
-                    missionItem.camera.value = gridTypeCombo.textAt(index)
-                    _noCameraValueRecalc = true
-                    var listIndex = index - _gridTypeCamera
-                    missionItem.cameraSensorWidth.rawValue          = _vehicleCameraList[listIndex].sensorWidth
-                    missionItem.cameraSensorHeight.rawValue         = _vehicleCameraList[listIndex].sensorHeight
-                    missionItem.cameraResolutionWidth.rawValue      = _vehicleCameraList[listIndex].imageWidth
-                    missionItem.cameraResolutionHeight.rawValue     = _vehicleCameraList[listIndex].imageHeight
-                    missionItem.cameraFocalLength.rawValue          = _vehicleCameraList[listIndex].focalLength
-                    missionItem.cameraOrientationLandscape.rawValue = _vehicleCameraList[listIndex].landscape ? 1 : 0
-                    missionItem.cameraOrientationFixed              = _vehicleCameraList[listIndex].fixedOrientation
-                    _noCameraValueRecalc = false
-                    recalcFromCameraValues()
+            QGCComboBox {
+                id:             gridTypeCombo
+                anchors.left:   parent.left
+                anchors.right:  parent.right
+                model:          _cameraList
+                currentIndex:   -1
+
+                onActivated: {
+                    if (index == _gridTypeManual) {
+                        missionItem.manualGrid.value = true
+                    } else if (index == _gridTypeCustomCamera) {
+                        missionItem.manualGrid.value = false
+                        missionItem.camera.value = gridTypeCombo.textAt(index)
+                        missionItem.cameraOrientationFixed = false
+                    } else {
+                        missionItem.manualGrid.value = false
+                        missionItem.camera.value = gridTypeCombo.textAt(index)
+                        _noCameraValueRecalc = true
+                        var listIndex = index - _gridTypeCamera
+                        missionItem.cameraSensorWidth.rawValue          = _vehicleCameraList[listIndex].sensorWidth
+                        missionItem.cameraSensorHeight.rawValue         = _vehicleCameraList[listIndex].sensorHeight
+                        missionItem.cameraResolutionWidth.rawValue      = _vehicleCameraList[listIndex].imageWidth
+                        missionItem.cameraResolutionHeight.rawValue     = _vehicleCameraList[listIndex].imageHeight
+                        missionItem.cameraFocalLength.rawValue          = _vehicleCameraList[listIndex].focalLength
+                        missionItem.cameraOrientationLandscape.rawValue = _vehicleCameraList[listIndex].landscape ? 1 : 0
+                        missionItem.cameraOrientationFixed              = _vehicleCameraList[listIndex].fixedOrientation
+                        _noCameraValueRecalc = false
+                        recalcFromCameraValues()
+                    }
                 }
+            }
+
+            RowLayout {
+                anchors.left:   parent.left
+                anchors.right:  parent.right
+                spacing:        _margin
+                visible:        missionItem.manualGrid.value == true
+
+                QGCCheckBox {
+                    id:                 cameraTriggerDistanceCheckBox
+                    anchors.baseline:   cameraTriggerDistanceField.baseline
+                    text:               qsTr("Trigger Distance")
+                    checked:            missionItem.cameraTriggerDistance.rawValue > 0
+                    onClicked: {
+                        if (checked) {
+                            missionItem.cameraTriggerDistance.value = missionItem.cameraTriggerDistance.defaultValue
+                        } else {
+                            missionItem.cameraTriggerDistance.value = 0
+                        }
+                    }
+                }
+
+                FactTextField {
+                    id:                 cameraTriggerDistanceField
+                    Layout.fillWidth:   true
+                    fact:               missionItem.cameraTriggerDistance
+                    enabled:            cameraTriggerDistanceCheckBox.checked
+                }
+            }
+
+            FactCheckBox {
+                text:       qsTr("Hover and capture image")
+                fact:       missionItem.hoverAndCapture
+                visible:    missionItem.hoverAndCaptureAllowed
             }
         }
 
@@ -343,7 +385,10 @@ Rectangle {
                 }
             }
 
-            SectionHeader { text: qsTr("Grid") }
+            SectionHeader {
+                id:     gridHeader
+                text:   qsTr("Grid")
+            }
 
             GridLayout {
                 anchors.left:   parent.left
@@ -351,6 +396,7 @@ Rectangle {
                 columnSpacing:  _margin
                 rowSpacing:     _margin
                 columns:        2
+                visible:        gridHeader.checked
 
                 QGCLabel { text: qsTr("Angle") }
                 FactTextField {
@@ -362,6 +408,13 @@ Rectangle {
                 FactTextField {
                     fact:                   missionItem.turnaroundDist
                     Layout.fillWidth:       true
+                }
+
+                QGCCheckBox {
+                    text:       qsTr("Refly at 90 degree offset")
+                    checked:    missionItem.refly90Degrees
+                    onClicked:  missionItem.refly90Degrees = checked
+                    Layout.columnSpan: 2
                 }
 
                 QGCLabel {
@@ -403,13 +456,17 @@ Rectangle {
         }
 
         // Manual grid ui
+        SectionHeader {
+            id:         manualGridHeader
+            text:       qsTr("Grid")
+            visible:    gridTypeCombo.currentIndex == _gridTypeManual
+        }
+
         Column {
             anchors.left:   parent.left
             anchors.right:  parent.right
             spacing:        _margin
-            visible:        gridTypeCombo.currentIndex == _gridTypeManual
-
-            SectionHeader { text: qsTr("Grid") }
+            visible:        manualGridHeader.visible && manualGridHeader.checked
 
             FactTextFieldGrid {
                 anchors.left:   parent.left
@@ -420,50 +477,27 @@ Rectangle {
                 factLabels:     [ qsTr("Angle"), qsTr("Spacing"), qsTr("Altitude"), qsTr("Turnaround dist")]
             }
 
-            Item { height: _margin;  width: 1; visible: !ScreenTools.isTinyScreen }
+            QGCCheckBox {
+                text:       qsTr("Refly at 90 degree offset")
+                checked:    missionItem.refly90Degrees
+                onClicked:  missionItem.refly90Degrees = checked
+            }
 
             FactCheckBox {
                 anchors.left:   parent.left
                 text:           qsTr("Relative altitude")
                 fact:           missionItem.gridAltitudeRelative
             }
-
-            Item { height: _sectionSpacer;  width: 1; visible: !ScreenTools.isTinyScreen }
-
-            QGCLabel { text: qsTr("Camera") }
-
-            Rectangle {
-                anchors.left:   parent.left
-                anchors.right:  parent.right
-                height:         1
-                color:          qgcPal.text
-            }
-
-            RowLayout {
-                anchors.left:   parent.left
-                anchors.right:  parent.right
-                spacing:        _margin
-
-                FactCheckBox {
-                    anchors.baseline:   cameraTriggerDistanceField.baseline
-                    text:               qsTr("Trigger Distance")
-                    fact:               missionItem.cameraTrigger
-                }
-
-                FactTextField {
-                    id:                 cameraTriggerDistanceField
-                    Layout.fillWidth:   true
-                    fact:               missionItem.cameraTriggerDistance
-                    enabled:            missionItem.cameraTrigger.value
-                }
-            }
         }
 
-        SectionHeader { text: qsTr("Statistics") }
+        SectionHeader {
+            id:     statsHeader
+            text:   qsTr("Statistics") }
 
         Grid {
             columns:        2
             columnSpacing:  ScreenTools.defaultFontPixelWidth
+            visible:        statsHeader.checked
 
             QGCLabel { text: qsTr("Survey area") }
             QGCLabel { text: QGroundControl.squareMetersToAppSettingsAreaUnits(missionItem.coveredArea).toFixed(2) + " " + QGroundControl.appSettingsAreaUnitsString }

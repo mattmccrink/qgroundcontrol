@@ -38,24 +38,34 @@ public:
     ~MissionController();
 
     typedef struct {
-        double maxTelemetryDistance;
-        double totalDistance;
-        double totalTime;
-        double hoverDistance;
-        double hoverTime;
-        double cruiseDistance;
-        double cruiseTime;
-        double cruiseSpeed;
-        double hoverSpeed;
-        double vehicleSpeed;    //</ Either cruise or hover speed based on vehicle type and vtol state
-        double gimbalYaw;       ///< NaN signals yaw was never changed
+        double  maxTelemetryDistance;
+        double  totalDistance;
+        double  totalTime;
+        double  hoverDistance;
+        double  hoverTime;
+        double  cruiseDistance;
+        double  cruiseTime;
+        double  cruiseSpeed;
+        double  hoverSpeed;
+        double  vehicleSpeed;           ///< Either cruise or hover speed based on vehicle type and vtol state
+        double  vehicleYaw;
+        double  gimbalYaw;              ///< NaN signals yaw was never changed
+        int     mAhBattery;             ///< 0 for not available
+        double  hoverAmps;              ///< Amp consumption during hover
+        double  cruiseAmps;             ///< Amp consumption during cruise
+        double  ampMinutesAvailable;    ///< Amp minutes available from single battery
+        double  hoverAmpsTotal;         ///< Total hover amps used
+        double  cruiseAmpsTotal;        ///< Total cruise amps used
+        int     batteryChangePoint;     ///< -1 for not supported, 0 for not needed
+        int     batteriesRequired;      ///< -1 for not supported
     } MissionFlightStatus_t;
 
     Q_PROPERTY(QmlObjectListModel*  visualItems             READ visualItems                NOTIFY visualItemsChanged)
     Q_PROPERTY(QmlObjectListModel*  waypointLines           READ waypointLines              NOTIFY waypointLinesChanged)
     Q_PROPERTY(QStringList          complexMissionItemNames READ complexMissionItemNames    NOTIFY complexMissionItemNamesChanged)
+    Q_PROPERTY(QGeoCoordinate       plannedHomePosition     READ plannedHomePosition        NOTIFY plannedHomePositionChanged)
 
-    Q_PROPERTY(bool                 missionInProgress       READ missionInProgress          NOTIFY missionInProgressChanged)        ///< true: Mission sequence is beyond first item
+    Q_PROPERTY(int                  resumeMissionIndex      READ resumeMissionIndex         NOTIFY resumeMissionIndexChanged)
 
     Q_PROPERTY(double               missionDistance         READ missionDistance            NOTIFY missionDistanceChanged)
     Q_PROPERTY(double               missionTime             READ missionTime                NOTIFY missionTimeChanged)
@@ -64,6 +74,9 @@ public:
     Q_PROPERTY(double               missionHoverTime        READ missionHoverTime           NOTIFY missionHoverTimeChanged)
     Q_PROPERTY(double               missionCruiseTime       READ missionCruiseTime          NOTIFY missionCruiseTimeChanged)
     Q_PROPERTY(double               missionMaxTelemetry     READ missionMaxTelemetry        NOTIFY missionMaxTelemetryChanged)
+
+    Q_PROPERTY(int                  batteryChangePoint      READ batteryChangePoint         NOTIFY batteryChangePointChanged)
+    Q_PROPERTY(int                  batteriesRequired       READ batteriesRequired          NOTIFY batteriesRequiredChanged)
 
     Q_INVOKABLE void removeMissionItem(int index);
 
@@ -78,6 +91,11 @@ public:
     ///     @param i: index to insert at
     /// @return Sequence number for new item
     Q_INVOKABLE int insertComplexMissionItem(QString itemName, QGeoCoordinate mapCenterCoordinate, int i);
+
+    Q_INVOKABLE void resumeMission(int resumeIndex);
+
+    /// Updates the altitudes of the items in the current mission to the new default altitude
+    Q_INVOKABLE void applyDefaultMissionAltitude(void);
 
     /// Loads the mission items from the specified file
     ///     @param[in] vehicle Vehicle we are loading items for
@@ -110,7 +128,10 @@ public:
     QmlObjectListModel* visualItems             (void) { return _visualItems; }
     QmlObjectListModel* waypointLines           (void) { return &_waypointLines; }
     QStringList         complexMissionItemNames (void) const;
-    bool                missionInProgress       (void) const;
+    QGeoCoordinate      plannedHomePosition     (void) const;
+
+    /// Returns the item index two which a mission should be resumed. -1 indicates resume mission not available.
+    int resumeMissionIndex(void) const;
 
     double  missionDistance         (void) const { return _missionFlightStatus.totalDistance; }
     double  missionTime             (void) const { return _missionFlightStatus.totalTime; }
@@ -119,6 +140,9 @@ public:
     double  missionCruiseDistance   (void) const { return _missionFlightStatus.cruiseDistance; }
     double  missionCruiseTime       (void) const { return _missionFlightStatus.cruiseTime; }
     double  missionMaxTelemetry     (void) const { return _missionFlightStatus.maxTelemetryDistance; }
+
+    int  batteryChangePoint         (void) const { return _missionFlightStatus.batteryChangePoint; }    ///< -1 for not supported, 0 for not needed
+    int  batteriesRequired          (void) const { return _missionFlightStatus.batteriesRequired; }     ///< -1 for not supported
 
 signals:
     void visualItemsChanged(void);
@@ -132,18 +156,21 @@ signals:
     void missionCruiseTimeChanged(void);
     void missionMaxTelemetryChanged(double missionMaxTelemetry);
     void complexMissionItemNamesChanged(void);
-    bool missionInProgressChanged(void);
+    void resumeMissionIndexChanged(void);
+    void resumeMissionReady(void);
+    void batteryChangePointChanged(int batteryChangePoint);
+    void batteriesRequiredChanged(int batteriesRequired);
+    void plannedHomePositionChanged(QGeoCoordinate plannedHomePosition);
 
 private slots:
     void _newMissionItemsAvailableFromVehicle(bool removeAllRequested);
     void _itemCommandChanged(void);
     void _activeVehicleHomePositionChanged(const QGeoCoordinate& homePosition);
     void _inProgressChanged(bool inProgress);
-    void _currentMissionItemChanged(int sequenceNumber);
+    void _currentMissionIndexChanged(int sequenceNumber);
     void _recalcWaypointLines(void);
     void _recalcMissionFlightStatus(void);
     void _updateContainsItems(void);
-    void _visualItemsDirtyChanged(bool dirty);
 
 private:
     void _init(void);
@@ -166,16 +193,13 @@ private:
     static bool _loadJsonMissionFileV2(Vehicle* vehicle, const QJsonObject& json, QmlObjectListModel* visualItems, QString& errorString);
     static bool _loadTextMissionFile(Vehicle* vehicle, QTextStream& stream, QmlObjectListModel* visualItems, QString& errorString);
     int _nextSequenceNumber(void);
-    void _setMissionDistance(double missionDistance);
-    void _setMissionTime(double missionTime);
-    void _setMissionHoverDistance(double missionHoverDistance);
-    void _setMissionHoverTime(double missionHoverTime);
-    void _setMissionCruiseDistance(double missionCruiseDistance);
-    void _setMissionCruiseTime(double missionCruiseTime);
-    void _setMissionMaxTelemetry(double missionMaxTelemetry);
     static void _scanForAdditionalSettings(QmlObjectListModel* visualItems, Vehicle* vehicle);
     static bool _convertToMissionItems(QmlObjectListModel* visualMissionItems, QList<MissionItem*>& rgMissionItems, QObject* missionItemParent);
     void _setPlannedHomePositionFromFirstCoordinate(void);
+    void _resetMissionFlightStatus(void);
+    void _addHoverTime(double hoverTime, double hoverDistance, int waypointIndex);
+    void _addCruiseTime(double cruiseTime, double cruiseDistance, int wayPointIndex);
+    void _updateBatteryInfo(int waypointIndex);
 
     // Overrides from PlanElementController
     void _activeVehicleBeingRemoved(void) final;
@@ -188,7 +212,6 @@ private:
     CoordVectHashTable      _linesTable;
     bool                    _firstItemsFromVehicle;
     bool                    _missionItemsRequested;
-    bool                    _queuedSend;
     MissionFlightStatus_t   _missionFlightStatus;
     QString                 _surveyMissionItemName;
     QString                 _fwLandingMissionItemName;

@@ -7,7 +7,9 @@
  *
  ****************************************************************************/
 
-// THIS CLASS IS DEPRECATED. ALL NEW FUNCTIONALITY SHOULD GO INTO Vehicle class
+// NO NEW CODE HERE
+// UASInterface, UAS.h/cc are deprecated. All new functionality should go into Vehicle.h/cc
+//
 
 #include <QList>
 #include <QTimer>
@@ -360,89 +362,89 @@ void UAS::receiveMessage(mavlink_message_t message)
         }
             break;
 
-        case MAVLINK_MSG_ID_COMPACT_STATE:
-        {
-            mavlink_compact_state_t attitude;
-            mavlink_msg_compact_state_decode(&message, &attitude);
-            quint64 time = getUnixReferenceTime(attitude.time_boot_ms);
+//        case MAVLINK_MSG_ID_COMPACT_STATE:
+//        {
+//            mavlink_compact_state_t attitude;
+//            mavlink_msg_compact_state_decode(&message, &attitude);
+//            quint64 time = getUnixReferenceTime(attitude.time_boot_ms);
 
-            double a = attitude.q1;
-            double b = attitude.q2;
-            double c = attitude.q3;
-            double d = attitude.q4;
-            double e = qSqrt(a*a+b*b+c*c+d*d);
-            a /= e;
-            b /= e;
-            c /= e;
-            d /= e;
+//            double a = attitude.q1;
+//            double b = attitude.q2;
+//            double c = attitude.q3;
+//            double d = attitude.q4;
+//            double e = qSqrt(a*a+b*b+c*c+d*d);
+//            a /= e;
+//            b /= e;
+//            c /= e;
+//            d /= e;
 
-            double aSq = a * a;
-            double bSq = b * b;
-            double cSq = c * c;
-            double dSq = d * d;
-            float dcm[3][3];
-            dcm[0][0] = aSq + bSq - cSq - dSq;
-            dcm[0][1] = 2.0 * (b * c - a * d);
-            dcm[0][2] = 2.0 * (a * c + b * d);
-            dcm[1][0] = 2.0 * (b * c + a * d);
-            dcm[1][1] = aSq - bSq + cSq - dSq;
-            dcm[1][2] = 2.0 * (c * d - a * b);
-            dcm[2][0] = 2.0 * (b * d - a * c);
-            dcm[2][1] = 2.0 * (a * b + c * d);
-            dcm[2][2] = aSq - bSq - cSq + dSq;
+//            double aSq = a * a;
+//            double bSq = b * b;
+//            double cSq = c * c;
+//            double dSq = d * d;
+//            float dcm[3][3];
+//            dcm[0][0] = aSq + bSq - cSq - dSq;
+//            dcm[0][1] = 2.0 * (b * c - a * d);
+//            dcm[0][2] = 2.0 * (a * c + b * d);
+//            dcm[1][0] = 2.0 * (b * c + a * d);
+//            dcm[1][1] = aSq - bSq + cSq - dSq;
+//            dcm[1][2] = 2.0 * (c * d - a * b);
+//            dcm[2][0] = 2.0 * (b * d - a * c);
+//            dcm[2][1] = 2.0 * (a * b + c * d);
+//            dcm[2][2] = aSq - bSq - cSq + dSq;
 
-            float phi, theta, psi;
-            theta = asin(-dcm[2][0]);
+//            float phi, theta, psi;
+//            theta = asin(-dcm[2][0]);
 
-            if (fabs(theta - M_PI_2) < 1.0e-3f) {
-                phi = 0.0f;
-                psi = (atan2(dcm[1][2] - dcm[0][1],
-                        dcm[0][2] + dcm[1][1]) + phi);
+//            if (fabs(theta - M_PI_2) < 1.0e-3f) {
+//                phi = 0.0f;
+//                psi = (atan2(dcm[1][2] - dcm[0][1],
+//                        dcm[0][2] + dcm[1][1]) + phi);
 
-            } else if (fabs(theta + M_PI_2) < 1.0e-3f) {
-                phi = 0.0f;
-                psi = atan2f(dcm[1][2] - dcm[0][1],
-                          dcm[0][2] + dcm[1][1] - phi);
+//            } else if (fabs(theta + M_PI_2) < 1.0e-3f) {
+//                phi = 0.0f;
+//                psi = atan2f(dcm[1][2] - dcm[0][1],
+//                          dcm[0][2] + dcm[1][1] - phi);
 
-            } else {
-                phi = atan2f(dcm[2][1], dcm[2][2]);
-                psi = atan2f(dcm[1][0], dcm[0][0]);
-            }
+//            } else {
+//                phi = atan2f(dcm[2][1], dcm[2][2]);
+//                psi = atan2f(dcm[1][0], dcm[0][0]);
+//            }
 
-            speedX = attitude.vx/(double)1000.0;
-            speedY = attitude.vy/(double)1000.0;
-            speedZ = attitude.vz/(double)1000.0;
+//            speedX = attitude.vx/(double)1000.0;
+//            speedY = attitude.vy/(double)1000.0;
+//            speedZ = attitude.vz/(double)1000.0;
 
-            _vehicle->airSpeed()->setRawValue(attitude.airspeed/(double)1000.0);
-            _vehicle->setLatitude(attitude.x/(double)1E7);
-            _vehicle->setLongitude(attitude.y/(double)1E7);
-            _vehicle->altitudeAMSL()->setRawValue(attitude.z/(double)1000.0);
-            _vehicle->groundSpeed()->setRawValue(qSqrt(speedX*speedX+speedY*speedY));
-            _vehicle->_setCoordinateValid(true); //HACK for compact state estimates
+//            _vehicle->airSpeed()->setRawValue(attitude.airspeed/(double)1000.0);
+//            _vehicle->setLatitude(attitude.x/(double)1E7);
+//            _vehicle->setLongitude(attitude.y/(double)1E7);
+//            _vehicle->altitudeAMSL()->setRawValue(attitude.z/(double)1000.0);
+//            _vehicle->groundSpeed()->setRawValue(qSqrt(speedX*speedX+speedY*speedY));
+//            _vehicle->_setCoordinateValid(true); //HACK for compact state estimates
 
-//            globalEstimatorActive = true;
+////            globalEstimatorActive = true;
 
-            if (!wrongComponent)
-            {
-                lastAttitude = time;
-                setRoll(QGC::limitAngleToPMPIf(phi));
-                setPitch(QGC::limitAngleToPMPIf(theta));
-                setYaw(QGC::limitAngleToPMPIf(psi));
+//            if (!wrongComponent)
+//            {
+//                lastAttitude = time;
+//                setRoll(QGC::limitAngleToPMPIf(phi));
+//                setPitch(QGC::limitAngleToPMPIf(theta));
+//                setYaw(QGC::limitAngleToPMPIf(psi));
 
-                attitudeKnown = true;
-                emit attitudeChanged(this, getRoll(), getPitch(), getYaw(), time);
-            }
-        }
-            break;
+//                attitudeKnown = true;
+//                emit attitudeChanged(this, getRoll(), getPitch(), getYaw(), time);
+//            }
+//        }
+//            break;
 
-        case MAVLINK_MSG_ID_TURBINE_STATE:
-        {
-            mavlink_turbine_state_t turbine;
-            mavlink_msg_turbine_state_decode(&message, &turbine);
-            quint64 time = getUnixReferenceTime(turbine.time_boot_ms);
-            emit turbineChanged(this,turbine.RPM, turbine.EGT, turbine.FuelConsumed, turbine.FuelFlow, turbine.FuelRemaining, turbine.State,time);
-        }
-            break;
+//        case MAVLINK_MSG_ID_TURBINE_STATE:
+//        {
+//            mavlink_turbine_state_t turbine;
+//            mavlink_msg_turbine_state_decode(&message, &turbine);
+//            quint64 time = getUnixReferenceTime(turbine.time_boot_ms);
+//            emit turbineChanged(this,turbine.RPM, turbine.EGT, turbine.FuelConsumed, turbine.FuelFlow, turbine.FuelRemaining, turbine.State,time);
+//        }
+//            break;
 
         case MAVLINK_MSG_ID_HIL_CONTROLS:
         {

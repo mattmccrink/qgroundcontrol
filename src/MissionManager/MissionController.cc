@@ -53,25 +53,61 @@ MissionController::MissionController(QObject *parent)
     , _settingsItem(NULL)
     , _firstItemsFromVehicle(false)
     , _missionItemsRequested(false)
-    , _queuedSend(false)
     , _surveyMissionItemName(tr("Survey"))
     , _fwLandingMissionItemName(tr("Fixed Wing Landing"))
     , _appSettings(qgcApp()->toolbox()->settingsManager()->appSettings())
 {
-    _missionFlightStatus.maxTelemetryDistance = 0;
-    _missionFlightStatus.totalDistance = 0;
-    _missionFlightStatus.totalTime = 0;
-    _missionFlightStatus.hoverDistance = 0;
-    _missionFlightStatus.hoverTime = 0;
-    _missionFlightStatus.cruiseDistance = 0;
-    _missionFlightStatus.cruiseTime = 0;
-    _missionFlightStatus.cruiseSpeed = 0;
-    _missionFlightStatus.hoverSpeed = 0;
-    _missionFlightStatus.gimbalYaw = 0;
+    _resetMissionFlightStatus();
 }
 
 MissionController::~MissionController()
 {
+
+}
+
+void MissionController::_resetMissionFlightStatus(void)
+{
+    _missionFlightStatus.totalDistance =        0.0;
+    _missionFlightStatus.maxTelemetryDistance = 0.0;
+    _missionFlightStatus.totalTime =            0.0;
+    _missionFlightStatus.hoverTime =            0.0;
+    _missionFlightStatus.cruiseTime =           0.0;
+    _missionFlightStatus.hoverDistance =        0.0;
+    _missionFlightStatus.cruiseDistance =       0.0;
+    _missionFlightStatus.cruiseSpeed =          _activeVehicle ? _activeVehicle->defaultCruiseSpeed() : std::numeric_limits<double>::quiet_NaN();
+    _missionFlightStatus.hoverSpeed =           _activeVehicle ? _activeVehicle->defaultHoverSpeed() : std::numeric_limits<double>::quiet_NaN();
+    _missionFlightStatus.vehicleSpeed =         _activeVehicle ? (_activeVehicle->multiRotor() || _activeVehicle->vtol() ? _missionFlightStatus.hoverSpeed : _missionFlightStatus.cruiseSpeed) : std::numeric_limits<double>::quiet_NaN();
+    _missionFlightStatus.vehicleYaw =           0.0;
+    _missionFlightStatus.gimbalYaw =            std::numeric_limits<double>::quiet_NaN();
+
+    // Battery information
+
+    _missionFlightStatus.mAhBattery =           0;
+    _missionFlightStatus.hoverAmps =            0;
+    _missionFlightStatus.cruiseAmps =           0;
+    _missionFlightStatus.ampMinutesAvailable =  0;
+    _missionFlightStatus.hoverAmpsTotal =       0;
+    _missionFlightStatus.cruiseAmpsTotal =      0;
+    _missionFlightStatus.batteryChangePoint =   -1;
+    _missionFlightStatus.batteriesRequired =    -1;
+
+    if (_activeVehicle) {
+        _activeVehicle->firmwarePlugin()->batteryConsumptionData(_activeVehicle, _missionFlightStatus.mAhBattery, _missionFlightStatus.hoverAmps, _missionFlightStatus.cruiseAmps);
+        if (_missionFlightStatus.mAhBattery != 0) {
+            double batteryPercentRemainingAnnounce = qgcApp()->toolbox()->settingsManager()->appSettings()->batteryPercentRemainingAnnounce()->rawValue().toDouble();
+            _missionFlightStatus.ampMinutesAvailable = (double)_missionFlightStatus.mAhBattery / 1000.0 * 60.0 * ((100.0 - batteryPercentRemainingAnnounce) / 100.0);
+        }
+    }
+
+    emit missionDistanceChanged(_missionFlightStatus.totalDistance);
+    emit missionTimeChanged();
+    emit missionHoverDistanceChanged(_missionFlightStatus.hoverDistance);
+    emit missionCruiseDistanceChanged(_missionFlightStatus.cruiseDistance);
+    emit missionHoverTimeChanged();
+    emit missionCruiseTimeChanged();
+    emit missionMaxTelemetryChanged(_missionFlightStatus.maxTelemetryDistance);
+    emit batteryChangePointChanged(_missionFlightStatus.batteryChangePoint);
+    emit batteriesRequiredChanged(_missionFlightStatus.batteriesRequired);
 
 }
 
@@ -140,7 +176,7 @@ void MissionController::_newMissionItemsAvailableFromVehicle(bool removeAllReque
         _visualItems = newControllerMissionItems;
 
         if (!_activeVehicle->firmwarePlugin()->sendHomePositionToVehicle() || _visualItems->count() == 0) {
-            _addMissionSettings(_activeVehicle, _visualItems, _visualItems->count() > 0 /* addToCenter */);
+            _addMissionSettings(_activeVehicle, _visualItems, _editMode && _visualItems->count() > 0 /* addToCenter */);
         }
 
         _missionItemsRequested = false;
@@ -234,7 +270,7 @@ int MissionController::insertSimpleMissionItem(QGeoCoordinate coordinate, int i)
     newItem->setCommand(MavlinkQmlSingleton::MAV_CMD_NAV_WAYPOINT);
     _initVisualItem(newItem);
     if (_visualItems->count() == 1) {
-        newItem->setCommand(MavlinkQmlSingleton::MAV_CMD_NAV_TAKEOFF);
+        newItem->setCommand(_activeVehicle->vtol() ? MavlinkQmlSingleton::MAV_CMD_NAV_VTOL_TAKEOFF : MavlinkQmlSingleton::MAV_CMD_NAV_TAKEOFF);
     }
     newItem->setDefaultsForCommand();
     if ((MAV_CMD)newItem->command() == MAV_CMD_NAV_WAYPOINT) {
@@ -298,6 +334,7 @@ void MissionController::removeAll(void)
         _addMissionSettings(_activeVehicle, _visualItems, false /* addToCenter */);
         _initAllVisualItems();
         _visualItems->setDirty(true);
+       _resetMissionFlightStatus();
     }
 }
 
@@ -647,7 +684,11 @@ void MissionController::loadFromFile(const QString& filename)
     MissionController::_scanForAdditionalSettings(_visualItems, _activeVehicle);
 
     _initAllVisualItems();
-    sendToVehicle();
+
+    if (!_activeVehicle->isOfflineEditingVehicle()) {
+        // Needs a sync to vehicle
+        setDirty(true);
+    }
 }
 
 bool MissionController::loadItemsFromFile(Vehicle* vehicle, const QString& filename, QmlObjectListModel** visualItems)
@@ -755,7 +796,10 @@ void MissionController::saveToFile(const QString& filename)
         file.write(saveDoc.toJson());
     }
 
-    _visualItems->setDirty(false);
+    // If we are connected to a real vehicle, don't clear dirty bit on saving to file since vehicle is still out of date
+    if (_activeVehicle->isOfflineEditingVehicle()) {
+        _visualItems->setDirty(false);
+    }
 }
 
 void MissionController::_calcPrevWaypointValues(double homeAlt, VisualMissionItem* currentItem, VisualMissionItem* prevItem, double* azimuth, double* distance, double* altDifference)
@@ -766,10 +810,6 @@ void MissionController::_calcPrevWaypointValues(double homeAlt, VisualMissionIte
 
     // Convert to fixed altitudes
 
-    qCDebug(MissionControllerLog) << homeAlt
-                                  << currentItem->coordinateHasRelativeAltitude() << currentItem->coordinate().altitude()
-                                  << prevItem->exitCoordinateHasRelativeAltitude() << prevItem->exitCoordinate().altitude();
-
     distanceOk = true;
     if (currentItem->coordinateHasRelativeAltitude()) {
         currentCoord.setAltitude(homeAlt + currentCoord.altitude());
@@ -777,8 +817,6 @@ void MissionController::_calcPrevWaypointValues(double homeAlt, VisualMissionIte
     if (prevItem->exitCoordinateHasRelativeAltitude()) {
         prevCoord.setAltitude(homeAlt + prevCoord.altitude());
     }
-
-    qCDebug(MissionControllerLog) << "distanceOk" << distanceOk;
 
     if (distanceOk) {
         *altDifference = currentCoord.altitude() - prevCoord.altitude();
@@ -799,8 +837,6 @@ double MissionController::_calcDistanceToHome(VisualMissionItem* currentItem, Vi
 
     distanceOk = true;
 
-    qCDebug(MissionControllerLog) << "distanceOk" << distanceOk;
-
     return distanceOk ? homeCoord.distanceTo(currentCoord) : 0.0;
 }
 
@@ -811,7 +847,7 @@ void MissionController::_recalcWaypointLines(void)
 
     bool showHomePosition = _settingsItem->coordinate().isValid();
 
-    qCDebug(MissionControllerLog) << "_recalcWaypointLines";
+    qCDebug(MissionControllerLog) << "_recalcWaypointLines showHomePosition" << showHomePosition;
 
     CoordVectHashTable old_table = _linesTable;
     _linesTable.clear();
@@ -878,6 +914,36 @@ void MissionController::_recalcWaypointLines(void)
     emit waypointLinesChanged();
 }
 
+void MissionController::_updateBatteryInfo(int waypointIndex)
+{
+    if (_missionFlightStatus.mAhBattery != 0) {
+        _missionFlightStatus.hoverAmpsTotal = (_missionFlightStatus.hoverTime / 60.0) * _missionFlightStatus.hoverAmps;
+        _missionFlightStatus.cruiseAmpsTotal = (_missionFlightStatus.cruiseTime / 60.0) * _missionFlightStatus.cruiseAmps;
+        _missionFlightStatus.batteriesRequired = ceil((_missionFlightStatus.hoverAmpsTotal + _missionFlightStatus.cruiseAmpsTotal) / _missionFlightStatus.ampMinutesAvailable);
+        if (_missionFlightStatus.batteriesRequired == 2 && _missionFlightStatus.batteryChangePoint == -1) {
+            _missionFlightStatus.batteryChangePoint = waypointIndex - 1;
+        }
+    }
+}
+
+void MissionController::_addHoverTime(double hoverTime, double hoverDistance, int waypointIndex)
+{
+    _missionFlightStatus.totalTime += hoverTime;
+    _missionFlightStatus.hoverTime += hoverTime;
+    _missionFlightStatus.hoverDistance += hoverDistance;
+    _missionFlightStatus.totalDistance += hoverDistance;
+    _updateBatteryInfo(waypointIndex);
+}
+
+void MissionController::_addCruiseTime(double cruiseTime, double cruiseDistance, int waypointIndex)
+{
+    _missionFlightStatus.totalTime += cruiseTime;
+    _missionFlightStatus.cruiseTime += cruiseTime;
+    _missionFlightStatus.cruiseDistance += cruiseDistance;
+    _missionFlightStatus.totalDistance += cruiseDistance;
+    _updateBatteryInfo(waypointIndex);
+}
+
 void MissionController::_recalcMissionFlightStatus()
 {
     if (!_visualItems->count()) {
@@ -905,19 +971,7 @@ void MissionController::_recalcMissionFlightStatus()
     const double homePositionAltitude = _settingsItem->coordinate().altitude();
     minAltSeen = maxAltSeen = _settingsItem->coordinate().altitude();
 
-    double lastVehicleYaw = 0;
-
-    _missionFlightStatus.totalDistance =        0.0;
-    _missionFlightStatus.maxTelemetryDistance = 0.0;
-    _missionFlightStatus.totalTime =            0.0;
-    _missionFlightStatus.hoverTime =            0.0;
-    _missionFlightStatus.cruiseTime =           0.0;
-    _missionFlightStatus.hoverDistance =        0.0;
-    _missionFlightStatus.cruiseDistance =       0.0;
-    _missionFlightStatus.cruiseSpeed =          _activeVehicle->defaultCruiseSpeed();
-    _missionFlightStatus.hoverSpeed =           _activeVehicle->defaultHoverSpeed();
-    _missionFlightStatus.vehicleSpeed =         _activeVehicle->multiRotor() || _activeVehicle->vtol() ? _missionFlightStatus.hoverSpeed : _missionFlightStatus.cruiseSpeed;
-    _missionFlightStatus.gimbalYaw =            std::numeric_limits<double>::quiet_NaN();
+    _resetMissionFlightStatus();
 
     bool vtolInHover = true;
     bool linkBackToHome = false;
@@ -996,8 +1050,8 @@ void MissionController::_recalcMissionFlightStatus()
         if (item->specifiesCoordinate()) {
             // Update vehicle yaw assuming direction to next waypoint
             if (item != lastCoordinateItem) {
-                lastVehicleYaw = lastCoordinateItem->exitCoordinate().azimuthTo(item->coordinate());
-                lastCoordinateItem->setMissionVehicleYaw(lastVehicleYaw);
+                _missionFlightStatus.vehicleYaw = lastCoordinateItem->exitCoordinate().azimuthTo(item->coordinate());
+                lastCoordinateItem->setMissionVehicleYaw(_missionFlightStatus.vehicleYaw);
             }
 
             // Keep track of the min/max altitude for all waypoints so we can show altitudes as a percentage
@@ -1029,7 +1083,6 @@ void MissionController::_recalcMissionFlightStatus()
                     item->setAzimuth(azimuth);
                     item->setDistance(distance);
 
-                    _missionFlightStatus.totalDistance += distance;
                     _missionFlightStatus.maxTelemetryDistance = qMax(_missionFlightStatus.maxTelemetryDistance, _calcDistanceToHome(item, _settingsItem));
 
                     // Calculate time/distance
@@ -1037,24 +1090,15 @@ void MissionController::_recalcMissionFlightStatus()
                     double cruiseTime = distance / _missionFlightStatus.cruiseSpeed;
                     if (_activeVehicle->vtol()) {
                         if (vtolInHover) {
-                            _missionFlightStatus.totalTime += hoverTime;
-                            _missionFlightStatus.hoverTime += hoverTime;
-                            _missionFlightStatus.hoverDistance += distance;
+                            _addHoverTime(hoverTime, distance, item->sequenceNumber());
                         } else {
-                            _missionFlightStatus.totalTime += cruiseTime;
-                            _missionFlightStatus.cruiseTime += cruiseTime;
-                            _missionFlightStatus.cruiseDistance += distance;
+                            _addCruiseTime(cruiseTime, distance, item->sequenceNumber());
                         }
                     } else {
                         if (_activeVehicle->multiRotor()) {
-                            _missionFlightStatus.totalTime += hoverTime;
-                            _missionFlightStatus.hoverTime += hoverTime;
-                            _missionFlightStatus.hoverDistance += distance;
+                            _addHoverTime(hoverTime, distance, item->sequenceNumber());
                         } else {
-                            _missionFlightStatus.totalTime += cruiseTime;
-                            _missionFlightStatus.cruiseTime += cruiseTime;
-                            _missionFlightStatus.cruiseDistance += distance;
-
+                            _addCruiseTime(cruiseTime, distance, item->sequenceNumber());
                         }
                     }
                 }
@@ -1062,31 +1106,21 @@ void MissionController::_recalcMissionFlightStatus()
                 if (complexItem) {
                     // Add in distance/time inside complex items as well
                     double distance = complexItem->complexDistance();
-                    _missionFlightStatus.totalDistance += distance;
                     _missionFlightStatus.maxTelemetryDistance = qMax(_missionFlightStatus.maxTelemetryDistance, complexItem->greatestDistanceTo(complexItem->exitCoordinate()));
 
-                    double hoverTime = _missionFlightStatus.totalDistance / _missionFlightStatus.hoverSpeed;
-                    double cruiseTime = _missionFlightStatus.totalDistance / _missionFlightStatus.cruiseSpeed;
+                    double hoverTime = distance / _missionFlightStatus.hoverSpeed;
+                    double cruiseTime = distance / _missionFlightStatus.cruiseSpeed;
                     if (_activeVehicle->vtol()) {
                         if (vtolInHover) {
-                            _missionFlightStatus.totalTime += hoverTime;
-                            _missionFlightStatus.hoverTime += hoverTime;
-                            _missionFlightStatus.hoverDistance += distance;
+                            _addHoverTime(hoverTime, distance, item->sequenceNumber());
                         } else {
-                            _missionFlightStatus.totalTime += cruiseTime;
-                            _missionFlightStatus.cruiseTime += cruiseTime;
-                            _missionFlightStatus.cruiseDistance += distance;
+                            _addCruiseTime(cruiseTime, distance, item->sequenceNumber());
                         }
                     } else {
                         if (_activeVehicle->multiRotor()) {
-                            _missionFlightStatus.totalTime += hoverTime;
-                            _missionFlightStatus.hoverTime += hoverTime;
-                            _missionFlightStatus.hoverDistance += distance;
+                            _addHoverTime(hoverTime, distance, item->sequenceNumber());
                         } else {
-                            _missionFlightStatus.totalTime += cruiseTime;
-                            _missionFlightStatus.cruiseTime += cruiseTime;
-                            _missionFlightStatus.cruiseDistance += distance;
-
+                            _addCruiseTime(cruiseTime, distance, item->sequenceNumber());
                         }
                     }
                 }
@@ -1097,8 +1131,11 @@ void MissionController::_recalcMissionFlightStatus()
             lastCoordinateItem = item;
         }
     }
-    lastCoordinateItem->setMissionVehicleYaw(lastVehicleYaw);
+    lastCoordinateItem->setMissionVehicleYaw(_missionFlightStatus.vehicleYaw);
 
+    if (_missionFlightStatus.mAhBattery != 0 && _missionFlightStatus.batteryChangePoint == -1) {
+        _missionFlightStatus.batteryChangePoint = 0;
+    }
 
     emit missionMaxTelemetryChanged(_missionFlightStatus.maxTelemetryDistance);
     emit missionDistanceChanged(_missionFlightStatus.totalDistance);
@@ -1107,6 +1144,8 @@ void MissionController::_recalcMissionFlightStatus()
     emit missionTimeChanged();
     emit missionHoverTimeChanged();
     emit missionCruiseTimeChanged();
+    emit batteryChangePointChanged(_missionFlightStatus.batteryChangePoint);
+    emit batteriesRequiredChanged(_missionFlightStatus.batteriesRequired);
 
     // Walk the list again calculating altitude percentages
     double altRange = maxAltSeen - minAltSeen;
@@ -1180,7 +1219,9 @@ void MissionController::_setPlannedHomePositionFromFirstCoordinate(void)
 
 void MissionController::_recalcAll(void)
 {
-    _setPlannedHomePositionFromFirstCoordinate();
+    if (_editMode) {
+        _setPlannedHomePositionFromFirstCoordinate();
+    }
     _recalcSequence();
     _recalcChildItems();
     _recalcWaypointLines();
@@ -1196,13 +1237,16 @@ void MissionController::_initAllVisualItems(void)
         qWarning() << "First item not MissionSettingsItem";
         return;
     }
-    _settingsItem->setIsCurrentItem(true);
+    if (_editMode) {
+        _settingsItem->setIsCurrentItem(true);
+    }
 
     if (!_editMode && _activeVehicle) {
         _settingsItem->setCoordinate(_activeVehicle->homePosition());
     }
 
     connect(_settingsItem, &MissionSettingsItem::coordinateChanged, this, &MissionController::_recalcAll);
+    connect(_settingsItem, &MissionSettingsItem::coordinateChanged, this, &MissionController::plannedHomePositionChanged);
 
     for (int i=0; i<_visualItems->count(); i++) {
         VisualMissionItem* item = qobject_cast<VisualMissionItem*>(_visualItems->get(i));
@@ -1211,22 +1255,26 @@ void MissionController::_initAllVisualItems(void)
 
     _recalcAll();
 
-    connect(_visualItems, &QmlObjectListModel::dirtyChanged, this, &MissionController::_visualItemsDirtyChanged);
+    connect(_visualItems, &QmlObjectListModel::dirtyChanged, this, &MissionController::dirtyChanged);
     connect(_visualItems, &QmlObjectListModel::countChanged, this, &MissionController::_updateContainsItems);
 
     emit visualItemsChanged();
     emit containsItemsChanged(containsItems());
+    emit plannedHomePositionChanged(plannedHomePosition());
 
     _visualItems->setDirty(false);
 }
 
 void MissionController::_deinitAllVisualItems(void)
 {
+    disconnect(_settingsItem, &MissionSettingsItem::coordinateChanged, this, &MissionController::_recalcAll);
+    disconnect(_settingsItem, &MissionSettingsItem::coordinateChanged, this, &MissionController::plannedHomePositionChanged);
+
     for (int i=0; i<_visualItems->count(); i++) {
         _deinitVisualItem(qobject_cast<VisualMissionItem*>(_visualItems->get(i)));
     }
 
-    disconnect(_visualItems, &QmlObjectListModel::dirtyChanged, this, &MissionController::_visualItemsDirtyChanged);
+    disconnect(_visualItems, &QmlObjectListModel::dirtyChanged, this, &MissionController::dirtyChanged);
     disconnect(_visualItems, &QmlObjectListModel::countChanged, this, &MissionController::_updateContainsItems);
 }
 
@@ -1279,7 +1327,9 @@ void MissionController::_activeVehicleBeingRemoved(void)
 
     disconnect(missionManager, &MissionManager::newMissionItemsAvailable,   this, &MissionController::_newMissionItemsAvailableFromVehicle);
     disconnect(missionManager, &MissionManager::inProgressChanged,          this, &MissionController::_inProgressChanged);
-    disconnect(missionManager, &MissionManager::currentItemChanged,         this, &MissionController::_currentMissionItemChanged);
+    disconnect(missionManager, &MissionManager::currentIndexChanged,        this, &MissionController::_currentMissionIndexChanged);
+    disconnect(missionManager, &MissionManager::lastCurrentIndexChanged,    this, &MissionController::resumeMissionIndexChanged);
+    disconnect(missionManager, &MissionManager::resumeMissionReady,         this, &MissionController::resumeMissionReady);
     disconnect(_activeVehicle, &Vehicle::homePositionChanged,               this, &MissionController::_activeVehicleHomePositionChanged);
 
     // We always remove all items on vehicle change. This leaves a user model hole:
@@ -1297,7 +1347,9 @@ void MissionController::_activeVehicleSet(void)
 
     connect(missionManager, &MissionManager::newMissionItemsAvailable,  this, &MissionController::_newMissionItemsAvailableFromVehicle);
     connect(missionManager, &MissionManager::inProgressChanged,         this, &MissionController::_inProgressChanged);
-    connect(missionManager, &MissionManager::currentItemChanged,        this, &MissionController::_currentMissionItemChanged);
+    connect(missionManager, &MissionManager::currentIndexChanged,       this, &MissionController::_currentMissionIndexChanged);
+    connect(missionManager, &MissionManager::lastCurrentIndexChanged,   this, &MissionController::resumeMissionIndexChanged);
+    connect(missionManager, &MissionManager::resumeMissionReady,        this, &MissionController::resumeMissionReady);
     connect(_activeVehicle, &Vehicle::homePositionChanged,              this, &MissionController::_activeVehicleHomePositionChanged);
     connect(_activeVehicle, &Vehicle::defaultCruiseSpeedChanged,        this, &MissionController::_recalcMissionFlightStatus);
     connect(_activeVehicle, &Vehicle::defaultHoverSpeedChanged,         this, &MissionController::_recalcMissionFlightStatus);
@@ -1312,6 +1364,7 @@ void MissionController::_activeVehicleSet(void)
     _activeVehicleHomePositionChanged(_activeVehicle->homePosition());
 
     emit complexMissionItemNamesChanged();
+    emit resumeMissionIndexChanged();
 }
 
 void MissionController::_activeVehicleHomePositionChanged(const QGeoCoordinate& homePosition)
@@ -1323,62 +1376,6 @@ void MissionController::_activeVehicleHomePositionChanged(const QGeoCoordinate& 
         } else {
             qWarning() << "First item is not MissionSettingsItem";
         }
-    }
-}
-
-void MissionController::_setMissionMaxTelemetry(double missionMaxTelemetry)
-{
-    if (!qFuzzyCompare(_missionFlightStatus.maxTelemetryDistance, missionMaxTelemetry)) {
-        _missionFlightStatus.maxTelemetryDistance = missionMaxTelemetry;
-        emit missionMaxTelemetryChanged(missionMaxTelemetry);
-    }
-}
-
-void MissionController::_setMissionDistance(double missionDistance)
-{
-    if (!qFuzzyCompare(_missionFlightStatus.totalDistance, missionDistance)) {
-        _missionFlightStatus.totalDistance = missionDistance;
-        emit missionDistanceChanged(missionDistance);
-    }
-}
-
-void MissionController::_setMissionTime(double missionTime)
-{
-    if (!qFuzzyCompare(_missionFlightStatus.totalTime, missionTime)) {
-        _missionFlightStatus.totalTime = missionTime;
-        emit missionTimeChanged();
-    }
-}
-
-void MissionController::_setMissionHoverTime(double missionHoverTime)
-{
-    if (!qFuzzyCompare(_missionFlightStatus.hoverTime, missionHoverTime)) {
-        _missionFlightStatus.hoverTime = missionHoverTime;
-        emit missionHoverTimeChanged();
-    }
-}
-
-void MissionController::_setMissionHoverDistance(double missionHoverDistance)
-{
-    if (!qFuzzyCompare(_missionFlightStatus.hoverDistance, missionHoverDistance)) {
-        _missionFlightStatus.hoverDistance = missionHoverDistance;
-        emit missionHoverDistanceChanged(missionHoverDistance);
-    }
-}
-
-void MissionController::_setMissionCruiseTime(double missionCruiseTime)
-{
-    if (!qFuzzyCompare(_missionFlightStatus.cruiseTime, missionCruiseTime)) {
-        _missionFlightStatus.cruiseTime = missionCruiseTime;
-        emit missionCruiseTimeChanged();
-    }
-}
-
-void MissionController::_setMissionCruiseDistance(double missionCruiseDistance)
-{
-    if (!qFuzzyCompare(_missionFlightStatus.cruiseDistance, missionCruiseDistance)) {
-        _missionFlightStatus.cruiseDistance = missionCruiseDistance;
-        emit missionCruiseDistanceChanged(missionCruiseDistance);
     }
 }
 
@@ -1478,11 +1475,28 @@ void MissionController::_addMissionSettings(Vehicle* vehicle, QmlObjectListModel
     }
 }
 
-void MissionController::_currentMissionItemChanged(int sequenceNumber)
+int MissionController::resumeMissionIndex(void) const
+{
+
+    int resumeIndex = 0;
+
+    if (!_editMode) {
+        resumeIndex = _activeVehicle->missionManager()->lastCurrentIndex() + (_activeVehicle->firmwarePlugin()->sendHomePositionToVehicle() ? 0 : 1);
+        if (resumeIndex > 1 && resumeIndex != _visualItems->value<VisualMissionItem*>(_visualItems->count() - 1)->sequenceNumber()) {
+            // Resume at the item previous to the item we were heading towards
+            resumeIndex--;
+        } else {
+            resumeIndex = 0;
+        }
+    }
+
+    qDebug() << "resumeIndex" << resumeIndex;
+    return resumeIndex;
+}
+
+void MissionController::_currentMissionIndexChanged(int sequenceNumber)
 {
     if (!_editMode) {
-        bool prevMissionInProgress = missionInProgress();
-
         if (!_activeVehicle->firmwarePlugin()->sendHomePositionToVehicle()) {
             sequenceNumber++;
         }
@@ -1490,10 +1504,6 @@ void MissionController::_currentMissionItemChanged(int sequenceNumber)
         for (int i=0; i<_visualItems->count(); i++) {
             VisualMissionItem* item = qobject_cast<VisualMissionItem*>(_visualItems->get(i));
             item->setIsCurrentItem(item->sequenceNumber() == sequenceNumber);
-        }
-
-        if (prevMissionInProgress != missionInProgress()) {
-            emit missionInProgressChanged();
         }
     }
 }
@@ -1533,18 +1543,18 @@ void MissionController::_scanForAdditionalSettings(QmlObjectListModel* visualIte
         qCDebug(MissionControllerLog) << "MissionController::_scanForAdditionalSettings count:scanIndex" << visualItems->count() << scanIndex;
 
         MissionSettingsItem* settingsItem = qobject_cast<MissionSettingsItem*>(visualItem);
-        if (settingsItem && settingsItem->scanForMissionSettings(visualItems, scanIndex, vehicle)) {
+        if (settingsItem && settingsItem->scanForMissionSettings(visualItems, scanIndex)) {
             continue;
         }
 
         SimpleMissionItem* simpleItem = qobject_cast<SimpleMissionItem*>(visualItem);
-        if (simpleItem && simpleItem->cameraSection()->available()) {
+        if (simpleItem) {
             scanIndex++;
             simpleItem->scanForSections(visualItems, scanIndex, vehicle);
-            continue;
+        } else {
+            // Complex item, can't have sections
+            scanIndex++;
         }
-
-        scanIndex++;
     }
 }
 
@@ -1576,21 +1586,29 @@ QStringList MissionController::complexMissionItemNames(void) const
     return complexItems;
 }
 
-bool MissionController::missionInProgress(void) const
+void MissionController::resumeMission(int resumeIndex)
 {
-    return _visualItems && _visualItems->count() > 1 && (!_visualItems->value<VisualMissionItem*>(0)->isCurrentItem() && !_visualItems->value<VisualMissionItem*>(1)->isCurrentItem());
+    if (!_activeVehicle->firmwarePlugin()->sendHomePositionToVehicle()) {
+        resumeIndex--;
+    }
+    _activeVehicle->missionManager()->generateResumeMission(resumeIndex);
 }
 
-void MissionController::_visualItemsDirtyChanged(bool dirty)
+QGeoCoordinate MissionController::plannedHomePosition(void) const
 {
-    if (dirty) {
-        if (_visualItems->count() > 1) {
-            emit dirtyChanged(true);
-        } else {
-            // This was a change to mission settings with no other mission items added
-            _visualItems->setDirty(false);
-        }
+    if (_settingsItem) {
+        return _settingsItem->coordinate();
     } else {
-        emit dirtyChanged(false);
+        return QGeoCoordinate();
+    }
+}
+
+void MissionController::applyDefaultMissionAltitude(void)
+{
+    double defaultAltitude = _appSettings->defaultMissionItemAltitude()->rawValue().toDouble();
+
+    for (int i=1; i<_visualItems->count(); i++) {
+        VisualMissionItem* item = _visualItems->value<VisualMissionItem*>(i);
+        item->applyNewAltitude(defaultAltitude);
     }
 }

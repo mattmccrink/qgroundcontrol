@@ -42,15 +42,16 @@ QGCView {
     readonly property real      _toolButtonTopMargin:   parent.height - ScreenTools.availableHeight + (ScreenTools.defaultFontPixelHeight / 2)
     readonly property var       _defaultVehicleCoordinate:   QtPositioning.coordinate(37.803784, -122.462276)
 
-    property var    _visualItems:           missionController.visualItems
+    property var    _visualItems:               missionController.visualItems
     property var    _currentMissionItem
-    property int    _currentMissionIndex:   0
-    property bool   _lightWidgetBorders:    editorMap.isSatelliteMap
-    property bool   _addWaypointOnClick:    false
-    property bool   _singleComplexItem:     missionController.complexMissionItemNames.length === 1
-    property real   _toolbarHeight:         _qgcView.height - ScreenTools.availableHeight
-    property int    _editingLayer:          _layerMission
-    property bool   _autoSync:               QGroundControl.settingsManager.appSettings.automaticMissionUpload.rawValue != 0
+    property int    _currentMissionIndex:       0
+    property bool   _lightWidgetBorders:        editorMap.isSatelliteMap
+    property bool   _addWaypointOnClick:        false
+    property bool   _singleComplexItem:         missionController.complexMissionItemNames.length === 1
+    property real   _toolbarHeight:             _qgcView.height - ScreenTools.availableHeight
+    property int    _editingLayer:              _layerMission
+    property bool   _autoSync:                  QGroundControl.settingsManager.appSettings.automaticMissionUpload.rawValue != 0
+    property bool   _switchToFlyAfterUpload:    false
 
     /// The controller which should be called for load/save, send to/from vehicle calls
     property var _syncDropDownController: missionController
@@ -70,7 +71,11 @@ QGCView {
         coordinate.latitude = coordinate.latitude.toFixed(_decimalPlaces)
         coordinate.longitude = coordinate.longitude.toFixed(_decimalPlaces)
         coordinate.altitude = coordinate.altitude.toFixed(_decimalPlaces)
-        var sequenceNumber = missionController.insertComplexMissionItem(complexItemName, coordinate, missionController.visualItems.count)
+        insertComplexMissionItem(complexItemName, coordinate, missionController.visualItems.count)
+    }
+
+    function insertComplexMissionItem(complexItemName, coordinate, index) {
+        var sequenceNumber = missionController.insertComplexMissionItem(complexItemName, coordinate, index)
         setCurrentItem(sequenceNumber)
     }
 
@@ -79,21 +84,81 @@ QGCView {
     property bool _firstRallyLoadComplete:      false
     property bool _firstLoadComplete:           false
 
-    function checkFirstLoadComplete() {
-        if (!_firstLoadComplete && _firstMissionLoadComplete && _firstRallyLoadComplete && _firstFenceLoadComplete) {
-            _firstLoadComplete = true
-            mapFitFunctions.fitMapViewportToAllItems()
-        }
-    }
-
     MapFitFunctions {
         id:                         mapFitFunctions
         map:                        editorMap
-        mapFitViewport:             editorMap.centerViewport
         usePlannedHomePosition:     true
         mapGeoFenceController:      geoFenceController
         mapMissionController:       missionController
         mapRallyPointController:    rallyPointController
+    }
+
+    Connections {
+        target: QGroundControl.settingsManager.appSettings.defaultMissionItemAltitude
+
+        onRawValueChanged: {
+            if (_visualItems.count > 1) {
+                _qgcView.showDialog(applyNewAltitude, qsTr("Apply new alititude"), showDialogDefaultWidth, StandardButton.Yes | StandardButton.No)
+            }
+        }
+    }
+
+    Component {
+        id: applyNewAltitude
+
+        QGCViewMessage {
+            message:    qsTr("You have changed the default altitude for mission items. Would you like to apply that altitude to all the items in the current mission?")
+
+            function accept() {
+                hideDialog()
+                missionController.applyDefaultMissionAltitude()
+            }
+        }
+    }
+
+    Component {
+        id: activeMissionUploadDialogComponent
+
+        QGCViewDialog {
+
+            Column {
+                anchors.fill:   parent
+                spacing:        ScreenTools.defaultFontPixelHeight
+
+                QGCLabel {
+                    width:      parent.width
+                    wrapMode:   Text.WordWrap
+                    text:       qsTr("Your vehicle is currently flying a mission. In order to upload a new or modified mission the current mission will be paused.")
+                }
+
+                QGCLabel {
+                    width:      parent.width
+                    wrapMode:   Text.WordWrap
+                    text:       qsTr("After the mission is uploaded you can adjust the current waypoint and start the mission.")
+                }
+
+                QGCButton {
+                    text:       qsTr("Pause and Upload")
+                    onClicked: {
+                        _activeVehicle.flightMode = _activeVehicle.pauseFlightMode
+                        missionController.sendToVehicle()
+                        hideDialog()
+                        if (_switchToFlyAfterUpload) {
+                            toolbar.showFlyView()
+                        }
+                    }
+                }
+
+                QGCButton {
+                    text:       qsTr("Exit planning (no upload)")
+                    visible:    _switchToFlyAfterUpload
+                    onClicked: {
+                        hideDialog()
+                        toolbar.showFlyView()
+                    }
+                }
+            }
+        }
     }
 
     MissionController {
@@ -106,9 +171,10 @@ QGCView {
             setCurrentItem(0)
         }
 
-        function _denyUpload() {
+        function _denyUpload(switchToFly) {
             if (_activeVehicle && _activeVehicle.armed && _activeVehicle.flightMode === _activeVehicle.missionFlightMode) {
-                _qgcView.showMessage(qsTr("Mission Upload"), qsTr("Your vehicle is currently flying a mission. Upload is not allowed."), StandardButton.Ok)
+                _switchToFlyAfterUpload = switchToFly
+                _qgcView.showDialog(activeMissionUploadDialogComponent, qsTr("Mission Upload"), _qgcView.showDialogDefaultWidth, StandardButton.Cancel)
                 return true
             } else {
                 return false
@@ -118,7 +184,9 @@ QGCView {
         // Users is switching away from Plan View
         function uploadOnSwitch() {
             if (missionController.dirty && _autoSync) {
-                if (!_denyUpload()) {
+                if (_denyUpload(true /* switchToFly */)) {
+                    return false
+                } else {
                     sendToVehicle()
                 }
             }
@@ -126,9 +194,9 @@ QGCView {
         }
 
         function upload() {
-                if (!_denyUpload()) {
-                    sendToVehicle()
-                }
+            if (!_denyUpload(false /* switchToFly */)) {
+                sendToVehicle()
+            }
         }
 
         function loadFromSelectedFile() {
@@ -156,8 +224,6 @@ QGCView {
                 mapFitFunctions.fitMapViewportToMissionItems()
             }
             setCurrentItem(0)
-            _firstMissionLoadComplete = true
-            checkFirstLoadComplete()
         }
     }
 
@@ -187,16 +253,8 @@ QGCView {
             mapFitFunctions.fitMapViewportToFenceItems()
         }
 
-        onLoadComplete: {
-            _firstFenceLoadComplete = true
-            switch (_syncDropDownController) {
-            case geoFenceController:
-                mapFitFunctions.fitMapViewportToFenceItems()
-                break
-            case missionController:
-                checkFirstLoadComplete()
-                break
-            }
+        function upload() {
+            sendToVehicle()
         }
     }
 
@@ -234,16 +292,8 @@ QGCView {
             mapFitFunctions.fitMapViewportToRallyItems()
         }
 
-        onLoadComplete: {
-            _firstRallyLoadComplete = true
-            switch (_syncDropDownController) {
-            case rallyPointController:
-                mapFitFunctions.fitMapViewportToRallyItems()
-                break
-            case missionController:
-                checkFirstLoadComplete()
-                break
-            }
+        function upload() {
+            sendToVehicle()
         }
     }
 
@@ -342,9 +392,12 @@ QGCView {
         anchors.fill:   parent
 
         FlightMap {
-            id:             editorMap
-            anchors.fill:   parent
-            mapName:        "MissionEditor"
+            id:                         editorMap
+            anchors.fill:               parent
+            mapName:                    "MissionEditor"
+            allowGCSLocationCenter:     true
+            allowVehicleLocationCenter: true
+            planView:                   true
 
             // This is the center rectangle of the map which is not obscured by tools
             property rect centerViewport: Qt.rect(_leftToolWidth, _toolbarHeight, editorMap.width - _leftToolWidth - _rightPanelWidth, editorMap.height - _statusHeight - _toolbarHeight)
@@ -474,6 +527,7 @@ QGCView {
                     z:              QGroundControl.zOrderMapItems - 1
                 }
             }
+
             GeoFenceMapVisuals {
                 map:                    editorMap
                 myGeoFenceController:   geoFenceController
@@ -482,35 +536,11 @@ QGCView {
                 planView:               true
             }
 
-            // Rally points on map
-
-            MapItemView {
-                model: rallyPointController.points
-
-                delegate: MapQuickItem {
-                    id:             itemIndicator
-                    anchorPoint.x:  sourceItem.anchorPointX
-                    anchorPoint.y:  sourceItem.anchorPointY
-                    coordinate:     object.coordinate
-                    z:              QGroundControl.zOrderMapItems
-
-                    sourceItem: MissionItemIndexLabel {
-                        id:         itemIndexLabel
-                        label:      qsTr("R", "rally point map item label")
-                        checked:    _editingLayer == _layerRallyPoints ? object == rallyPointController.currentRallyPoint : false
-
-                        onClicked: rallyPointController.currentRallyPoint = object
-
-                        onCheckedChanged: {
-                            if (checked) {
-                                // Setup our drag item
-                                itemDragger.visible = true
-                                itemDragger.coordinateItem = Qt.binding(function() { return object })
-                                itemDragger.mapCoordinateIndicator = Qt.binding(function() { return itemIndicator })
-                            }
-                        }
-                    }
-                }
+            RallyPointMapVisuals {
+                map:                    editorMap
+                myRallyPointController: rallyPointController
+                interactive:            _editingLayer == _layerRallyPoints
+                planView:               true
             }
 
             ToolStrip {
@@ -573,38 +603,14 @@ QGCView {
                             addComplexItem(missionController.complexMissionItemNames[0])
                         }
                         break
-                    case 5:
+                    case 4:
                         editorMap.zoomLevel += 0.5
                         break
-                    case 6:
+                    case 5:
                         editorMap.zoomLevel -= 0.5
                         break
                     }
                 }
-            }
-
-            MapScale {
-                id:                 mapScale
-                anchors.margins:    ScreenTools.defaultFontPixelHeight * (0.66)
-                anchors.bottom:     waypointValuesDisplay.visible ? waypointValuesDisplay.top : parent.bottom
-                anchors.left:       parent.left
-                mapControl:         editorMap
-                visible:            !ScreenTools.isTinyScreen
-            }
-
-            MissionItemStatus {
-                id:                     waypointValuesDisplay
-                anchors.margins:        ScreenTools.defaultFontPixelWidth
-                anchors.left:           parent.left
-                anchors.bottom:         parent.bottom
-                z:                      QGroundControl.zOrderTopMost
-                currentMissionItem:     _currentMissionItem
-                missionItems:           missionController.visualItems
-                expandedWidth:          missionItemEditor.x - (ScreenTools.defaultFontPixelWidth * 2)
-                missionDistance:        missionController.missionDistance
-                missionTime:            missionController.missionTime
-                missionMaxTelemetry:    missionController.missionMaxTelemetry
-                visible:                _editingLayer == _layerMission && !ScreenTools.isShortScreen
             }
         } // FlightMap
 
@@ -625,11 +631,12 @@ QGCView {
             // Plan Element selector (Mission/Fence/Rally)
             Row {
                 id:                 planElementSelectorRow
+                anchors.topMargin:  Math.round(ScreenTools.defaultFontPixelHeight / 3)
                 anchors.top:        parent.top
                 anchors.left:       parent.left
                 anchors.right:      parent.right
                 spacing:            _horizontalMargin
-                visible:            false // WIP: Temporarily remove - QGroundControl.corePlugin.options.enablePlanViewSelector
+                visible:            QGroundControl.corePlugin.options.enablePlanViewSelector
 
                 readonly property real _buttonRadius: ScreenTools.defaultFontPixelHeight * 0.75
 
@@ -650,7 +657,6 @@ QGCView {
                             _syncDropDownController = rallyPointController
                             break
                         }
-                        _syncDropDownController.fitViewportToItems()
                     }
                 }
 
@@ -690,6 +696,7 @@ QGCView {
             // Mission Item Editor
             Item {
                 id:                 missionItemEditor
+                anchors.topMargin:  ScreenTools.defaultFontPixelHeight / 2
                 anchors.top:        planElementSelectorRow.visible ? planElementSelectorRow.bottom : planElementSelectorRow.top
                 anchors.left:       parent.left
                 anchors.right:      parent.right
@@ -723,31 +730,34 @@ QGCView {
                             if (removeIndex >= missionController.visualItems.count) {
                                 removeIndex--
                             }
-                            setCurrentItem(removeIndex)
+                            _currentMissionIndex = -1
+                            rootQgcView.setCurrentItem(removeIndex)
                         }
 
-                        onInsert: insertSimpleMissionItem(editorMap.center, index)
+                        onInsertWaypoint:       insertSimpleMissionItem(editorMap.center, index)
+                        onInsertComplexItem:    insertComplexMissionItem(complexItemName, editorMap.center, index)
                     }
                 } // QGCListView
             } // Item - Mission Item editor
 
             // GeoFence Editor
-            Loader {
-                anchors.top:        planElementSelectorRow.visible ? planElementSelectorRow.bottom : planElementSelectorRow.top
-                anchors.left:       parent.left
-                anchors.right:      parent.right
-                sourceComponent:    _editingLayer == _layerGeoFence ? geoFenceEditorComponent : undefined
-
-                property real   availableWidth:         _rightPanelWidth
-                property real   availableHeight:        ScreenTools.availableHeight
-                property var    myGeoFenceController:   geoFenceController
+            GeoFenceEditor {
+                anchors.topMargin:      ScreenTools.defaultFontPixelHeight / 2
+                anchors.top:            planElementSelectorRow.bottom
+                anchors.left:           parent.left
+                anchors.right:          parent.right
+                availableHeight:        ScreenTools.availableHeight
+                myGeoFenceController:   geoFenceController
+                flightMap:              editorMap
+                visible:                _editingLayer == _layerGeoFence
             }
 
             // Rally Point Editor
 
             RallyPointEditorHeader {
                 id:                 rallyPointHeader
-                anchors.top:        planElementSelectorRow.visible ? planElementSelectorRow.bottom : planElementSelectorRow.top
+                anchors.topMargin:  ScreenTools.defaultFontPixelHeight / 2
+                anchors.top:        planElementSelectorRow.bottom
                 anchors.left:       parent.left
                 anchors.right:      parent.right
                 visible:            _editingLayer == _layerRallyPoints
@@ -756,7 +766,8 @@ QGCView {
 
             RallyPointItemEditor {
                 id:                 rallyPointEditor
-                anchors.top:        planElementSelectorRow.visible ? planElementSelectorRow.bottom : planElementSelectorRow.top
+                anchors.topMargin:  ScreenTools.defaultFontPixelHeight / 2
+                anchors.top:        rallyPointHeader.bottom
                 anchors.left:       parent.left
                 anchors.right:      parent.right
                 visible:            _editingLayer == _layerRallyPoints && rallyPointController.points.count
@@ -764,6 +775,25 @@ QGCView {
                 controller:         rallyPointController
             }
         } // Right panel
+
+        MapScale {
+            id:                 mapScale
+            anchors.margins:    ScreenTools.defaultFontPixelHeight * (0.66)
+            anchors.bottom:     waypointValuesDisplay.visible ? waypointValuesDisplay.top : parent.bottom
+            anchors.left:       parent.left
+            mapControl:         editorMap
+            visible:            !ScreenTools.isTinyScreen
+        }
+
+        MissionItemStatus {
+            id:                 waypointValuesDisplay
+            anchors.margins:    ScreenTools.defaultFontPixelWidth
+            anchors.left:       parent.left
+            anchors.right:      rightPanel.left
+            anchors.bottom:     parent.bottom
+            missionItems:       missionController.visualItems
+            visible:            _editingLayer === _layerMission && !ScreenTools.isShortScreen
+        }
     } // QGCViewPanel
 
     Component {
@@ -799,19 +829,6 @@ QGCView {
                 _syncDropDownController.removeAll()
                 hideDialog()
             }
-        }
-    }
-
-
-
-    Component {
-        id: geoFenceEditorComponent
-
-        GeoFenceEditor {
-            availableWidth:         _rightPanelWidth
-            availableHeight:        ScreenTools.availableHeight
-            myGeoFenceController:   geoFenceController
-            flightMap:              editorMap
         }
     }
 

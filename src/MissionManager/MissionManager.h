@@ -36,7 +36,12 @@ public:
     
     bool inProgress(void);
     const QList<MissionItem*>& missionItems(void) { return _missionItems; }
-    int currentItem(void) { return _currentMissionItem; }
+
+    /// Current mission item as reported by MISSION_CURRENT
+    int currentIndex(void) const { return _currentMissionIndex; }
+
+    /// Last current mission item reported while in Mission flight mode
+    int lastCurrentIndex(void) const { return _lastCurrentIndex; }
     
     void requestMissionItems(void);
     
@@ -51,6 +56,10 @@ public:
 
     /// Removes all mission items from vehicle
     void removeAll(void);
+
+    /// Generates a new mission which starts from the specified index. It will include all the CMD_DO items
+    /// from mission start to resumeIndex in the generate mission.
+    void generateResumeMission(int resumeIndex);
 
     /// Error codes returned in error signal
     typedef enum {
@@ -72,8 +81,10 @@ signals:
     void newMissionItemsAvailable(bool removeAllRequested);
     void inProgressChanged(bool inProgress);
     void error(int errorCode, const QString& errorMsg);
-    void currentItemChanged(int currentItem);
-    
+    void currentIndexChanged(int currentIndex);
+    void lastCurrentIndexChanged(int lastCurrentIndex);
+    void resumeMissionReady(void);
+
 private slots:
     void _mavlinkMessageReceived(const mavlink_message_t& message);
     void _ackTimeout(void);
@@ -103,6 +114,9 @@ private:
     void _finishTransaction(bool success);
     void _requestList(void);
     void _writeMissionCount(void);
+    void _writeMissionItemsWorker(void);
+    void _clearAndDeleteMissionItems(void);
+    QString _lastMissionReqestString(MAV_MISSION_RESULT result);
 
 private:
     Vehicle*            _vehicle;
@@ -114,13 +128,16 @@ private:
     
     bool        _readTransactionInProgress;
     bool        _writeTransactionInProgress;
+    bool        _resumeMission;
     QList<int>  _itemIndicesToWrite;    ///< List of mission items which still need to be written to vehicle
     QList<int>  _itemIndicesToRead;     ///< List of mission items which still need to be requested from vehicle
+    int         _lastMissionRequest;    ///< Index of item last requested by MISSION_REQUEST
     
     QMutex _dataMutex;
     
     QList<MissionItem*> _missionItems;
-    int                 _currentMissionItem;
+    int                 _currentMissionIndex;
+    int                 _lastCurrentIndex;
 };
 
 #endif

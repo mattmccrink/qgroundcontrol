@@ -71,10 +71,10 @@ public:
 
     // The following properties are calculated/set by the MissionController recalc methods
 
-    Q_PROPERTY(double altDifference READ altDifference  WRITE setAltDifference  NOTIFY altDifferenceChanged)    ///< Change in altitude from previous waypoint
-    Q_PROPERTY(double altPercent    READ altPercent     WRITE setAltPercent     NOTIFY altPercentChanged)       ///< Percent of total altitude change in mission altitude
-    Q_PROPERTY(double azimuth       READ azimuth        WRITE setAzimuth        NOTIFY azimuthChanged)          ///< Azimuth to previous waypoint
-    Q_PROPERTY(double distance      READ distance       WRITE setDistance       NOTIFY distanceChanged)         ///< Distance to previous waypoint
+    Q_PROPERTY(double altDifference     READ altDifference      WRITE setAltDifference      NOTIFY altDifferenceChanged)        ///< Change in altitude from previous waypoint
+    Q_PROPERTY(double altPercent        READ altPercent         WRITE setAltPercent         NOTIFY altPercentChanged)           ///< Percent of total altitude change in mission altitude
+    Q_PROPERTY(double azimuth           READ azimuth            WRITE setAzimuth            NOTIFY azimuthChanged)              ///< Azimuth to previous waypoint
+    Q_PROPERTY(double distance          READ distance           WRITE setDistance           NOTIFY distanceChanged)             ///< Distance to previous waypoint
 
     // Property accesors
 
@@ -137,6 +137,9 @@ public:
     ///     @param items List to append to
     ///     @param missionItemParent Parent object for newly created MissionItems
     virtual void appendMissionItems(QList<MissionItem*>& items, QObject* missionItemParent) = 0;
+
+    /// Adjust the altitude of the item if appropriate to the new altitude.
+    virtual void applyNewAltitude(double newAltitude) = 0;
 
     double  missionGimbalYaw    (void) const { return _missionGimbalYaw; }
     double  missionVehicleYaw   (void) const { return _missionVehicleYaw; }

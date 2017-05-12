@@ -3,12 +3,4 @@
 	url = https://github.com/PX4/GpsDrivers.git
 [submodule "libs/mavlink/include/mavlink/v2.0"]
 	path = libs/mavlink/include/mavlink/v2.0
-<<<<<<< HEAD
-	url = git://github.com/mavlink/c_library_v2.git
-[submodule "libs/mavlink/include/mavlink/v1.0"]
-	path = libs/mavlink/include/mavlink/v1.0
-	url = git://github.com/mavlink/c_library_v1.git
-
-=======
 	url = https://github.com/mavlink/c_library_v2.git
->>>>>>> upstream/master

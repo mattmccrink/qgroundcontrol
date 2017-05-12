@@ -383,6 +383,17 @@ const QVariantList& FirmwarePlugin::cameraList(const Vehicle* vehicle)
                                       this);
         _cameraList.append(QVariant::fromValue(metaData));
 
+        metaData = new CameraMetaData(tr("Canon G9 X PowerShot"),
+                                      13.2,
+                                      8.8,
+                                      5488,
+                                      3680,
+                                      10.2,
+                                      true,
+                                      false,
+                                      this);
+        _cameraList.append(QVariant::fromValue(metaData));
+
         metaData = new CameraMetaData(tr("Canon SX260 HS PowerShot"),
                                       6.17,
                                       4.55,
@@ -463,4 +474,13 @@ void FirmwarePlugin::missionFlightSpeedInfo(Vehicle* vehicle, double& hoverSpeed
     AppSettings* appSettings = qgcApp()->toolbox()->settingsManager()->appSettings();
     hoverSpeed = appSettings->offlineEditingHoverSpeed()->rawValue().toDouble();
     cruiseSpeed = appSettings->offlineEditingCruiseSpeed()->rawValue().toDouble();
+}
+
+bool FirmwarePlugin::hasGimbal(Vehicle* vehicle, bool& rollSupported, bool& pitchSupported, bool& yawSupported)
+{
+    Q_UNUSED(vehicle);
+    rollSupported = false;
+    pitchSupported = false;
+    yawSupported = false;
+    return false;
 }

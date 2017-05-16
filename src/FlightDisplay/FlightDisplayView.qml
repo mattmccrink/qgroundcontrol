@@ -418,6 +418,12 @@ QGCView {
                     visible:    _guidedController.showStartMission
                 },
                 {
+                    title:      _guidedController.continueMissionTitle,
+                    text:       _guidedController.continueMissionMessage,
+                    action:     _guidedController.actionContinueMission,
+                    visible:    _guidedController.showContinueMission
+                },
+                {
                     title:      _guidedController.resumeMissionTitle,
                     text:       _guidedController.resumeMissionMessage,
                     action:     _guidedController.actionResumeMission,
@@ -482,11 +488,7 @@ QGCView {
             ]
 
             onClicked: {
-                //-- Dismiss any other dialog
-                rootLoader.sourceComponent  = null
-                guidedActionConfirm.visible = false
-                guidedActionList.visible    = false
-                altitudeSlider.visible      = false
+                guidedActionsController.closeAll()
                 var action = model[index].action
                 if (action === -1) {
                     if (index == 4) {
@@ -506,6 +508,7 @@ QGCView {
             id:                 guidedActionsController
             missionController:  _missionController
             confirmDialog:      guidedActionConfirm
+            altitudeSlider:     _altitudeSlider
             z:                  _flightVideoPipControl.z + 1
 
             onShowStartMissionChanged: {
@@ -525,6 +528,20 @@ QGCView {
                     confirmAction(actionResumeMission)
                 }
             }
+
+            onShowLandAbortChanged: {
+                if (showLandAbort) {
+                    confirmAction(actionLandAbort)
+                }
+            }
+
+            /// Close all dialogs
+            function closeAll() {
+                rootLoader.sourceComponent  = null
+                guidedActionConfirm.visible = false
+                guidedActionList.visible    = false
+                altitudeSlider.visible      = false
+            }
         }
 
         GuidedActionConfirm {
@@ -542,7 +559,6 @@ QGCView {
             anchors.bottom:             parent.bottom
             anchors.horizontalCenter:   parent.horizontalCenter
             guidedController:           _guidedController
-            altitudeSlider:             _altitudeSlider
         }
 
         //-- Altitude slider

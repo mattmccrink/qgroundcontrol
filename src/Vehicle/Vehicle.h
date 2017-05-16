@@ -289,6 +289,7 @@ public:
     Q_PROPERTY(QString              flightMode              READ flightMode             WRITE setFlightMode             NOTIFY flightModeChanged)
     Q_PROPERTY(bool                 hilMode                 READ hilMode                WRITE setHilMode                NOTIFY hilModeChanged)
     Q_PROPERTY(QmlObjectListModel*  trajectoryPoints        READ trajectoryPoints                                       CONSTANT)
+    Q_PROPERTY(QmlObjectListModel*  cameraTriggerPoints     READ cameraTriggerPoints                                    CONSTANT)
     Q_PROPERTY(float                latitude                READ latitude                                               NOTIFY coordinateChanged)
     Q_PROPERTY(float                longitude               READ longitude                                              NOTIFY coordinateChanged)
     Q_PROPERTY(bool                 messageTypeNone         READ messageTypeNone                                        NOTIFY messageTypeChanged)
@@ -350,8 +351,8 @@ public:
     Q_PROPERTY(unsigned int         telemetryRXErrors       READ telemetryRXErrors                                      NOTIFY telemetryRXErrorsChanged)
     Q_PROPERTY(unsigned int         telemetryFixed          READ telemetryFixed                                         NOTIFY telemetryFixedChanged)
     Q_PROPERTY(unsigned int         telemetryTXBuffer       READ telemetryTXBuffer                                      NOTIFY telemetryTXBufferChanged)
-    Q_PROPERTY(unsigned int         telemetryLNoise         READ telemetryLNoise                                        NOTIFY telemetryLNoiseChanged)
-    Q_PROPERTY(unsigned int         telemetryRNoise         READ telemetryRNoise                                        NOTIFY telemetryRNoiseChanged)
+    Q_PROPERTY(int                  telemetryLNoise         READ telemetryLNoise                                        NOTIFY telemetryLNoiseChanged)
+    Q_PROPERTY(int                  telemetryRNoise         READ telemetryRNoise                                        NOTIFY telemetryRNoiseChanged)
     Q_PROPERTY(QVariantList         toolBarIndicators       READ toolBarIndicators                                      CONSTANT)
     Q_PROPERTY(QVariantList         cameraList              READ cameraList                                             CONSTANT)
 
@@ -360,10 +361,13 @@ public:
     Q_PROPERTY(double onboard_control_sensors_present          READ onboard_control_sensors_present NOTIFY sensorsPresentChanged)
 
     /// true: Vehicle is flying, false: Vehicle is on ground
-    Q_PROPERTY(bool flying      READ flying     WRITE setFlying     NOTIFY flyingChanged)
+    Q_PROPERTY(bool flying READ flying NOTIFY flyingChanged)
+
+    /// true: Vehicle is flying, false: Vehicle is on ground
+    Q_PROPERTY(bool landing READ landing NOTIFY landingChanged)
 
     /// true: Vehicle is in Guided mode and can respond to guided commands, false: vehicle cannot respond to direct control commands
-    Q_PROPERTY(bool guidedMode  READ guidedMode WRITE setGuidedMode NOTIFY guidedModeChanged)
+    Q_PROPERTY(bool guidedMode READ guidedMode WRITE setGuidedMode NOTIFY guidedModeChanged)
 
     /// true: Guided mode commands are supported by this vehicle
     Q_PROPERTY(bool guidedModeSupported READ guidedModeSupported CONSTANT)
@@ -420,8 +424,6 @@ public:
 
     Q_INVOKABLE void virtualTabletJoystickValue(double roll, double pitch, double yaw, double thrust);
     Q_INVOKABLE void disconnectInactiveVehicle(void);
-
-    Q_INVOKABLE void clearTrajectoryPoints(void);
 
     /// Command vehicle to return to launch
     Q_INVOKABLE void guidedModeRTL(void);
@@ -519,7 +521,7 @@ public:
     double onboard_control_sensors_health(void);
     double onboard_control_sensors_present(void);
 
-    /// Returns the highest quality link available to the Vehicle. If you need to hold a refernce to this link use
+    /// Returns the highest quality link available to the Vehicle. If you need to hold a reference to this link use
     /// LinkManager::sharedLinkInterfaceForGet to get QSharedPointer for link.
     LinkInterface* priorityLink(void) { return _priorityLink.data(); }
 
@@ -572,13 +574,13 @@ public:
     bool supportsCalibratePressure(void) const;
     bool supportsMotorInterference(void) const;
 
-    void setFlying(bool flying);
     void setGuidedMode(bool guidedMode);
 
     QString prearmError(void) const { return _prearmError; }
     void setPrearmError(const QString& prearmError);
 
     QmlObjectListModel* trajectoryPoints(void) { return &_mapTrajectoryList; }
+    QmlObjectListModel* cameraTriggerPoints(void) { return &_cameraTriggerPoints; }
 
     int  flowImageIndex() { return _flowImageIndex; }
 
@@ -621,6 +623,7 @@ public:
     uint            messagesSent            () { return _messagesSent; }
     uint            messagesLost            () { return _messagesLost; }
     bool            flying                  () const { return _flying; }
+    bool            landing                 () const { return _landing; }
     bool            guidedMode              () const;
     uint8_t         baseMode                () const { return _base_mode; }
     uint32_t        customMode              () const { return _custom_mode; }
@@ -642,8 +645,8 @@ public:
     unsigned int    telemetryRXErrors       () { return _telemetryRXErrors; }
     unsigned int    telemetryFixed          () { return _telemetryFixed; }
     unsigned int    telemetryTXBuffer       () { return _telemetryTXBuffer; }
-    unsigned int    telemetryLNoise         () { return _telemetryLNoise; }
-    unsigned int    telemetryRNoise         () { return _telemetryRNoise; }
+    int             telemetryLNoise         () { return _telemetryLNoise; }
+    int             telemetryRNoise         () { return _telemetryRNoise; }
     bool            autoDisarm              ();
 
     Fact* leaddist          (void) { return &_LeadDistFact;}
@@ -680,6 +683,7 @@ public:
     ///     @param component Component to send to
     ///     @param command MAV_CMD to send
     ///     @param showError true: Display error to user if command failed, false:  no error shown
+    /// Signals: mavCommandResult on success or failure
     void sendMavCommand(int component, MAV_CMD command, bool showError, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f, float param6 = 0.0f, float param7 = 0.0f);
 
     int firmwareMajorVersion(void) const { return _firmwareMajorVersion; }
@@ -732,6 +736,8 @@ public:
     /// @return: true: initial request is complete, false: initial request is still in progress;
     bool initialPlanRequestComplete(void) const { return _initialPlanRequestComplete; }
 
+    void _setFlying(bool flying);
+    void _setLanding(bool landing);
     void _setHomePosition(QGeoCoordinate& homeCoord);
 
 signals:
@@ -751,6 +757,7 @@ signals:
     void connectionLostEnabledChanged(bool connectionLostEnabled);
     void autoDisconnectChanged(bool autoDisconnectChanged);
     void flyingChanged(bool flying);
+    void landingChanged(bool landing);
     void guidedModeChanged(bool guidedMode);
     void prearmErrorChanged(const QString& prearmError);
     void soloFirmwareChanged(bool soloFirmware);
@@ -787,8 +794,8 @@ signals:
     void telemetryRXErrorsChanged   (unsigned int value);
     void telemetryFixedChanged      (unsigned int value);
     void telemetryTXBufferChanged   (unsigned int value);
-    void telemetryLNoiseChanged     (unsigned int value);
-    void telemetryRNoiseChanged     (unsigned int value);
+    void telemetryLNoiseChanged     (int value);
+    void telemetryRNoiseChanged     (int value);
     void autoDisarmChanged          (void);
 
     void firmwareMajorVersionChanged(int major);
@@ -827,7 +834,6 @@ signals:
 
 private slots:
     void _mavlinkMessageReceived(LinkInterface* link, mavlink_message_t message);
-    void _telemetryChanged(LinkInterface* link, unsigned rxerrors, unsigned fixed, int rssi, int remrssi, unsigned txbuf, unsigned noise, unsigned remnoise);
     void _linkInactiveOrDeleted(LinkInterface* link);
     void _sendMessageOnLink(LinkInterface* link, mavlink_message_t message);
     void _sendMessageMultipleNext(void);
@@ -856,8 +862,9 @@ private slots:
     void _rallyPointLoadComplete(void);
     void _sendMavCommandAgain(void);
     void _setGPSHomeLocation(QGeoPositionInfo geoPositionInfo);
-
     void _activeJoystickChanged(void);
+    void _clearTrajectoryPoints(void);
+    void _clearCameraTriggerPoints(void);
 
 private:
     bool _containsLink(LinkInterface* link);
@@ -867,6 +874,7 @@ private:
     void _startJoystick(bool start);
     void _handleHomePosition(mavlink_message_t& message);
     void _handleHeartbeat(mavlink_message_t& message);
+    void _handleRadioStatus(mavlink_message_t& message);
     void _handleRCChannels(mavlink_message_t& message);
     void _handleRCChannelsRaw(mavlink_message_t& message);
     void _handleBatteryStatus(mavlink_message_t& message);
@@ -886,6 +894,8 @@ private:
     void _handleScaledPressure(mavlink_message_t& message);
     void _handleScaledPressure2(mavlink_message_t& message);
     void _handleScaledPressure3(mavlink_message_t& message);
+    void _handleCameraFeedback(const mavlink_message_t& message);
+    void _handleCameraImageCaptured(const mavlink_message_t& message);
     void _missionManagerError(int errorCode, const QString& errorMsg);
     void _geoFenceManagerError(int errorCode, const QString& errorMsg);
     void _rallyPointManagerError(int errorCode, const QString& errorMsg);
@@ -947,6 +957,7 @@ private:
     double          _rcRSSIstore;
     bool            _autoDisconnect;    ///< true: Automatically disconnect vehicle when last connection goes away or lost heartbeat
     bool            _flying;
+    bool            _landing;
     uint32_t        _onboardControlSensorsPresent;
     uint32_t        _onboardControlSensorsEnabled;
     uint32_t        _onboardControlSensorsHealth;
@@ -960,8 +971,8 @@ private:
     uint32_t        _telemetryRXErrors;
     uint32_t        _telemetryFixed;
     uint32_t        _telemetryTXBuffer;
-    uint32_t        _telemetryLNoise;
-    uint32_t        _telemetryRNoise;
+    int             _telemetryLNoise;
+    int             _telemetryRNoise;
     bool            _vehicleCapabilitiesKnown;
     bool            _supportsMissionItemInt;
 
@@ -1024,11 +1035,14 @@ private:
     QTimer  _sendMultipleTimer;
     int     _nextSendMessageMultipleIndex;
 
+    QTime               _flightTimer;
     QTimer              _mapTrajectoryTimer;
     QmlObjectListModel  _mapTrajectoryList;
     QGeoCoordinate      _mapTrajectoryLastCoordinate;
     bool                _mapTrajectoryHaveFirstCoordinate;
     static const int    _mapTrajectoryMsecsBetweenPoints = 1000;
+
+    QmlObjectListModel  _cameraTriggerPoints;
 
     // Toolbox references
     FirmwarePluginManager*      _firmwarePluginManager;
@@ -1069,6 +1083,7 @@ private:
     Fact _altitudeRelativeFact;
     Fact _altitudeAMSLFact;
     Fact _flightDistanceFact;
+    Fact _flightTimeFact;
 
     VehicleGPSFactGroup         _gpsFactGroup;
     VehicleBatteryFactGroup     _batteryFactGroup;
@@ -1088,6 +1103,7 @@ private:
     static const char* _altitudeRelativeFactName;
     static const char* _altitudeAMSLFactName;
     static const char* _flightDistanceFactName;
+    static const char* _flightTimeFactName;
 
     static const char* _gpsFactGroupName;
     static const char* _batteryFactGroupName;

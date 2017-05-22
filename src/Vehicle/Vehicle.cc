@@ -402,8 +402,9 @@ void Vehicle::_commonInit(void)
     _addFactGroup(&_windFactGroup,      _windFactGroupName);
     _addFactGroup(&_vibrationFactGroup, _vibrationFactGroupName);
     _addFactGroup(&_temperatureFactGroup, _temperatureFactGroupName);
+    _addFactGroup(&_turbineFactGroup,_turbineFactGroupName);
 
-    _turbineFactGroup.setVehicle(NULL);
+//    _turbineFactGroup.setVehicle(NULL);
 
     _flightDistanceFact.setRawValue(0);
     _flightTimeFact.setRawValue(0);
@@ -717,9 +718,9 @@ void Vehicle::_handleCompactState(mavlink_message_t&message)
     _gpsRawIntMessageAvailable = true;
     _coordinate.setLatitude(compactState.x  / (double)1E7);
     _coordinate.setLongitude(compactState.y / (double)1E7);
-    _coordinate.setAltitude(-compactState.z  / 1000.0);
+    _coordinate.setAltitude(compactState.z  / 1000.0);
     emit coordinateChanged(_coordinate);
-    _altitudeAMSLFact.setRawValue(-compactState.z / 1000.0);
+    _altitudeAMSLFact.setRawValue(compactState.z / 1000.0);
     double cog = atan2(compactState.vy,compactState.vx)*180.0/M_PI;
     _gpsFactGroup.courseOverGround()->setRawValue(cog);
     _gpsFactGroup.lock()->setRawValue(3);
@@ -2581,25 +2582,25 @@ QStringList Vehicle::unhealthySensors(void) const
         { MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE,      "Absolute pressure" },
         { MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,  "Differential pressure" },
         { MAV_SYS_STATUS_SENSOR_GPS,                    "GPS" },
-        { MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW,           "Optical flow" },
-        { MAV_SYS_STATUS_SENSOR_VISION_POSITION,        "Computer vision position" },
-        { MAV_SYS_STATUS_SENSOR_LASER_POSITION,         "Laser based position" },
-        { MAV_SYS_STATUS_SENSOR_EXTERNAL_GROUND_TRUTH,  "External ground truth" },
-        { MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL,   "Angular rate control" },
-        { MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION, "Attitude stabilization" },
-        { MAV_SYS_STATUS_SENSOR_YAW_POSITION,           "Yaw position" },
-        { MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL,     "Z/altitude control" },
-        { MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL,    "X/Y position control" },
-        { MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS,          "Motor outputs / control" },
-        { MAV_SYS_STATUS_SENSOR_RC_RECEIVER,            "RC receiver" },
-        { MAV_SYS_STATUS_SENSOR_3D_GYRO2,               "Gyro 2" },
-        { MAV_SYS_STATUS_SENSOR_3D_ACCEL2,              "Accelerometer 2" },
-        { MAV_SYS_STATUS_SENSOR_3D_MAG2,                "Magnetometer 2" },
-        { MAV_SYS_STATUS_GEOFENCE,                      "GeoFence" },
-        { MAV_SYS_STATUS_AHRS,                          "AHRS" },
-        { MAV_SYS_STATUS_TERRAIN,                       "Terrain" },
-        { MAV_SYS_STATUS_REVERSE_MOTOR,                 "Motors reversed" },
-        { MAV_SYS_STATUS_LOGGING,                       "Logging" },
+        { MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW,           "Radio" },
+        { MAV_SYS_STATUS_SENSOR_VISION_POSITION,        "RC Control" },
+        { MAV_SYS_STATUS_SENSOR_LASER_POSITION,         "Kalman Filter" },
+        { MAV_SYS_STATUS_SENSOR_EXTERNAL_GROUND_TRUTH,  "SD Data" },
+        { MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL,   "Position control" },
+        { MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION, "Altitude control" },
+        { MAV_SYS_STATUS_SENSOR_YAW_POSITION,           "Rate control" },
+        { MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL,     "Mode" },
+        { MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL,    "Fail" },
+//        { MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS,          "Motor outputs / control" },
+//        { MAV_SYS_STATUS_SENSOR_RC_RECEIVER,            "RC receiver" },
+//        { MAV_SYS_STATUS_SENSOR_3D_GYRO2,               "Gyro 2" },
+//        { MAV_SYS_STATUS_SENSOR_3D_ACCEL2,              "Accelerometer 2" },
+//        { MAV_SYS_STATUS_SENSOR_3D_MAG2,                "Magnetometer 2" },
+//        { MAV_SYS_STATUS_GEOFENCE,                      "GeoFence" },
+//        { MAV_SYS_STATUS_AHRS,                          "AHRS" },
+//        { MAV_SYS_STATUS_TERRAIN,                       "Terrain" },
+//        { MAV_SYS_STATUS_REVERSE_MOTOR,                 "Motors reversed" },
+//        { MAV_SYS_STATUS_LOGGING,                       "Logging" },
     };
 
     for (size_t i=0; i<sizeof(rgSensorInfo)/sizeof(sensorInfo_s); i++) {
@@ -2875,7 +2876,6 @@ const char* TurbineFactGroup::_turbineStateFactName     = "turbineState";
 
 TurbineFactGroup::TurbineFactGroup(QObject* parent)
     : FactGroup(250, ":/json/Vehicle/TurbineFact.json", parent)
-    , _vehicle(NULL)
     , _RPMFact  (0, _RPMFactName, FactMetaData::valueTypeInt32)
     , _EGTFact  (0, _EGTFactName, FactMetaData::valueTypeInt16)
     , _fuelConsumedFact (0, _fuelConsumedFactName, FactMetaData::valueTypeInt16)

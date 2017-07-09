@@ -20,7 +20,6 @@ QGCPitchIndicator       1.0 QGCPitchIndicator.qml
 ValuesWidget            1.0 ValuesWidget.qml
 VehicleHealthWidget     1.0 VehicleHealthWidget.qml
 VibrationWidget         1.0 VibrationWidget.qml
-TurbineWidget           1.0 TurbineWidget.qml
 
 # Map items
 CameraTriggerIndicator      1.0 CameraTriggerIndicator.qml

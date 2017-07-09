@@ -199,9 +199,6 @@ protected: //COMMENTS FOR TEST UNIT
     double roll;
     double pitch;
     double yaw;
-    double speedX;
-    double speedY;
-    double speedZ;
 
     // dongfang: This looks like a candidate for being moved off to a separate class.
     /// IMAGING

@@ -28,7 +28,6 @@ DebugBuild {
 } else {
     DESTDIR  = $${OUT_PWD}/release
 }
-<<<<<<< HEAD
 
 #
 # OS Specific settings
@@ -84,8 +83,6 @@ QGC_APP_DESCRIPTION = "Open source ground control app provided by QGroundControl
 QGC_APP_COPYRIGHT   = "Copyright (C) 2017 QGroundControl Development Team. All rights reserved."
 
 
-=======
->>>>>>> origin/master
 # Load additional config flags from user_config.pri
 exists(user_config.pri):infile(user_config.pri, CONFIG) {
     CONFIG += $$fromfile(user_config.pri, CONFIG)
@@ -586,7 +583,6 @@ WindowsBuild {
     HEADERS += src/stable_headers.h
     CONFIG -= silent
     OTHER_FILES += .appveyor.yml
-    WINRT_MANIFEST.capabilities_device = location
 }
 
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {

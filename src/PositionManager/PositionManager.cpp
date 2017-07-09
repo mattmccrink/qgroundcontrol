@@ -16,12 +16,6 @@ QGCPositionManager::QGCPositionManager(QGCApplication* app, QGCToolbox* toolbox)
     , _updateInterval(0)
     , _currentSource(nullptr)
 {
-    if (qgetenv("QT_NMEA_SERIAL_PORT").isEmpty()){
-        qputenv("QT_NMEA_SERIAL_PORT","COM12");
-    }
-
-    _defaultSource = QGeoPositionInfoSource::createDefaultSource(this);
-    _simulatedSource = new SimulatedPosition();
 
 }
 
@@ -41,7 +35,6 @@ void QGCPositionManager::setToolbox(QGCToolbox *toolbox)
    }
    _simulatedSource = new SimulatedPosition();
 
-    //QGeoCoordinate position(update.coordinate().latitude(), update.coordinate().longitude(), update.coordinate().altitude());
    // Enable this to get a simulated target on desktop
    // if (_defaultSource == nullptr) {
    //     _defaultSource = _simulatedSource;

@@ -19,12 +19,7 @@ quint64 groundTimeUsecs()
 {
     return groundTimeMilliseconds() * 1000;
     //
-<<<<<<< HEAD
     ////
-=======
-
-
->>>>>>> origin/master
 }
 
 quint64 groundTimeMilliseconds()

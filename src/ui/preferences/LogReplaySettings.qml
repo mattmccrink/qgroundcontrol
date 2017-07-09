@@ -66,7 +66,7 @@ Item {
             selectExisting: true
             onAccepted: {
                 if(subEditConfig) {
-                    subEditConfig.fileName = fileDialog.fileUrl.toString().replace("file://", "")
+                    subEditConfig.fileName = fileDialog.fileUrl.toString().replace("file:///", "")
                 }
                 fileDialog.visible = false
             }

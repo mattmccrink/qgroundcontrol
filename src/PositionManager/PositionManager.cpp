@@ -41,7 +41,7 @@ void QGCPositionManager::setToolbox(QGCToolbox *toolbox)
    }
    _simulatedSource = new SimulatedPosition();
 
-    //QGeoCoordinate position(update.coordinate().latitude(), update.coordinate().longitude(), update.coordinate().altitude());
+   //QGeoCoordinate position(update.coordinate().latitude(), update.coordinate().longitude(), update.coordinate().altitude());
    // Enable this to get a simulated target on desktop
    // if (_defaultSource == nullptr) {
    //     _defaultSource = _simulatedSource;

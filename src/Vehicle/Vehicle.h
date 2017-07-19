@@ -325,7 +325,6 @@ public:
     Q_PROPERTY(bool        supportsThrottleModeCenterZero   READ supportsThrottleModeCenterZero                         CONSTANT)
     Q_PROPERTY(bool                 supportsJSButton        READ supportsJSButton                                       CONSTANT)
     Q_PROPERTY(bool                 supportsRadio           READ supportsRadio                                          CONSTANT)
-    Q_PROPERTY(bool               supportsCalibratePressure READ supportsCalibratePressure                              CONSTANT)
     Q_PROPERTY(bool               supportsMotorInterference READ supportsMotorInterference                              CONSTANT)
     Q_PROPERTY(bool                 autoDisconnect          MEMBER _autoDisconnect                                      NOTIFY autoDisconnectChanged)
     Q_PROPERTY(QString              prearmError             READ prearmError            WRITE setPrearmError            NOTIFY prearmErrorChanged)
@@ -574,7 +573,6 @@ public:
     bool supportsThrottleModeCenterZero(void) const;
     bool supportsRadio(void) const;
     bool supportsJSButton(void) const;
-    bool supportsCalibratePressure(void) const;
     bool supportsMotorInterference(void) const;
 
     void setGuidedMode(bool guidedMode);
@@ -734,6 +732,7 @@ public:
     const QVariantList& toolBarIndicators   ();
     const QVariantList& cameraList          (void) const;
 
+    bool capabilitiesKnown(void) const { return _vehicleCapabilitiesKnown; }
     bool supportsMissionItemInt(void) const { return _supportsMissionItemInt; }
 
     /// @true: When flying a mission the vehicle is always facing towards the next waypoint
@@ -742,6 +741,8 @@ public:
     /// The vehicle is responsible for making the initial request for the Plan.
     /// @return: true: initial request is complete, false: initial request is still in progress;
     bool initialPlanRequestComplete(void) const { return _initialPlanRequestComplete; }
+
+    void forceInitialPlanRequestComplete(void) { _initialPlanRequestComplete = true; }
 
     void _setFlying(bool flying);
     void _setLanding(bool landing);
@@ -773,6 +774,7 @@ signals:
     void defaultHoverSpeedChanged(double hoverSpeed);
     void firmwareTypeChanged(void);
     void vehicleTypeChanged(void);
+    void capabilitiesKnownChanged(bool capabilitiesKnown);
 
     //Mod prop pilot
     void sensorsEnabledChanged(double onboard_control_sensors_enabled);

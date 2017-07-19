@@ -20,6 +20,8 @@ const char* AppSettings::offlineEditingFirmwareTypeSettingsName =       "Offline
 const char* AppSettings::offlineEditingVehicleTypeSettingsName =        "OfflineEditingVehicleType";
 const char* AppSettings::offlineEditingCruiseSpeedSettingsName =        "OfflineEditingCruiseSpeed";
 const char* AppSettings::offlineEditingHoverSpeedSettingsName =         "OfflineEditingHoverSpeed";
+const char* AppSettings::offlineEditingAscentSpeedSettingsName =        "OfflineEditingAscentSpeed";
+const char* AppSettings::offlineEditingDescentSpeedSettingsName =       "OfflineEditingDescentSpeed";
 const char* AppSettings::batteryPercentRemainingAnnounceSettingsName =  "batteryPercentRemainingAnnounce";
 const char* AppSettings::defaultMissionItemAltitudeSettingsName =       "DefaultMissionItemAltitude";
 const char* AppSettings::telemetrySaveName =                            "PromptFLightDataSave";
@@ -33,6 +35,7 @@ const char* AppSettings::savePathName =                                 "SavePat
 const char* AppSettings::autoLoadMissionsName =                         "AutoLoadMissions";
 const char* AppSettings::mapboxTokenName =                              "MapboxToken";
 const char* AppSettings::esriTokenName =                                "EsriToken";
+const char* AppSettings::defaultFirmwareTypeName =                      "DefaultFirmwareType";
 
 const char* AppSettings::parameterFileExtension =   "params";
 const char* AppSettings::planFileExtension =        "plan";
@@ -47,6 +50,7 @@ const char* AppSettings::parameterDirectory =       "Parameters";
 const char* AppSettings::telemetryDirectory =       "Telemetry";
 const char* AppSettings::missionDirectory =         "Missions";
 const char* AppSettings::logDirectory =             "Logs";
+const char* AppSettings::videoDirectory =           "Video";
 
 AppSettings::AppSettings(QObject* parent)
     : SettingsGroup(appSettingsGroupName, QString() /* root settings group */, parent)
@@ -54,6 +58,8 @@ AppSettings::AppSettings(QObject* parent)
     , _offlineEditingVehicleTypeFact(NULL)
     , _offlineEditingCruiseSpeedFact(NULL)
     , _offlineEditingHoverSpeedFact(NULL)
+    , _offlineEditingAscentSpeedFact(NULL)
+    , _offlineEditingDescentSpeedFact(NULL)
     , _batteryPercentRemainingAnnounceFact(NULL)
     , _defaultMissionItemAltitudeFact(NULL)
     , _telemetrySaveFact(NULL)
@@ -67,6 +73,7 @@ AppSettings::AppSettings(QObject* parent)
     , _autoLoadMissionsFact(NULL)
     , _mapboxTokenFact(NULL)
     , _esriTokenFact(NULL)
+    , _defaultFirmwareTypeFact(NULL)
 {
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
     qmlRegisterUncreatableType<AppSettings>("QGroundControl.SettingsManager", 1, 0, "AppSettings", "Reference only");
@@ -78,7 +85,11 @@ AppSettings::AppSettings(QObject* parent)
     QString appName = qgcApp()->applicationName();
     if (savePathFact->rawValue().toString().isEmpty() && _nameToMetaDataMap[savePathName]->rawDefaultValue().toString().isEmpty()) {
 #ifdef __mobile__
+#ifdef __ios__
+        QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+#else
         QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation));
+#endif
         savePathFact->setVisible(false);
 #else
         QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
@@ -103,6 +114,7 @@ void AppSettings::_checkSavePathDirectories(void)
         savePathDir.mkdir(telemetryDirectory);
         savePathDir.mkdir(missionDirectory);
         savePathDir.mkdir(logDirectory);
+        savePathDir.mkdir(videoDirectory);
     }
 }
 
@@ -138,6 +150,22 @@ Fact* AppSettings::offlineEditingHoverSpeed(void)
         _offlineEditingHoverSpeedFact = _createSettingsFact(offlineEditingHoverSpeedSettingsName);
     }
     return _offlineEditingHoverSpeedFact;
+}
+
+Fact* AppSettings::offlineEditingAscentSpeed(void)
+{
+    if (!_offlineEditingAscentSpeedFact) {
+        _offlineEditingAscentSpeedFact = _createSettingsFact(offlineEditingAscentSpeedSettingsName);
+    }
+    return _offlineEditingAscentSpeedFact;
+}
+
+Fact* AppSettings::offlineEditingDescentSpeed(void)
+{
+    if (!_offlineEditingDescentSpeedFact) {
+        _offlineEditingDescentSpeedFact = _createSettingsFact(offlineEditingDescentSpeedSettingsName);
+    }
+    return _offlineEditingDescentSpeedFact;
 }
 
 Fact* AppSettings::batteryPercentRemainingAnnounce(void)
@@ -289,6 +317,19 @@ QString AppSettings::logSavePath(void)
     return fullPath;
 }
 
+QString AppSettings::videoSavePath(void)
+{
+    QString fullPath;
+
+    QString path = savePath()->rawValue().toString();
+    if (!path.isEmpty() && QDir(path).exists()) {
+        QDir dir(path);
+        return dir.filePath(videoDirectory);
+    }
+
+    return fullPath;
+}
+
 Fact* AppSettings::autoLoadMissions(void)
 {
     if (!_autoLoadMissionsFact) {
@@ -339,3 +380,11 @@ MAV_TYPE AppSettings::offlineEditingVehicleTypeFromVehicleType(MAV_TYPE vehicleT
     }
 }
 
+Fact* AppSettings::defaultFirmwareType(void)
+{
+    if (!_defaultFirmwareTypeFact) {
+        _defaultFirmwareTypeFact = _createSettingsFact(defaultFirmwareTypeName);
+    }
+
+    return _defaultFirmwareTypeFact;
+}

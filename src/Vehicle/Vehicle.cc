@@ -406,6 +406,16 @@ void Vehicle::_commonInit(void)
 
 //    _turbineFactGroup.setVehicle(NULL);
 
+    // Add firmware-specific fact groups, if provided
+    QMap<QString, FactGroup*>* fwFactGroups = _firmwarePlugin->factGroups();
+    if (fwFactGroups) {
+        QMapIterator<QString, FactGroup*> i(*fwFactGroups);
+        while(i.hasNext()) {
+            i.next();
+            _addFactGroup(i.value(), i.key());
+        }
+    }
+
     _flightDistanceFact.setRawValue(0);
     _flightTimeFact.setRawValue(0);
 }
@@ -488,9 +498,11 @@ void Vehicle::resetCounters()
 
 void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t message)
 {
-
     if (message.sysid != _id && message.sysid != 0) {
-        return;
+        // We allow RADIO_STATUS messages which come from a link the vehicle is using to pass through and be handled
+        if (!(message.msgid == MAVLINK_MSG_ID_RADIO_STATUS && _containsLink(link))) {
+            return;
+        }
     }
 
     if (!_containsLink(link)) {
@@ -802,6 +814,11 @@ void Vehicle::_handleGlobalPositionInt(mavlink_message_t& message)
     mavlink_global_position_int_t globalPositionInt;
     mavlink_msg_global_position_int_decode(&message, &globalPositionInt);
 
+    // ArduPilot sends bogus GLOBAL_POSITION_INT messages with lat/lat/alt 0/0/0 even when it has not gps signal
+    if (globalPositionInt.lat == 0 && globalPositionInt.lon == 0 && globalPositionInt.alt == 0) {
+        return;
+    }
+
     _globalPositionIntMessageAvailable = true;
     //-- Set these here and emit a single signal instead of 3 for the same variable (_coordinate)
     _coordinate.setLatitude(globalPositionInt.lat  / (double)1E7);
@@ -832,6 +849,7 @@ void Vehicle::_setCapabilities(uint64_t capabilityBits)
         _supportsMissionItemInt = true;
     }
     _vehicleCapabilitiesKnown = true;
+    emit capabilitiesKnownChanged(true);
 
     qCDebug(VehicleLog) << QString("Vehicle %1 MISSION_ITEM_INT").arg(_supportsMissionItemInt ? QStringLiteral("supports") : QStringLiteral("does not support"));
 }
@@ -904,7 +922,7 @@ void Vehicle::_handleHilActuatorControls(mavlink_message_t &message)
 
 void Vehicle::_handleCommandAck(mavlink_message_t& message)
 {
-    bool showError = true;
+    bool showError = false;
 
     mavlink_command_ack_t ack;
     mavlink_msg_command_ack_decode(&message, &ack);
@@ -1991,6 +2009,7 @@ void Vehicle::_missionLoadComplete(void)
     // After the initial mission request completes we ask for the geofence
     if (!_geoFenceManagerInitialRequestSent) {
         _geoFenceManagerInitialRequestSent = true;
+        qCDebug(VehicleLog) << "_missionLoadComplete requesting geoFence";
         _geoFenceManager->loadFromVehicle();
     }
 }
@@ -2000,13 +2019,14 @@ void Vehicle::_geoFenceLoadComplete(void)
     // After geofence request completes we ask for the rally points
     if (!_rallyPointManagerInitialRequestSent) {
         _rallyPointManagerInitialRequestSent = true;
+        qCDebug(VehicleLog) << "_missionLoadComplete requesting rally points";
         _rallyPointManager->loadFromVehicle();
     }
 }
 
-
 void Vehicle::_rallyPointLoadComplete(void)
 {
+    qCDebug(VehicleLog) << "_missionLoadComplete _initialPlanRequestComplete = true";
     _initialPlanRequestComplete = true;
 }
 
@@ -2161,11 +2181,6 @@ bool Vehicle::supportsRadio(void) const
 bool Vehicle::supportsJSButton(void) const
 {
     return _firmwarePlugin->supportsJSButton();
-}
-
-bool Vehicle::supportsCalibratePressure(void) const
-{
-    return _firmwarePlugin->supportsCalibratePressure();
 }
 
 bool Vehicle::supportsMotorInterference(void) const

@@ -17,8 +17,6 @@
 #include <QObject>
 #include <QGeoCoordinate>
 #include <QElapsedTimer>
-#include <QGeoPositionInfo>
-#include <QGeoPositionInfoSource>
 
 #include "FactGroup.h"
 #include "LinkInterface.h"
@@ -45,47 +43,6 @@ class ADSBVehicle;
 Q_DECLARE_LOGGING_CATEGORY(VehicleLog)
 
 class Vehicle;
-
-class TurbineFactGroup : public FactGroup
-{
-    Q_OBJECT
-
-public:
-    TurbineFactGroup(QObject* parent=NULL);
-
-    Q_PROPERTY(Fact* RPM        READ RPM        CONSTANT)
-    Q_PROPERTY(Fact* EGT        READ EGT        CONSTANT)
-    Q_PROPERTY(Fact* fuelConsumed           READ fuelConsumed       CONSTANT)
-    Q_PROPERTY(Fact* fuelFlow               READ fuelFlow           CONSTANT)
-    Q_PROPERTY(Fact* fuelRemaining          READ fuelRemaining      CONSTANT)
-    Q_PROPERTY(Fact* turbineState           READ turbineState       CONSTANT)
-
-    Fact*   RPM (void)  { return &_RPMFact;}
-    Fact*   EGT (void)  { return &_EGTFact;}
-    Fact*   fuelConsumed    (void)  { return &_fuelConsumedFact;}
-    Fact*   fuelFlow        (void)  { return &_fuelFlowFact;}
-    Fact*   fuelRemaining   (void)  { return &_fuelRemainingFact;}
-    Fact*   turbineState    (void)  { return &_turbineStateFact;}
-
-    void setVehicle(Vehicle* vehicle);
-
-    static const char* _RPMFactName;
-    static const char* _EGTFactName;
-    static const char* _fuelConsumedFactName;
-    static const char* _fuelFlowFactName;
-    static const char* _fuelRemainingFactName;
-    static const char* _turbineStateFactName;
-
-private:
-    Vehicle*    _vehicle;
-    Fact        _RPMFact;
-    Fact        _EGTFact;
-    Fact        _fuelConsumedFact;
-    Fact        _fuelFlowFact;
-    Fact        _fuelRemainingFact;
-    Fact        _turbineStateFact;
-
-};
 
 class VehicleVibrationFactGroup : public FactGroup
 {
@@ -357,10 +314,6 @@ public:
     Q_PROPERTY(QVariantList         cameraList              READ cameraList                                             CONSTANT)
     Q_PROPERTY(QmlObjectListModel*  adsbVehicles            READ adsbVehicles                                           CONSTANT)
 
-    Q_PROPERTY(double onboard_control_sensors_enabled          READ onboard_control_sensors_enabled NOTIFY sensorsEnabledChanged)
-    Q_PROPERTY(double onboard_control_sensors_health           READ onboard_control_sensors_health NOTIFY sensorsHealthChanged)
-    Q_PROPERTY(double onboard_control_sensors_present          READ onboard_control_sensors_present NOTIFY sensorsPresentChanged)
-
     /// true: Vehicle is flying, false: Vehicle is on ground
     Q_PROPERTY(bool flying READ flying NOTIFY flyingChanged)
 
@@ -382,8 +335,6 @@ public:
     Q_PROPERTY(ParameterManager* parameterManager READ parameterManager CONSTANT)
 
     // FactGroup object model properties
-    //Asymmetric changes
-    Q_PROPERTY(Fact* leaddist           READ leaddist           CONSTANT)
 
     Q_PROPERTY(Fact* roll               READ roll               CONSTANT)
     Q_PROPERTY(Fact* pitch              READ pitch              CONSTANT)
@@ -394,13 +345,12 @@ public:
     Q_PROPERTY(Fact* altitudeRelative   READ altitudeRelative   CONSTANT)
     Q_PROPERTY(Fact* altitudeAMSL       READ altitudeAMSL       CONSTANT)
     Q_PROPERTY(Fact* flightDistance     READ flightDistance     CONSTANT)
+
     Q_PROPERTY(FactGroup* gps         READ gpsFactGroup         CONSTANT)
     Q_PROPERTY(FactGroup* battery     READ batteryFactGroup     CONSTANT)
     Q_PROPERTY(FactGroup* wind        READ windFactGroup        CONSTANT)
     Q_PROPERTY(FactGroup* vibration   READ vibrationFactGroup   CONSTANT)
     Q_PROPERTY(FactGroup* temperature READ temperatureFactGroup CONSTANT)
-
-    Q_PROPERTY(FactGroup* turbine   READ turbineFactGroup   CONSTANT)
 
     Q_PROPERTY(int      firmwareMajorVersion        READ firmwareMajorVersion       NOTIFY firmwareVersionChanged)
     Q_PROPERTY(int      firmwareMinorVersion        READ firmwareMinorVersion       NOTIFY firmwareVersionChanged)
@@ -519,11 +469,6 @@ public:
     MAV_AUTOPILOT firmwareType(void) const { return _firmwareType; }
     MAV_TYPE vehicleType(void) const { return _vehicleType; }
     Q_INVOKABLE QString vehicleTypeName(void) const;
-
-    //Mod prop pilot
-    double onboard_control_sensors_enabled(void);
-    double onboard_control_sensors_health(void);
-    double onboard_control_sensors_present(void);
 
     /// Returns the highest quality link available to the Vehicle. If you need to hold a reference to this link use
     /// LinkManager::sharedLinkInterfaceForGet to get QSharedPointer for link.
@@ -653,8 +598,6 @@ public:
     int             telemetryRNoise         () { return _telemetryRNoise; }
     bool            autoDisarm              ();
 
-    Fact* leaddist          (void) { return &_LeadDistFact;}
-
     Fact* roll              (void) { return &_rollFact; }
     Fact* heading           (void) { return &_headingFact; }
     Fact* pitch             (void) { return &_pitchFact; }
@@ -670,8 +613,6 @@ public:
     FactGroup* windFactGroup        (void) { return &_windFactGroup; }
     FactGroup* vibrationFactGroup   (void) { return &_vibrationFactGroup; }
     FactGroup* temperatureFactGroup (void) { return &_temperatureFactGroup; }
-
-    FactGroup* turbineFactGroup     (void) { return &_turbineFactGroup; }
 
     void setConnectionLostEnabled(bool connectionLostEnabled);
 
@@ -779,11 +720,6 @@ signals:
     void vehicleTypeChanged(void);
     void capabilitiesKnownChanged(bool capabilitiesKnown);
 
-    //Mod prop pilot
-    void sensorsEnabledChanged(double onboard_control_sensors_enabled);
-    void sensorsHealthChanged(double onboard_control_sensors_health);
-    void sensorsPresentChanged(double onboard_control_sensors_present);
-
     void messagesReceivedChanged    ();
     void messagesSentChanged        ();
     void messagesLostChanged        ();
@@ -870,7 +806,6 @@ private slots:
     void _geoFenceLoadComplete(void);
     void _rallyPointLoadComplete(void);
     void _sendMavCommandAgain(void);
-    void _setGPSHomeLocation(QGeoPositionInfo geoPositionInfo);
     void _activeJoystickChanged(void);
     void _clearTrajectoryPoints(void);
     void _clearCameraTriggerPoints(void);
@@ -891,7 +826,6 @@ private:
     void _handleWindCov(mavlink_message_t& message);
     void _handleWind(mavlink_message_t& message);
     void _handleVibration(mavlink_message_t& message);
-    void _handleTurbine(mavlink_message_t& message);
     void _handleExtendedSysState(mavlink_message_t& message);
     void _handleCommandAck(mavlink_message_t& message);
     void _handleAutopilotVersion(LinkInterface* link, mavlink_message_t& message);
@@ -924,15 +858,10 @@ private:
     void _setupAutoDisarmSignalling(void);
     void _setCapabilities(uint64_t capabilityBits);
 
-    void _handleCompactState(mavlink_message_t&message);
-    void _handleTurbineState(mavlink_message_t&message);
-
     int     _id;                    ///< Mavlink system id
     int     _defaultComponentId;
     bool    _active;
     bool    _offlineEditingVehicle; ///< This Vehicle is a "disconnected" vehicle for ui use while offline editing
-
-    bool Hold;
 
     MAV_AUTOPILOT       _firmwareType;
     MAV_TYPE            _vehicleType;
@@ -1027,11 +956,6 @@ private:
     uint8_t _base_mode;     ///< base_mode from HEARTBEAT
     uint32_t _custom_mode;  ///< custom_mode from HEARTBEAT
 
-    //Mod messages prop pilot
-    uint32_t _onboard_control_sensors_present;
-    uint32_t _onboard_control_sensors_enabled;
-    uint32_t _onboard_control_sensors_health;
-
     /// Used to store a message being sent by sendMessageMultiple
     typedef struct {
         mavlink_message_t   message;    ///< Message to send multiple times
@@ -1089,8 +1013,6 @@ private:
 
     // FactGroup facts
 
-    Fact _LeadDistFact;
-
     Fact _rollFact;
     Fact _pitchFact;
     Fact _headingFact;
@@ -1108,9 +1030,6 @@ private:
     VehicleVibrationFactGroup   _vibrationFactGroup;
     VehicleTemperatureFactGroup _temperatureFactGroup;
 
-    TurbineFactGroup            _turbineFactGroup;
-    static const char* _LeadDistFactName;
-
     static const char* _rollFactName;
     static const char* _pitchFactName;
     static const char* _headingFactName;
@@ -1127,8 +1046,6 @@ private:
     static const char* _windFactGroupName;
     static const char* _vibrationFactGroupName;
     static const char* _temperatureFactGroupName;
-
-    static const char* _turbineFactGroupName;
 
     static const int _vehicleUIUpdateRateMSecs = 100;
 

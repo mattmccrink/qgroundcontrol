@@ -589,7 +589,6 @@ WindowsBuild {
     HEADERS += src/stable_headers.h
     CONFIG -= silent
     OTHER_FILES += .appveyor.yml
-    WINRT_MANIFEST.capabilities_device = location
 }
 
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {

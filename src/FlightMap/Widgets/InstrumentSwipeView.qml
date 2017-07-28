@@ -19,7 +19,7 @@ Item {
     property real   _margins:       ScreenTools.defaultFontPixelWidth / 2
     property real   _pageWidth:     _root.width
     property int    _currentPage:   0
-    property int    _maxPage:       4
+    property int    _maxPage:       3
 
     onWidthChanged: showPage(_currentPage)
 
@@ -74,12 +74,6 @@ Item {
                 maxHeight:  _root.maxHeight
             }
             VibrationWidget {
-                width:              _pageWidth
-                textColor:          _root.textColor
-                backgroundColor:    _root.backgroundColor
-                maxHeight:          _root.maxHeight
-            }
-            TurbineWidget {
                 width:              _pageWidth
                 textColor:          _root.textColor
                 backgroundColor:    _root.backgroundColor

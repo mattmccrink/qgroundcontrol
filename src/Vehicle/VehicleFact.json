@@ -63,17 +63,9 @@
     "units":            "m"
 },
 {
-    "name":             "leaddist",
-    "shortDescription": "Lead distance",
-    "type":             "double",
-    "decimalPlaces":    1,
-    "units":            "m"
-},
-{
     "name":             "flightTime",
     "shortDescription": "Flight Time",
     "type":             "elapsedSeconds",
     "decimalPlaces":    1
 }
-
 ]

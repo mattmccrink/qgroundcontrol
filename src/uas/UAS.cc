@@ -76,9 +76,6 @@ UAS::UAS(MAVLinkProtocol* protocol, Vehicle* vehicle, FirmwarePluginManager * fi
     roll(0.0),
     pitch(0.0),
     yaw(0.0),
-    speedX(0.0),
-    speedY(0.0),
-    speedZ(0.0),
 
     imagePackets(0),    // We must initialize to 0, otherwise extended data packets maybe incorrectly thought to be images
 
@@ -358,91 +355,6 @@ void UAS::receiveMessage(mavlink_message_t message)
             }
         }
             break;
-
-//        case MAVLINK_MSG_ID_COMPACT_STATE:
-//        {
-//            mavlink_compact_state_t attitude;
-//            mavlink_msg_compact_state_decode(&message, &attitude);
-//            quint64 time = getUnixReferenceTime(attitude.time_boot_ms);
-
-//            double a = attitude.q1;
-//            double b = attitude.q2;
-//            double c = attitude.q3;
-//            double d = attitude.q4;
-//            double e = qSqrt(a*a+b*b+c*c+d*d);
-//            a /= e;
-//            b /= e;
-//            c /= e;
-//            d /= e;
-
-//            double aSq = a * a;
-//            double bSq = b * b;
-//            double cSq = c * c;
-//            double dSq = d * d;
-//            float dcm[3][3];
-//            dcm[0][0] = aSq + bSq - cSq - dSq;
-//            dcm[0][1] = 2.0 * (b * c - a * d);
-//            dcm[0][2] = 2.0 * (a * c + b * d);
-//            dcm[1][0] = 2.0 * (b * c + a * d);
-//            dcm[1][1] = aSq - bSq + cSq - dSq;
-//            dcm[1][2] = 2.0 * (c * d - a * b);
-//            dcm[2][0] = 2.0 * (b * d - a * c);
-//            dcm[2][1] = 2.0 * (a * b + c * d);
-//            dcm[2][2] = aSq - bSq - cSq + dSq;
-
-//            float phi, theta, psi;
-//            theta = asin(-dcm[2][0]);
-
-//            if (fabs(theta - M_PI_2) < 1.0e-3f) {
-//                phi = 0.0f;
-//                psi = (atan2(dcm[1][2] - dcm[0][1],
-//                        dcm[0][2] + dcm[1][1]) + phi);
-
-//            } else if (fabs(theta + M_PI_2) < 1.0e-3f) {
-//                phi = 0.0f;
-//                psi = atan2f(dcm[1][2] - dcm[0][1],
-//                          dcm[0][2] + dcm[1][1] - phi);
-
-//            } else {
-//                phi = atan2f(dcm[2][1], dcm[2][2]);
-//                psi = atan2f(dcm[1][0], dcm[0][0]);
-//            }
-
-//            speedX = attitude.vx/(double)1000.0;
-//            speedY = attitude.vy/(double)1000.0;
-//            speedZ = attitude.vz/(double)1000.0;
-
-//            _vehicle->airSpeed()->setRawValue(attitude.airspeed/(double)1000.0);
-//            _vehicle->setLatitude(attitude.x/(double)1E7);
-//            _vehicle->setLongitude(attitude.y/(double)1E7);
-//            _vehicle->altitudeAMSL()->setRawValue(attitude.z/(double)1000.0);
-//            _vehicle->groundSpeed()->setRawValue(qSqrt(speedX*speedX+speedY*speedY));
-//            _vehicle->_setCoordinateValid(true); //HACK for compact state estimates
-
-////            globalEstimatorActive = true;
-
-//            if (!wrongComponent)
-//            {
-//                lastAttitude = time;
-//                setRoll(QGC::limitAngleToPMPIf(phi));
-//                setPitch(QGC::limitAngleToPMPIf(theta));
-//                setYaw(QGC::limitAngleToPMPIf(psi));
-
-//                attitudeKnown = true;
-//                emit attitudeChanged(this, getRoll(), getPitch(), getYaw(), time);
-//            }
-//        }
-//            break;
-
-//        case MAVLINK_MSG_ID_TURBINE_STATE:
-//        {
-//            mavlink_turbine_state_t turbine;
-//            mavlink_msg_turbine_state_decode(&message, &turbine);
-//            quint64 time = getUnixReferenceTime(turbine.time_boot_ms);
-//            emit turbineChanged(this,turbine.RPM, turbine.EGT, turbine.FuelConsumed, turbine.FuelFlow, turbine.FuelRemaining, turbine.State,time);
-//        }
-//            break;
-
         case MAVLINK_MSG_ID_HIL_CONTROLS:
         {
             mavlink_hil_controls_t hil;
@@ -1090,20 +1002,20 @@ void UAS::setExternalControlSetpoint(float roll, float pitch, float yaw, float t
     if (countSinceLastTransmission++ >= 5) {
         sendCommand = true;
         countSinceLastTransmission = 0;
-    } /*else if ((!qIsNaN(roll) && roll != manualRollAngle) || (!qIsNaN(pitch) && pitch != manualPitchAngle) ||
+    } else if ((!qIsNaN(roll) && roll != manualRollAngle) || (!qIsNaN(pitch) && pitch != manualPitchAngle) ||
              (!qIsNaN(yaw) && yaw != manualYawAngle) || (!qIsNaN(thrust) && thrust != manualThrust) ||
              buttons != manualButtons) {
         sendCommand = true;
 
         // Ensure that another message will be sent the next time this function is called
         countSinceLastTransmission = 10;
-    }*/
+    }
 
     // Now if we should trigger an update, let's do that
     if (sendCommand) {
         // Save the new manual control inputs
         manualRollAngle = roll;
-//        manualPitchAngle = pitch;
+        manualPitchAngle = pitch;
         manualYawAngle = yaw;
         manualThrust = thrust;
         manualButtons = buttons;
@@ -1222,7 +1134,7 @@ void UAS::setExternalControlSetpoint(float roll, float pitch, float yaw, float t
 
             // Save the new manual control inputs
             manualRollAngle = roll;
-//            manualPitchAngle = pitch;
+            manualPitchAngle = pitch;
             manualYawAngle = yaw;
             manualThrust = thrust;
             manualButtons = buttons;
@@ -1240,66 +1152,12 @@ void UAS::setExternalControlSetpoint(float roll, float pitch, float yaw, float t
             //qDebug() << newRollCommand << newPitchCommand << newYawCommand << newThrustCommand;
 
             // Send the MANUAL_COMMAND message
-//            mavlink_msg_manual_control_pack_chan(mavlink->getSystemId(),
-//                                                 mavlink->getComponentId(),
-//                                                 _vehicle->priorityLink()->mavlinkChannel(),
-//                                                 &message,
-//                                                 this->uasId,
-//                                                 newPitchCommand, newRollCommand, newThrustCommand, newYawCommand, buttons);
-
-            if (qAbs(pitch)>0.05)
-            {
-                manualPitchAngle += pitch/10;
-            }
-            if (manualPitchAngle > 0.5)
-            {
-                manualPitchAngle = 0.5;
-            } else if (manualPitchAngle < -1) {
-                manualPitchAngle = -1;
-            }
-
-            qCDebug(JoystickManagerLog)<<"manual pitch angle"<<manualPitchAngle;
-
-            mavlink_msg_command_long_pack_chan(mavlink->getSystemId(),
+            mavlink_msg_manual_control_pack_chan(mavlink->getSystemId(),
                                                  mavlink->getComponentId(),
                                                  _vehicle->priorityLink()->mavlinkChannel(),
                                                  &message,
                                                  this->uasId,
-                                                 mavlink->getComponentId(),
-                                     MAV_CMD_DO_MOUNT_CONTROL,     // command id
-                                     true,                              // showError
-                                     manualPitchAngle*180,                                 // gyro cal
-                                     roll*180,                                 // mag cal
-                                     yaw*180,                                 // ground pressure
-                                     0.0,                                 // radio cal
-                                     0.0,                                 // accel cal
-                                     0.0,                                 // airspeed cal
-                                     MAV_MOUNT_MODE_MAVLINK_TARGETING);                                // unused
-
-//            _vehicle->sendMessageOnLink(_vehicle->priorityLink(), message);
-
-//            _vehicle->sendMavCommand(_vehicle->defaultComponentId(),
-//                                     MAV_CMD_DO_MOUNT_CONTROL,
-//                                     true,
-//                                     (pitch*500.0+1500.0),
-//                                     (roll*500.0+1500.0),
-//                                     0.0,
-//                                     0.0,
-//                                     0.0,
-//                                     0.0,
-//                                     0.0
-//                                     );
-            qCDebug(JoystickManagerLog)<<"Sending gimbal"<<(pitch*180)<<(roll*180)<<yaw*180;
-//            mavlink_msg_rc_channels_override_pack_chan(mavlink->getSystemId()
-//                                                       mavlink->getComponentId(),
-//                                                       _vehicle->priorityLink()->mavlinkChannel(),
-//                                                       &message,
-//                                                       this->uasId,
-//                                                       mavlink->getComponentId(),
-//                                                       qint16(0),qint16(0),qint16(0),qint16(0),
-//                                                       qint16(0),qint16(0),qint16(pitch*500+1500),qint16(roll*500+1500)
-//                                                       );
-
+                                                 newPitchCommand, newRollCommand, newThrustCommand, newYawCommand, buttons);
         }
 
         _vehicle->sendMessageOnLink(_vehicle->priorityLink(), message);
@@ -1579,33 +1437,14 @@ void UAS::sendHilState(quint64 time_us, float roll, float pitch, float yaw, floa
         q[3] = (cosPhi_2 * cosTheta_2 * sinPsi_2 -
                 sinPhi_2 * sinTheta_2 * cosPsi_2);
 
-        int q1[4];
-
-        q1[0] = qRound(q[0]*(1<<30));
-        q1[1] = qRound(q[1]*(1<<30));
-        q1[2] = qRound(q[2]*(1<<30));
-        q1[3] = qRound(q[3]*(1<<30));
-
-        double rate_scale = 204.8*39*180/M_PI;
-        double acc_scale = 12800*39/9.81;
-
         mavlink_message_t msg;
-//        mavlink_msg_hil_state_quaternion_pack(mavlink->getSystemId(), mavlink->getComponentId(), &msg,
-//                                   time_us, q, rollspeed, pitchspeed, yawspeed,
-//                                   lat*1e7f, lon*1e7f, alt*1000, vx*100, vy*100, vz*100, ind_airspeed*100, true_airspeed*100, xacc*1000/9.81, yacc*1000/9.81, zacc*1000/9.81);
-        mavlink_msg_hil_propeller_state_quaternion_pack_chan(mavlink->getSystemId(),
-                                                        mavlink->getComponentId(),
-                                                        _vehicle->priorityLink()->mavlinkChannel(),
-                                                        &msg,
-                                                        time_us, q1,(int32_t) (rollspeed*rate_scale),(int32_t) (pitchspeed*rate_scale), (int32_t) (yawspeed*rate_scale),
-                                                        (int32_t) (xacc*acc_scale), (int32_t) (yacc*acc_scale), (int32_t) (zacc*acc_scale),
-                                                        (int32_t) (lat*1e7f), (int32_t) (lon*1e7f), (int32_t) (alt*1000.0),
-                                                        (int16_t) (vx*100.0), (int16_t) (vy*100.0), (int16_t) (vz*100.0),
-                                                        (int16_t) (ind_airspeed*100.0), (int16_t) (true_airspeed*100.0),
-                                                        (int16_t) 0, (int16_t) 0, (int16_t) 0);
-
+        mavlink_msg_hil_state_quaternion_pack_chan(mavlink->getSystemId(),
+                                                   mavlink->getComponentId(),
+                                                   _vehicle->priorityLink()->mavlinkChannel(),
+                                                   &msg,
+                                                   time_us, q, rollspeed, pitchspeed, yawspeed,
+                                                   lat*1e7f, lon*1e7f, alt*1000, vx*100, vy*100, vz*100, ind_airspeed*100, true_airspeed*100, xacc*1000/9.81, yacc*1000/9.81, zacc*1000/9.81);
         _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
-
     }
     else
     {

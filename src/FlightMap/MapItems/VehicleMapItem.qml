@@ -21,6 +21,7 @@ MapQuickItem {
     property var    vehicle                                                         /// Vehicle object, undefined for ADSB vehicle
     property var    map
     property double altitude:       Number.NaN                                      ///< NAN to not show
+    property string callsign:       ""                                              ///< Vehicle callsign
     property double heading:        vehicle ? vehicle.heading.value : Number.NaN    ///< Vehicle heading, NAN for none
     property real   size:           _adsbVehicle ? _adsbSize : _uavSize             /// Size for icon
 
@@ -32,15 +33,17 @@ MapQuickItem {
     property real   _uavSize:       ScreenTools.defaultFontPixelHeight * 5
     property real   _adsbSize:      ScreenTools.defaultFontPixelHeight * 1.5
     property var    _map:           map
+    property bool   _multiVehicle:  QGroundControl.multiVehicleManager.vehicles.count > 1
 
     sourceItem: Item {
-        id:     vehicleItem
-        width:  vehicleIcon.width
-        height: vehicleIcon.height
+        id:         vehicleItem
+        width:      vehicleIcon.width
+        height:     vehicleIcon.height
+        opacity:    vehicle ? (vehicle.active ? 1.0 : 0.5) : 1.0
 
         Image {
             id:                 vehicleIcon
-            source:             _adsbVehicle ? "/qmlimages/adsbVehicle.svg" : (map.isSatelliteMap ? vehicle.vehicleImageOpaque : vehicle.vehicleImageOutline)
+            source:             _adsbVehicle ? "/qmlimages/adsbVehicle.svg" : vehicle.vehicleImageOpaque
             mipmap:             true
             width:              size
             sourceSize.width:   size
@@ -54,15 +57,31 @@ MapQuickItem {
         }
 
         QGCMapLabel {
+            id:                         vehicleLabel
             anchors.top:                parent.bottom
             anchors.horizontalCenter:   parent.horizontalCenter
             map:                        _map
-            text:                       altText
+            text:                       vehicleLabelText
             font.pointSize:             ScreenTools.smallFontPointSize
-            visible:                    !isNaN(altitude)
+            visible:                    _adsbVehicle ? !isNaN(altitude) : _multiVehicle
 
-            property string altText: visible ? QGroundControl.metersToAppSettingsDistanceUnits(altitude).toFixed(0) + " " + QGroundControl.appSettingsDistanceUnitsString : ""
+            property string vehicleLabelText: visible ?
+                                                  (_adsbVehicle ?
+                                                       QGroundControl.metersToAppSettingsDistanceUnits(altitude).toFixed(0) + " " + QGroundControl.appSettingsDistanceUnitsString :
+                                                       (_multiVehicle ? qsTr("Vehicle %1").arg(vehicle.id) : "")) :
+                                                  ""
 
+        }
+
+        QGCMapLabel {
+            anchors.top:                vehicleLabel.bottom
+            anchors.horizontalCenter:   parent.horizontalCenter
+            map:                        _map
+            text:                       vehicleLabelText
+            font.pointSize:             ScreenTools.smallFontPointSize
+            visible:                    _adsbVehicle ? !isNaN(altitude) : _multiVehicle
+
+            property string vehicleLabelText: visible && _adsbVehicle ? callsign : ""
         }
     }
 }

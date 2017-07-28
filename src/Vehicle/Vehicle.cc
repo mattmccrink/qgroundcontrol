@@ -1763,7 +1763,10 @@ bool Vehicle::active(void)
 
 void Vehicle::setActive(bool active)
 {
-    _active = active;
+    if (_active != active) {
+        _active = active;
+        emit activeChanged(_active);
+    }
 
     _startJoystick(_active);
 }
@@ -2832,12 +2835,20 @@ bool Vehicle::autoDisarm(void)
 void Vehicle::_handleADSBVehicle(const mavlink_message_t& message)
 {
     mavlink_adsb_vehicle_t adsbVehicle;
+    static const int maxTimeSinceLastSeen = 15;
 
     mavlink_msg_adsb_vehicle_decode(&message, &adsbVehicle);
     if (adsbVehicle.flags | ADSB_FLAGS_VALID_COORDS) {
         if (_adsbICAOMap.contains(adsbVehicle.ICAO_address)) {
-            _adsbICAOMap[adsbVehicle.ICAO_address]->update(adsbVehicle);
-        } else {
+            if (adsbVehicle.tslc > maxTimeSinceLastSeen) {
+                ADSBVehicle* vehicle = _adsbICAOMap[adsbVehicle.ICAO_address];
+                _adsbVehicles.removeOne(vehicle);
+                _adsbICAOMap.remove(adsbVehicle.ICAO_address);
+                vehicle->deleteLater();
+            } else {
+                _adsbICAOMap[adsbVehicle.ICAO_address]->update(adsbVehicle);
+            }
+        } else if (adsbVehicle.tslc <= maxTimeSinceLastSeen) {
             ADSBVehicle* vehicle = new ADSBVehicle(adsbVehicle, this);
             _adsbICAOMap[adsbVehicle.ICAO_address] = vehicle;
             _adsbVehicles.append(vehicle);

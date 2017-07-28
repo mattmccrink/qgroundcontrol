@@ -54,6 +54,7 @@ thirdParty/qserialport-build-desktop/
 thirdParty/qserialport/bin/
 thirdParty/qserialport/lib/
 libs/thirdParty/libxbee/lib/
+libs/mavlink/include/mavlink/v1.0/*
 GeneratedFiles/
 gstreamer-1.0-android*
 

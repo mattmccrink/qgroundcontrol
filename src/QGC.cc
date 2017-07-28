@@ -18,8 +18,6 @@ namespace QGC
 quint64 groundTimeUsecs()
 {
     return groundTimeMilliseconds() * 1000;
-    //
-    ////
 }
 
 quint64 groundTimeMilliseconds()

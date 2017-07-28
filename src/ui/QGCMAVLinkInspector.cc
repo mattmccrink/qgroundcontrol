@@ -47,7 +47,7 @@ QGCMAVLinkInspector::QGCMAVLinkInspector(const QString& title, QAction* action, 
     // Attach the UI's refresh rate to a timer.
     connect(&updateTimer, &QTimer::timeout, this, &QGCMAVLinkInspector::refreshView);
     updateTimer.start(updateInterval);
-    
+
     loadSettings();
 }
 
@@ -95,7 +95,7 @@ void QGCMAVLinkInspector::addComponent(int uas, int component, const QString& na
 {
     Q_UNUSED(component);
     Q_UNUSED(name);
-    
+
     if (uas != selectedSystemID) return;
 
     rebuildComponentList();
@@ -136,7 +136,7 @@ void QGCMAVLinkInspector::clearView()
         iteTree.value() = NULL;
     }
     uasTreeWidgetItems.clear();
-    
+
     QMap<int, QMap<int, float>* >::iterator iteHz;
     for (iteHz=uasMessageHz.begin(); iteHz!=uasMessageHz.end();++iteHz)
     {
@@ -296,7 +296,7 @@ void QGCMAVLinkInspector::receiveMessage(LinkInterface* link,mavlink_message_t m
     Q_UNUSED(link);
 
     quint64 receiveTime;
-    
+
     if (selectedSystemID != 0 && selectedSystemID != message.sysid) return;
     if (selectedComponentID != 0 && selectedComponentID != message.compid) return;
 
@@ -337,7 +337,7 @@ void QGCMAVLinkInspector::receiveMessage(LinkInterface* link,mavlink_message_t m
     QMap<int, QMap<int, quint64>* >::const_iterator ite = uasLastMessageUpdate.find(message.sysid);
     QMap<int, quint64>* lastMsgUpdate = ite.value();
     while((ite != uasLastMessageUpdate.end()) && (ite.key() == message.sysid))
-    {   
+    {
         if(ite.value()->contains(message.msgid))
         {
             msgFound = true;
@@ -424,7 +424,7 @@ void QGCMAVLinkInspector::updateField(mavlink_message_t* msg, const mavlink_mess
 {
     // Add field tree widget item
     item->setData(0, Qt::DisplayRole, QVariant(msgInfo->fields[fieldid].name));
-    
+
     bool msgFound = false;
     QMap<int, mavlink_message_t* >::const_iterator iteMsg = uasMessageStorage.find(msg->sysid);
     mavlink_message_t* uasMessage = iteMsg.value();

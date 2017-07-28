@@ -281,6 +281,16 @@ VideoReceiver::start()
             break;
         }
 
+        if ((decoder = gst_element_factory_make("avdec_h264", "h264-decoder")) == NULL) {
+            qCritical() << "VideoReceiver::start() failed. Error with gst_element_factory_make('avdec_h264')";
+            break;
+        }
+
+        if ((video = gst_element_factory_make("videoconvert", "colorspace")) == NULL) {
+            qCritical() << "VideoReceiver::start() failed. Error with gst_element_factory_make('videoconvert')";
+            break;
+        }
+
         if((_tee = gst_element_factory_make("tee", NULL)) == NULL)  {
             qCritical() << "VideoReceiver::start() failed. Error with gst_element_factory_make('tee')";
             break;
@@ -301,9 +311,10 @@ VideoReceiver::start()
             break;
         }
 
-        gst_bin_add_many(GST_BIN(_pipeline), dataSource, demux, parser, _tee, queue, decoder, queue1, _videoSink, NULL);
+        gst_bin_add_many(GST_BIN(_pipeline), dataSource, demux, parser,video, _tee, queue, decoder, queue1, _videoSink, NULL);
 
         if(isUdp) {
+
             // Link the pipeline in front of the tee
             if(!gst_element_link_many(dataSource, demux, parser, _tee, queue, decoder, queue1, _videoSink, NULL)) {
                 qCritical() << "Unable to link elements.";
@@ -316,7 +327,7 @@ VideoReceiver::start()
             }
         }
 
-        dataSource = demux = parser = queue = decoder = NULL;
+        dataSource = demux = parser = queue = decoder = video = NULL;
 
         GstBus* bus = NULL;
 
@@ -342,6 +353,11 @@ VideoReceiver::start()
         if (decoder != NULL) {
             gst_object_unref(decoder);
             decoder = NULL;
+        }
+
+        if (video != NULL) {
+            gst_object_unref(video);
+            video = NULL;
         }
 
         if (parser != NULL) {

@@ -8,6 +8,7 @@
  ****************************************************************************/
 
 
+#include "MissionCommandUIInfo.h"
 #include "MissionController.h"
 #include "MultiVehicleManager.h"
 #include "MissionManager.h"
@@ -25,6 +26,7 @@
 #include "MissionSettingsItem.h"
 #include "QGCQGeoCoordinate.h"
 #include "PlanMasterController.h"
+#include "KML.h"
 
 #ifndef __mobile__
 #include "MainWindow.h"
@@ -254,6 +256,44 @@ bool MissionController::_convertToMissionItems(QmlObjectListModel* visualMission
     }
 
     return endActionSet;
+}
+
+void MissionController::convertToKMLDocument(QDomDocument& document)
+{
+    QJsonObject missionJson;
+    QmlObjectListModel* visualItems = new QmlObjectListModel();
+    QList<MissionItem*> missionItens;
+    QString error;
+    save(missionJson);
+    _loadItemsFromJson(missionJson, visualItems, error);
+    _convertToMissionItems(visualItems, missionItens, this);
+
+    float altitude = missionJson[_jsonPlannedHomePositionKey].toArray()[2].toDouble();
+
+    QString coord;
+    QStringList coords;
+    // Drop home position
+    bool dropPoint = true;
+    for(const auto& item : missionItens) {
+        if(dropPoint) {
+            dropPoint = false;
+            continue;
+        }
+        const MissionCommandUIInfo* uiInfo = \
+            qgcApp()->toolbox()->missionCommandTree()->getUIInfo(_controllerVehicle, item->command());
+
+        if (uiInfo && uiInfo->specifiesCoordinate() && !uiInfo->isStandaloneCoordinate()) {
+            coord = QString::number(item->param6(),'f',7) \
+                + "," \
+                + QString::number(item->param5(),'f',7) \
+                + "," \
+                + QString::number(item->param7() + altitude,'f',2);
+            coords.append(coord);
+        }
+    }
+    Kml kml;
+    kml.points(coords);
+    kml.save(document);
 }
 
 void MissionController::sendItemsToVehicle(Vehicle* vehicle, QmlObjectListModel* visualMissionItems)
@@ -1206,13 +1246,10 @@ void MissionController::_recalcMissionFlightStatus()
             minAltSeen = std::min(minAltSeen, absoluteAltitude);
             maxAltSeen = std::max(maxAltSeen, absoluteAltitude);
 
-            if (!item->exitCoordinateSameAsEntry()) {
-                absoluteAltitude = item->exitCoordinate().altitude();
-                if (item->exitCoordinateHasRelativeAltitude()) {
-                    absoluteAltitude += homePositionAltitude;
-                }
-                minAltSeen = std::min(minAltSeen, absoluteAltitude);
-                maxAltSeen = std::max(maxAltSeen, absoluteAltitude);
+            double terrainAltitude = item->terrainAltitude();
+            if (!qIsNaN(terrainAltitude)) {
+                minAltSeen = std::min(minAltSeen, terrainAltitude);
+                maxAltSeen = std::max(maxAltSeen, terrainAltitude);
             }
 
             if (!item->isStandaloneCoordinate()) {
@@ -1290,8 +1327,12 @@ void MissionController::_recalcMissionFlightStatus()
             }
             if (altRange == 0.0) {
                 item->setAltPercent(0.0);
+                item->setTerrainPercent(qQNaN());
             } else {
                 item->setAltPercent((absoluteAltitude - minAltSeen) / altRange);
+                if (!qIsNaN(item->terrainAltitude())) {
+                    item->setTerrainPercent((item->terrainAltitude() - minAltSeen) / altRange);
+                }
             }
         }
     }
@@ -1372,7 +1413,7 @@ void MissionController::_initAllVisualItems(void)
         _settingsItem->setIsCurrentItem(true);
     }
 
-    if (!_editMode && _managerVehicle->homePosition().isValid()) {
+    if (_managerVehicle->homePosition().isValid()) {
         _settingsItem->setCoordinate(_managerVehicle->homePosition());
     }
 
@@ -1419,6 +1460,7 @@ void MissionController::_initVisualItem(VisualMissionItem* visualItem)
     connect(visualItem, &VisualMissionItem::exitCoordinateHasRelativeAltitudeChanged,   this, &MissionController::_recalcWaypointLines);
     connect(visualItem, &VisualMissionItem::specifiedFlightSpeedChanged,                this, &MissionController::_recalcMissionFlightStatus);
     connect(visualItem, &VisualMissionItem::specifiedGimbalYawChanged,                  this, &MissionController::_recalcMissionFlightStatus);
+    connect(visualItem, &VisualMissionItem::terrainAltitudeChanged,                     this, &MissionController::_recalcMissionFlightStatus);
     connect(visualItem, &VisualMissionItem::lastSequenceNumberChanged,                  this, &MissionController::_recalcSequence);
 
     if (visualItem->isSimpleItem()) {
@@ -1476,6 +1518,7 @@ void MissionController::managerVehicleChanged(Vehicle* managerVehicle)
     connect(_missionManager, &MissionManager::currentIndexChanged,      this, &MissionController::_currentMissionIndexChanged);
     connect(_missionManager, &MissionManager::lastCurrentIndexChanged,  this, &MissionController::resumeMissionIndexChanged);
     connect(_missionManager, &MissionManager::resumeMissionReady,       this, &MissionController::resumeMissionReady);
+    connect(_missionManager, &MissionManager::resumeMissionUploadFail,  this, &MissionController::resumeMissionUploadFail);
     connect(_managerVehicle, &Vehicle::homePositionChanged,             this, &MissionController::_managerVehicleHomePositionChanged);
     connect(_managerVehicle, &Vehicle::defaultCruiseSpeedChanged,       this, &MissionController::_recalcMissionFlightStatus);
     connect(_managerVehicle, &Vehicle::defaultHoverSpeedChanged,        this, &MissionController::_recalcMissionFlightStatus);
@@ -1494,7 +1537,7 @@ void MissionController::_managerVehicleHomePositionChanged(const QGeoCoordinate&
     if (_visualItems) {
         MissionSettingsItem* settingsItem = qobject_cast<MissionSettingsItem*>(_visualItems->get(0));
         if (settingsItem) {
-            settingsItem->setCoordinate(homePosition);
+            settingsItem->setHomePositionFromVehicle(homePosition);
         } else {
             qWarning() << "First item is not MissionSettingsItem";
         }

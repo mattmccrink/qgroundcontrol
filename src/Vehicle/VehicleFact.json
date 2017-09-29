@@ -65,7 +65,13 @@
 {
     "name":             "leaddist",
     "shortDescription": "Lead distance",
-    "type":             "double",
+},
+{
+    "name":             "distanceToHome",
+    "shortDescription": "Distance to Home",
+},
+{
+   "type":             "double",
     "decimalPlaces":    1,
     "units":            "m"
 },

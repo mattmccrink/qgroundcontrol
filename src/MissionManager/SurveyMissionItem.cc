@@ -14,6 +14,8 @@
 #include "QGCGeo.h"
 #include "QGroundControlQmlGlobal.h"
 #include "QGCQGeoCoordinate.h"
+#include "SettingsManager.h"
+#include "AppSettings.h"
 
 #include <QPolygonF>
 
@@ -115,6 +117,11 @@ SurveyMissionItem::SurveyMissionItem(Vehicle* vehicle, QObject* parent)
     // NULL check since object creation during unit testing passes NULL for vehicle
     if (_vehicle && _vehicle->multiRotor() && _turnaroundDistFact.rawValue().toDouble() == _turnaroundDistFact.rawDefaultValue().toDouble()) {
         _turnaroundDistFact.setRawValue(5);
+    }
+
+    // We override the grid altitude to the mission default
+    if (_manualGridFact.rawValue().toBool() || _fixedValueIsAltitudeFact.rawValue().toBool()) {
+        _gridAltitudeFact.setRawValue(qgcApp()->toolbox()->settingsManager()->appSettings()->defaultMissionItemAltitude()->rawValue());
     }
 
     connect(&_gridSpacingFact,                  &Fact::valueChanged,                        this, &SurveyMissionItem::_generateGrid);
@@ -740,7 +747,9 @@ void SurveyMissionItem::_generateGrid(void)
     _setSurveyDistance(surveyDistance);
 
     if (cameraShots == 0 && _triggerCamera()) {
-        cameraShots = (int)ceil(surveyDistance / _triggerDistance());
+        cameraShots = (int)floor(surveyDistance / _triggerDistance());
+        // Take into account immediate camera trigger at waypoint entry
+        cameraShots++;
     }
     _setCameraShots(cameraShots);
 
@@ -1058,7 +1067,9 @@ int SurveyMissionItem::_gridGenerator(const QList<QPointF>& polygonPoints,  QLis
     // Calc camera shots here if there are no images in turnaround
     if (_triggerCamera() && !_imagesEverywhere()) {
         for (int i=0; i<resultLines.count(); i++) {
-            cameraShots += (int)ceil(resultLines[i].length() / _triggerDistance());
+            cameraShots += (int)floor(resultLines[i].length() / _triggerDistance());
+            // Take into account immediate camera trigger at waypoint entry
+            cameraShots++;
         }
     }
 
@@ -1361,6 +1372,7 @@ double SurveyMissionItem::_turnaroundDistance(void) const
 
 void SurveyMissionItem::applyNewAltitude(double newAltitude)
 {
+    _fixedValueIsAltitudeFact.setRawValue(true);
     _gridAltitudeFact.setRawValue(newAltitude);
 }
 

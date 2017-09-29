@@ -460,7 +460,7 @@ void SimpleMissionItem::_rebuildNaNFacts(void)
                 if (!firmwareVehicle) {
                     firmwareVehicle = _vehicle;
                 }
-                bool hideWaypointHeading = (command == MAV_CMD_NAV_WAYPOINT) && (i == 4) && firmwareVehicle->firmwarePlugin()->vehicleYawsToNextWaypointInMission(firmwareVehicle);
+                bool hideWaypointHeading = (command == MAV_CMD_NAV_WAYPOINT || command == MAV_CMD_NAV_TAKEOFF) && (i == 4) && firmwareVehicle->firmwarePlugin()->vehicleYawsToNextWaypointInMission(firmwareVehicle);
                 if (hideWaypointHeading) {
                     continue;
                 }
@@ -755,13 +755,11 @@ void SimpleMissionItem::_updateOptionalSections(void)
     connect(_cameraSection, &CameraSection::dirtyChanged,               this, &SimpleMissionItem::_sectionDirtyChanged);
     connect(_cameraSection, &CameraSection::itemCountChanged,           this, &SimpleMissionItem::_updateLastSequenceNumber);
     connect(_cameraSection, &CameraSection::availableChanged,           this, &SimpleMissionItem::specifiedGimbalYawChanged);
-    connect(_cameraSection, &CameraSection::specifyGimbalChanged,       this, &SimpleMissionItem::specifiedGimbalYawChanged);
     connect(_cameraSection, &CameraSection::specifiedGimbalYawChanged,  this, &SimpleMissionItem::specifiedGimbalYawChanged);
 
-    connect(_speedSection,                  &SpeedSection::dirtyChanged,                this, &SimpleMissionItem::_sectionDirtyChanged);
-    connect(_speedSection,                  &SpeedSection::itemCountChanged,            this, &SimpleMissionItem::_updateLastSequenceNumber);
-    connect(_speedSection,                  &SpeedSection::specifyFlightSpeedChanged,   this, &SimpleMissionItem::specifiedFlightSpeedChanged);
-    connect(_speedSection->flightSpeed(),   &Fact::rawValueChanged,                     this, &SimpleMissionItem::specifiedFlightSpeedChanged);
+    connect(_speedSection,  &SpeedSection::dirtyChanged,                this, &SimpleMissionItem::_sectionDirtyChanged);
+    connect(_speedSection,  &SpeedSection::itemCountChanged,            this, &SimpleMissionItem::_updateLastSequenceNumber);
+    connect(_speedSection,  &SpeedSection::specifiedFlightSpeedChanged, this, &SimpleMissionItem::specifiedFlightSpeedChanged);
 
     emit cameraSectionChanged(_cameraSection);
     emit speedSectionChanged(_speedSection);

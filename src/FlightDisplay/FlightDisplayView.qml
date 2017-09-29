@@ -44,11 +44,12 @@ QGCView {
     property var    _rallyPointController:  _planMasterController.rallyPointController
     property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle
     property var    _videoReceiver:         QGroundControl.videoManager.videoReceiver
+    property bool   _recordingVideo:        _videoReceiver && _videoReceiver.recording
     property bool   _mainIsMap:             QGroundControl.videoManager.hasVideo ? QGroundControl.loadBoolGlobalSetting(_mainIsMapKey,  true) : true
     property bool   _isPipVisible:          QGroundControl.videoManager.hasVideo ? QGroundControl.loadBoolGlobalSetting(_PIPVisibleKey, true) : false
     property real   _savedZoomLevel:        0
     property real   _margins:               ScreenTools.defaultFontPixelWidth / 2
-    property real   _pipSize:               mainWindow.width * 0.2
+    property real   _pipSize:               flightView.width * 0.2
     property alias  _guidedController:      guidedActionsController
     property alias  _altitudeSlider:        altitudeSlider
 
@@ -91,44 +92,19 @@ QGCView {
         QGroundControl.saveBoolGlobalSetting(_PIPVisibleKey, state)
     }
 
-    function px4JoystickCheck() {
-        if ( _activeVehicle && !_activeVehicle.supportsManualControl && (QGroundControl.settingsManager.appSettings.virtualJoystick.value || _activeVehicle.joystickEnabled)) {
-            px4JoystickSupport.open()
-        }
-    }
-
-    PlanElemementMasterController {
+    PlanMasterController {
         id:                     masterController
         Component.onCompleted:  start(false /* editMode */)
     }
 
     Connections {
-        target:                 _missionController
-        onResumeMissionReady:   guidedActionsController.confirmAction(guidedActionsController.actionResumeMissionReady)
+        target:                     _missionController
+        onResumeMissionReady:       guidedActionsController.confirmAction(guidedActionsController.actionResumeMissionReady)
+        onResumeMissionUploadFail:  guidedActionsController.confirmAction(guidedActionsController.actionResumeMissionUploadFail)
     }
-
-    MessageDialog {
-        id:     px4JoystickSupport
-        text:   qsTr("Joystick support requires MAVLink MANUAL_CONTROL support. ") +
-                qsTr("The firmware you are running does not normally support this. ") +
-                qsTr("It will only work if you have modified the firmware to add MANUAL_CONTROL support.")
-    }
-
-    Connections {
-        target:                 QGroundControl.multiVehicleManager
-        onActiveVehicleChanged: px4JoystickCheck()
-    }
-
-    Connections {
-        target:         QGroundControl.settingsManager.appSettings.virtualJoystick
-        onValueChanged: px4JoystickCheck()
-    }
-
-    onActiveVehicleJoystickEnabledChanged: px4JoystickCheck()
 
     Component.onCompleted: {
         setStates()
-        px4JoystickCheck()
         if(QGroundControl.corePlugin.options.flyViewOverlay.toString().length) {
             flyViewOverlay.source = QGroundControl.corePlugin.options.flyViewOverlay
         }
@@ -247,6 +223,7 @@ QGCView {
                 flightWidgets:              flightDisplayViewWidgets
                 rightPanelWidth:            ScreenTools.defaultFontPixelHeight * 9
                 qgcView:                    root
+                multiVehicleView:           !singleVehicleView.checked
                 scaleState:                 (_mainIsMap && flyViewOverlay.item) ? (flyViewOverlay.item.scaleState ? flyViewOverlay.item.scaleState : "bottomMode") : "bottomMode"
             }
         }
@@ -307,6 +284,9 @@ QGCView {
             }
             onHideIt: {
                 setPipVisibility(!state)
+            }
+            onNewWidth: {
+                _pipSize = newWidth
             }
         }
 
@@ -371,15 +351,25 @@ QGCView {
             anchors.right:      _flightVideo.right
             height:             ScreenTools.defaultFontPixelHeight * 2
             width:              height
-            visible:            _videoReceiver && _videoReceiver.videoRunning && QGroundControl.settingsManager.videoSettings.showRecControl.rawValue
+            visible:            _videoReceiver && _videoReceiver.videoRunning && QGroundControl.settingsManager.videoSettings.showRecControl.rawValue && _flightVideo.visible
             opacity:            0.75
 
+            readonly property string recordBtnBackground: "BackgroundName"
+
             Rectangle {
+                id:                 recordBtnBackground
                 anchors.top:        parent.top
                 anchors.bottom:     parent.bottom
                 width:              height
-                radius:             QGroundControl.videoManager && _videoReceiver && _videoReceiver.recording ? 0 : height
+                radius:             _recordingVideo ? 0 : height
                 color:              "red"
+
+                SequentialAnimation on visible {
+                    running:        _recordingVideo
+                    loops:          Animation.Infinite
+                    PropertyAnimation { to: false; duration: 1000 }
+                    PropertyAnimation { to: true;  duration: 1000 }
+                }
             }
 
             QGCColoredImage {
@@ -389,13 +379,24 @@ QGCView {
                 width:                      height * 0.625
                 sourceSize.width:           width
                 source:                     "/qmlimages/CameraIcon.svg"
+                visible:                    recordBtnBackground.visible
                 fillMode:                   Image.PreserveAspectFit
                 color:                      "white"
             }
 
             MouseArea {
                 anchors.fill:   parent
-                onClicked:      _videoReceiver && _videoReceiver.recording ? _videoReceiver.stopRecording() : _videoReceiver.startRecording()
+                onClicked: {
+                    if (_videoReceiver) {
+                        if (_recordingVideo) {
+                            _videoReceiver.stopRecording()
+                            // reset blinking animation
+                            recordBtnBackground.visible = true
+                        } else {
+                            _videoReceiver.startRecording()
+                        }
+                    }
+                }
             }
         }
 

@@ -26,6 +26,7 @@ class MissionSettingsItem;
 class AppSettings;
 class MissionManager;
 class SimpleMissionItem;
+class QDomDocument;
 
 Q_DECLARE_LOGGING_CATEGORY(MissionControllerLog)
 
@@ -110,6 +111,7 @@ public:
     bool loadTextFile(QFile& file, QString& errorString);
 
     // Overrides from PlanElementController
+    bool supported                  (void) const final { return true; };
     void start                      (bool editMode) final;
     void save                       (QJsonObject& json) final;
     bool load                       (const QJsonObject& json, QString& errorString) final;
@@ -123,6 +125,9 @@ public:
     bool containsItems              (void) const final;
     void managerVehicleChanged      (Vehicle* managerVehicle) final;
     bool showPlanFromManagerVehicle (void) final;
+
+    // Create KML file
+    void convertToKMLDocument(QDomDocument& document);
 
     // Property accessors
 
@@ -160,6 +165,7 @@ signals:
     void complexMissionItemNamesChanged(void);
     void resumeMissionIndexChanged(void);
     void resumeMissionReady(void);
+    void resumeMissionUploadFail(void);
     void batteryChangePointChanged(int batteryChangePoint);
     void batteriesRequiredChanged(int batteriesRequired);
     void plannedHomePositionChanged(QGeoCoordinate plannedHomePosition);

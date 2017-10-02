@@ -185,7 +185,7 @@ QString PX4FirmwarePlugin::flightMode(uint8_t base_mode, uint32_t custom_mode) c
             return tr("Unknown %1:%2").arg(base_mode).arg(custom_mode);
         }
     } else {
-        qWarning() << "PX4 Flight Stack flight mode without custom mode enabled? "<<base_mode<<(base_mode && MAV_MODE_FLAG_CUSTOM_MODE_ENABLED);
+        qWarning() << "PX4 Flight Stack flight mode without custom mode enabled?";
     }
 
     return flightMode;

@@ -52,7 +52,7 @@ public:
     int getSystemId();
     /** @brief Get the component id of this application */
     int getComponentId();
-
+    
     /** @brief Get protocol version check state */
     bool versionCheckEnabled() const {
         return m_enable_version_check;
@@ -89,7 +89,6 @@ public:
     /**
      * Reset the counters for all metadata for this link.
      */
-
     virtual void resetMetadataForLink(LinkInterface *link);
     
     /// Suspend/Restart logging during replay.
@@ -104,7 +103,7 @@ public:
 public slots:
     /** @brief Receive bytes from a communication interface */
     void receiveBytes(LinkInterface* link, QByteArray b);
-
+    
     /** @brief Set the system id of this application */
     void setSystemId(int id);
 
@@ -118,7 +117,7 @@ public slots:
     
     /// @brief Deletes any log files which are in the temp directory
     static void deleteTempLogFiles(void);
-
+    
     /// Checks for lost log files
     void checkForLostLogFiles(void);
 
@@ -173,9 +172,8 @@ signals:
     void checkTelemetrySavePath(void);
 
 private slots:
-
     void _vehicleCountChanged(void);
-
+    
 private:
     bool _closeLogFile(void);
     void _startLogging(void);

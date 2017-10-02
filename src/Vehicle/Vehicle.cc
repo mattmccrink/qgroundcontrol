@@ -34,8 +34,6 @@
 #include "ADSBVehicle.h"
 #include "QGCCameraManager.h"
 
-#include "PositionManager.h"
-
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
 #define UPDATE_TIMER 50
@@ -710,7 +708,6 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_WIND:
         _handleWind(message);
         break;
-
     }
 
     emit mavlinkMessageReceived(message);
@@ -1105,7 +1102,6 @@ void Vehicle::_handleVibration(mavlink_message_t& message)
     _vibrationFactGroup.clipCount2()->setRawValue(vibration.clipping_1);
     _vibrationFactGroup.clipCount3()->setRawValue(vibration.clipping_2);
 }
-
 
 void Vehicle::_handleWindCov(mavlink_message_t& message)
 {
@@ -1538,40 +1534,6 @@ void Vehicle::_updatePriorityLink(void)
 
     if (newPriorityLink) {
         _priorityLink = _toolbox->linkManager()->sharedLinkInterfacePointerForLink(newPriorityLink);
-    }
-}
-
-void Vehicle::_setGPSHomeLocation(QGeoPositionInfo geoPositionInfo)
-
-{
-    if ((this->leaddist()->rawValue().toDouble() != 0.0) &&
-            ((!strcmp(this->flightMode().toLocal8Bit().data(),"Mission")) || (!strcmp(this->flightMode().toLocal8Bit().data(),"Hold"))))
-    {
-        if (geoPositionInfo.isValid() && !isnan(geoPositionInfo.coordinate().altitude()))
-        {
-            qCDebug(FollowMeLog)<<"Bad data"<<geoPositionInfo.coordinate().latitude()<<geoPositionInfo.coordinate().longitude()<<geoPositionInfo.coordinate().altitude();
-            QGeoCoordinate vehicleposition (_coordinate.latitude(),
-                                            _coordinate.longitude(),
-                                            _coordinate.altitude());
-            const double Vehicle_Distance = geoPositionInfo.coordinate().distanceTo(vehicleposition);
-
-            qCDebug(FollowMeLog)<<"Distance from target"<<Vehicle_Distance;
-
-            if ((Vehicle_Distance-1 > this->leaddist()->rawValue().toDouble()) && (strcmp(this->flightMode().toLocal8Bit().data(),"Hold"))) // && !Hold)
-            {//Hold
-                qCDebug(FollowMeLog)<<"Holding";
-                Hold = true;
-                //sendMavCommand(defaultComponentId(), MAV_CMD_OVERRIDE_GOTO, true,0.0,2.0,1.0,0.0,0.0,0.0,0.0);
-                this->pauseVehicle();
-            }
-            else if ((Vehicle_Distance < this->leaddist()->rawValue().toDouble()) && (strcmp(this->flightMode().toLocal8Bit().data(),"Mission")))
-            {//Continue
-                Hold = false;
-                qCDebug(FollowMeLog)<<"Continue";
-                this->setFlightMode(this->missionFlightMode());
-                //sendMavCommand(defaultComponentId(), MAV_CMD_OVERRIDE_GOTO, true,1.0,2.0,1.0,0.0,0.0,0.0,0.0);
-            }
-        }
     }
 }
 

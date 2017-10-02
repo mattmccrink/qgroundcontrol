@@ -17,8 +17,6 @@
 #include "Vehicle.h"
 #include "PositionManager.h"
 
-QGC_LOGGING_CATEGORY(FollowMeLog, "FollowMeLog")
-
 FollowMe::FollowMe(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox), estimatation_capabilities(0)
 {
@@ -46,7 +44,6 @@ void FollowMe::followMeHandleManager(const QString&)
 
 void FollowMe::_enable()
 {
-    qCDebug(FollowMeLog)<<"Trying to connect position manager";
     connect(_toolbox->qgcPositionManager(),
             SIGNAL(positionInfoUpdated(QGeoPositionInfo)),
             this,
@@ -58,7 +55,6 @@ void FollowMe::_enable()
 
 void FollowMe::_disable()
 {
-    qCDebug(FollowMeLog)<<"Disconnecting follow me";
     disconnect(_toolbox->qgcPositionManager(),
                SIGNAL(positionInfoUpdated(QGeoPositionInfo)),
                this,
@@ -69,7 +65,6 @@ void FollowMe::_disable()
 
 void FollowMe::_setGPSLocation(QGeoPositionInfo geoPositionInfo)
 {
-    qCDebug(FollowMeLog)<<"Current location"<<geoPositionInfo.coordinate().latitude()<<geoPositionInfo.coordinate().longitude();
     if (geoPositionInfo.isValid())
     {
         // get the current location coordinates

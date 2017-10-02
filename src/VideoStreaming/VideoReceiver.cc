@@ -240,8 +240,7 @@ VideoReceiver::start()
     GstElement*     parser      = NULL;
     GstElement*     queue       = NULL;
     GstElement*     decoder     = NULL;
-    GstElement*     video       = NULL;
-    GstElement*     queue1     = NULL;
+    GstElement*     queue1      = NULL;
 
     do {
         if ((_pipeline = gst_pipeline_new("receiver")) == NULL) {
@@ -293,16 +292,6 @@ VideoReceiver::start()
             break;
         }
 
-        if ((decoder = gst_element_factory_make("avdec_h264", "h264-decoder")) == NULL) {
-            qCritical() << "VideoReceiver::start() failed. Error with gst_element_factory_make('avdec_h264')";
-            break;
-        }
-
-        if ((video = gst_element_factory_make("videoconvert", "colorspace")) == NULL) {
-            qCritical() << "VideoReceiver::start() failed. Error with gst_element_factory_make('videoconvert')";
-            break;
-        }
-
         if((_tee = gst_element_factory_make("tee", NULL)) == NULL)  {
             qCritical() << "VideoReceiver::start() failed. Error with gst_element_factory_make('tee')";
             break;
@@ -329,7 +318,6 @@ VideoReceiver::start()
         pipelineUp = true;
 
         if(isUdp) {
-
             // Link the pipeline in front of the tee
             if(!gst_element_link_many(dataSource, demux, parser, _tee, queue, decoder, queue1, _videoSink, NULL)) {
                 qCritical() << "Unable to link UDP elements.";
@@ -352,7 +340,6 @@ VideoReceiver::start()
                 break;
             }
         }
-
 
         dataSource = demux = parser = queue = decoder = queue1 = NULL;
 
@@ -382,7 +369,6 @@ VideoReceiver::start()
             gst_object_unref(_pipeline);
             _pipeline = NULL;
         }
-
 
         // If we failed before adding items to the pipeline, then clean up
         if (!pipelineUp) {

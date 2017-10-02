@@ -12,8 +12,6 @@
 #include <QObject>
 #include <QGeoCoordinate>
 #include <QElapsedTimer>
-#include <QGeoPositionInfo>
-#include <QGeoPositionInfoSource>
 
 #include "FactGroup.h"
 #include "LinkInterface.h"
@@ -895,7 +893,6 @@ private slots:
     void _geoFenceLoadComplete(void);
     void _rallyPointLoadComplete(void);
     void _sendMavCommandAgain(void);
-    void _setGPSHomeLocation(QGeoPositionInfo geoPositionInfo);
     void _activeJoystickChanged(void);
     void _clearTrajectoryPoints(void);
     void _clearCameraTriggerPoints(void);
@@ -959,8 +956,6 @@ private:
     int     _defaultComponentId;
     bool    _active;
     bool    _offlineEditingVehicle; ///< This Vehicle is a "disconnected" vehicle for ui use while offline editing
-
-    bool Hold;
 
     MAV_AUTOPILOT       _firmwareType;
     MAV_TYPE            _vehicleType;

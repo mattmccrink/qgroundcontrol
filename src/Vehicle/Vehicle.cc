@@ -24,7 +24,7 @@
 #include "ParameterManager.h"
 #include "QGCApplication.h"
 #include "QGCImageProvider.h"
-#include "GAudioOutput.h"
+#include "AudioOutput.h"
 #include "FollowMe.h"
 #include "MissionCommandTree.h"
 #include "QGroundControlQmlGlobal.h"
@@ -40,7 +40,7 @@ QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 #define DEFAULT_LAT  38.965767f
 #define DEFAULT_LON -120.083923f
 
-extern const char* guided_mode_not_supported_by_vehicle;
+const QString guided_mode_not_supported_by_vehicle = QObject::tr("Guided mode not supported by Vehicle.");
 
 const char* Vehicle::_settingsGroup =               "Vehicle%1";        // %1 replaced with mavlink system id
 const char* Vehicle::_joystickModeSettingsKey =     "JoystickMode";
@@ -710,6 +710,8 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
         break;
     }
 
+    // This must be emitted after the vehicle processes the message. This way the vehicle state is up to date when anyone else
+    // does processing.
     emit mavlinkMessageReceived(message);
 
     _uas->receiveMessage(message);
@@ -1040,9 +1042,9 @@ void Vehicle::_handleHilActuatorControls(mavlink_message_t &message)
 
 void Vehicle::_handleCommandLong(mavlink_message_t& message)
 {
-#ifdef __ios__
+#ifdef NO_SERIAL_LINK
+    // If not using serial link, bail out.
     Q_UNUSED(message)
-    // iOS has no serial links
 #else
     mavlink_command_long_t cmd;
     mavlink_msg_command_long_decode(&message, &cmd);
@@ -1164,7 +1166,7 @@ void Vehicle::_handleSysStatus(mavlink_message_t& message)
             sysStatus.battery_remaining < _settingsManager->appSettings()->batteryPercentRemainingAnnounce()->rawValue().toInt() &&
             sysStatus.battery_remaining < _lastAnnouncedLowBatteryPercent) {
         _lastAnnouncedLowBatteryPercent = sysStatus.battery_remaining;
-        _say(QString("%1 low battery: %2 percent remaining").arg(_vehicleIdSpeech()).arg(sysStatus.battery_remaining));
+        _say(tr("%1 low battery: %2 percent remaining").arg(_vehicleIdSpeech()).arg(sysStatus.battery_remaining));
     }
 
     _onboardControlSensorsPresent = sysStatus.onboard_control_sensors_present;
@@ -1553,8 +1555,9 @@ void Vehicle::_updateAttitude(UASInterface*, double roll, double pitch, double y
         _headingFact.setRawValue(0);
     } else {
         yaw = yaw * (180.0 / M_PI);
-        if (yaw < 0) yaw += 360;
-        _headingFact.setRawValue(yaw);
+        if (yaw < 0.0) yaw += 360.0;
+        // truncate to integer so widget never displays 360
+        _headingFact.setRawValue(trunc(yaw));
     }
 }
 
@@ -1983,19 +1986,19 @@ void Vehicle::sendMessageMultiple(mavlink_message_t message)
 void Vehicle::_missionManagerError(int errorCode, const QString& errorMsg)
 {
     Q_UNUSED(errorCode);
-    qgcApp()->showMessage(QString("Mission transfer failed. Retry transfer. Error: %1").arg(errorMsg));
+    qgcApp()->showMessage(tr("Mission transfer failed. Retry transfer. Error: %1").arg(errorMsg));
 }
 
 void Vehicle::_geoFenceManagerError(int errorCode, const QString& errorMsg)
 {
     Q_UNUSED(errorCode);
-    qgcApp()->showMessage(QString("GeoFence transfer failed. Retry transfer. Error: %1").arg(errorMsg));
+    qgcApp()->showMessage(tr("GeoFence transfer failed. Retry transfer. Error: %1").arg(errorMsg));
 }
 
 void Vehicle::_rallyPointManagerError(int errorCode, const QString& errorMsg)
 {
     Q_UNUSED(errorCode);
-    qgcApp()->showMessage(QString("Rally Point transfer failed. Retry transfer. Error: %1").arg(errorMsg));
+    qgcApp()->showMessage(tr("Rally Point transfer failed. Retry transfer. Error: %1").arg(errorMsg));
 }
 
 void Vehicle::_addNewMapTrajectoryPoint(void)

@@ -52,7 +52,7 @@ public:
     int getSystemId();
     /** @brief Get the component id of this application */
     int getComponentId();
-
+    
     /** @brief Get protocol version check state */
     bool versionCheckEnabled() const {
         return m_enable_version_check;
@@ -60,6 +60,10 @@ public:
     /** @brief Get the protocol version */
     int getVersion() {
         return MAVLINK_VERSION;
+    }
+    /** @brief Get the currently configured protocol version */
+    unsigned getCurrentVersion() {
+        return _current_version;
     }
     /**
      * Retrieve a total of all successfully parsed packets for the specified link.
@@ -85,10 +89,13 @@ public:
     /**
      * Reset the counters for all metadata for this link.
      */
-    virtual void resetMetadataForLink(const LinkInterface *link);
-
+    virtual void resetMetadataForLink(LinkInterface *link);
+    
     /// Suspend/Restart logging during replay.
     void suspendLogForReplay(bool suspend);
+
+    /// Set protocol version
+    void setVersion(unsigned version);
 
     // Override from QGCTool
     virtual void setToolbox(QGCToolbox *toolbox);
@@ -96,7 +103,7 @@ public:
 public slots:
     /** @brief Receive bytes from a communication interface */
     void receiveBytes(LinkInterface* link, QByteArray b);
-
+    
     /** @brief Set the system id of this application */
     void setSystemId(int id);
 
@@ -110,7 +117,7 @@ public slots:
     
     /// @brief Deletes any log files which are in the temp directory
     static void deleteTempLogFiles(void);
-
+    
     /// Checks for lost log files
     void checkForLostLogFiles(void);
 
@@ -125,6 +132,8 @@ protected:
     int currLossCounter[MAVLINK_COMM_NUM_BUFFERS];        ///< Lost messages during this sample time window. Used for calculating loss %.
     bool versionMismatchIgnore;
     int systemId;
+    unsigned _current_version;
+    unsigned _radio_version_mismatch_count;
 
 signals:
     /// Heartbeat received on link
@@ -163,8 +172,8 @@ signals:
     void checkTelemetrySavePath(void);
 
 private slots:
-    void _vehicleCountChanged(int count);
-
+    void _vehicleCountChanged(void);
+    
 private:
     bool _closeLogFile(void);
     void _startLogging(void);

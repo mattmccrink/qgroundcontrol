@@ -48,6 +48,9 @@ public:
     /// @return true: Mission end action was added
     bool addMissionEndAction(QList<MissionItem*>& items, int seqNum, QObject* missionItemParent);
 
+    /// Called to updaet home position coordinate when it comes from a connected vehicle
+    void setHomePositionFromVehicle(const QGeoCoordinate& coordinate);
+
     // Overrides from ComplexMissionItem
 
     double              complexDistance     (void) const final;
@@ -74,8 +77,8 @@ public:
     void            applyNewAltitude        (double newAltitude) final { Q_UNUSED(newAltitude); /* no action */ }
     double          specifiedFlightSpeed    (void) final;
 
-    bool coordinateHasRelativeAltitude      (void) const final { return true; }
-    bool exitCoordinateHasRelativeAltitude  (void) const final { return true; }
+    bool coordinateHasRelativeAltitude      (void) const final { return false; }
+    bool exitCoordinateHasRelativeAltitude  (void) const final { return false; }
     bool exitCoordinateSameAsEntry          (void) const final { return true; }
 
     void setDirty           (bool dirty) final;
@@ -94,10 +97,12 @@ private slots:
     void _setDirty                              (void);
     void _sectionDirtyChanged                   (bool dirty);
     void _updateAltitudeInCoordinate            (QVariant value);
+    void _setHomeAltFromTerrain                 (double terrainAltitude);
 
 private:
     QGeoCoordinate  _plannedHomePositionCoordinate;     // Does not include altitude
     Fact            _plannedHomePositionAltitudeFact;
+    bool            _plannedHomePositionFromVehicle;
     bool            _missionEndRTL;
     CameraSection   _cameraSection;
     SpeedSection    _speedSection;

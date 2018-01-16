@@ -89,6 +89,8 @@ public:
     DEFINE_QGC_COLOR(textFieldText,         setTextFieldText)
     DEFINE_QGC_COLOR(mapButton,             setMapButton)
     DEFINE_QGC_COLOR(mapButtonHighlight,    setMapButtonHighlight)
+    DEFINE_QGC_COLOR(mapIndicator,          setMapIndicator)
+    DEFINE_QGC_COLOR(mapIndicatorChild,     setMapIndicatorChild)
     DEFINE_QGC_COLOR(mapWidgetBorderLight,  setMapWidgetBorderLight)
     DEFINE_QGC_COLOR(mapWidgetBorderDark,   setMapWidgetBorderDark)
     DEFINE_QGC_COLOR(brandingPurple,        setBrandingPurple)
@@ -105,22 +107,22 @@ public:
 
      QGCPalette(QObject* parent = NULL);
     ~QGCPalette();
-
+    
     bool colorGroupEnabled      (void) const { return _colorGroupEnabled; }
     void setColorGroupEnabled   (bool enabled);
-
+    
     static Theme    globalTheme     (void) { return _theme; }
     static void     setGlobalTheme  (Theme newTheme);
 
 signals:
     void paletteChanged ();
-
+    
 private:
     static void _buildMap                   (void);
     static void _signalPaletteChangeToAll   (void);
     void        _signalPaletteChanged       (void);
     void        _themeChanged               (void);
-
+    
     static Theme                _theme;             ///< There is a single theme for all palettes
     bool                        _colorGroupEnabled; ///< Currently selected ColorGroup. true: enabled, false: disabled
 

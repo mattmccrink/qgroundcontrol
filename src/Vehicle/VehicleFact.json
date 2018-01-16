@@ -63,8 +63,8 @@
     "units":            "m"
 },
 {
-    "name":             "leaddist",
-    "shortDescription": "Lead distance",
+    "name":             "distanceToHome",
+    "shortDescription": "Distance to Home",
     "type":             "double",
     "decimalPlaces":    1,
     "units":            "m"
@@ -75,5 +75,4 @@
     "type":             "elapsedSeconds",
     "decimalPlaces":    1
 }
-
 ]

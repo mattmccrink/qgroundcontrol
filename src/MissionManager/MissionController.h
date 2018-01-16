@@ -25,6 +25,8 @@ class MissionItem;
 class MissionSettingsItem;
 class AppSettings;
 class MissionManager;
+class SimpleMissionItem;
+class QDomDocument;
 
 Q_DECLARE_LOGGING_CATEGORY(MissionControllerLog)
 
@@ -109,6 +111,7 @@ public:
     bool loadTextFile(QFile& file, QString& errorString);
 
     // Overrides from PlanElementController
+    bool supported                  (void) const final { return true; };
     void start                      (bool editMode) final;
     void save                       (QJsonObject& json) final;
     bool load                       (const QJsonObject& json, QString& errorString) final;
@@ -122,6 +125,9 @@ public:
     bool containsItems              (void) const final;
     void managerVehicleChanged      (Vehicle* managerVehicle) final;
     bool showPlanFromManagerVehicle (void) final;
+
+    // Create KML file
+    void convertToKMLDocument(QDomDocument& document);
 
     // Property accessors
 
@@ -159,6 +165,7 @@ signals:
     void complexMissionItemNamesChanged(void);
     void resumeMissionIndexChanged(void);
     void resumeMissionReady(void);
+    void resumeMissionUploadFail(void);
     void batteryChangePointChanged(int batteryChangePoint);
     void batteriesRequiredChanged(int batteriesRequired);
     void plannedHomePositionChanged(QGeoCoordinate plannedHomePosition);
@@ -189,7 +196,7 @@ private:
     void _initVisualItem(VisualMissionItem* item);
     void _deinitVisualItem(VisualMissionItem* item);
     void _setupActiveVehicle(Vehicle* activeVehicle, bool forceLoadFromVehicle);
-    static void _calcPrevWaypointValues(double homeAlt, VisualMissionItem* currentItem, VisualMissionItem* prevItem, double* azimuth, double* distance, double* altDifference);
+    void _calcPrevWaypointValues(double homeAlt, VisualMissionItem* currentItem, VisualMissionItem* prevItem, double* azimuth, double* distance, double* altDifference);
     static double _calcDistanceToHome(VisualMissionItem* currentItem, VisualMissionItem* homeItem);
     bool _findPreviousAltitude(int newIndex, double* prevAltitude, MAV_FRAME* prevFrame);
     static double _normalizeLat(double lat);
@@ -210,6 +217,8 @@ private:
     bool _loadItemsFromJson(const QJsonObject& json, QmlObjectListModel* visualItems, QString& errorString);
     void _initLoadedVisualItems(QmlObjectListModel* loadedVisualItems);
     void _addWaypointLineSegment(CoordVectHashTable& prevItemPairHashTable, VisualItemPair& pair);
+    void _addCommandTimeDelay(SimpleMissionItem* simpleItem, bool vtolInHover);
+    void _addTimeDistance(bool vtolInHover, double hoverTime, double cruiseTime, double extraTime, double distance, int seqNum);
 
 private:
     MissionManager*         _missionManager;
@@ -222,6 +231,7 @@ private:
     MissionFlightStatus_t   _missionFlightStatus;
     QString                 _surveyMissionItemName;
     QString                 _fwLandingMissionItemName;
+    QString                 _structureScanMissionItemName;
     AppSettings*            _appSettings;
     double                  _progressPct;
 

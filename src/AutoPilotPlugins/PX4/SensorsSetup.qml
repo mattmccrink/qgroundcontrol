@@ -42,9 +42,9 @@ Item {
     readonly property string boardRotationText: qsTr("If the orientation is in the direction of flight, select ROTATION_NONE.")
     readonly property string compassRotationText: qsTr("If the orientation is in the direction of flight, select ROTATION_NONE.")
 
-    readonly property string compassHelp:   qsTr("For Compass calibration you will need to rotate your vehicle through a number of positions. Click Ok to start calibration.")
-    readonly property string gyroHelp:      qsTr("For Gyroscope calibration you will need to place your vehicle on a surface and leave it still. Click Ok to start calibration.")
-    readonly property string accelHelp:     qsTr("For Accelerometer calibration you will need to place your vehicle on all six sides on a perfectly level surface and hold it still in each orientation for a few seconds. Click Ok to start calibration.")
+    readonly property string compassHelp:   qsTr("For Compass calibration you will need to rotate your vehicle through a number of positions.\n\nClick Ok to start calibration.")
+    readonly property string gyroHelp:      qsTr("For Gyroscope calibration you will need to place your vehicle on a surface and leave it still.\n\nClick Ok to start calibration.")
+    readonly property string accelHelp:     qsTr("For Accelerometer calibration you will need to place your vehicle on all six sides on a perfectly level surface and hold it still in each orientation for a few seconds.\n\nClick Ok to start calibration.")
     readonly property string levelHelp:     qsTr("To level the horizon you need to place the vehicle in its level flight position and press OK.")
     readonly property string airspeedHelp:  qsTr("For Airspeed calibration you will need to keep your airspeed sensor out of any wind and then blow across the sensor. Do not touch the sensor or obstruct any holes during the calibration.")
 
@@ -150,7 +150,7 @@ Item {
     Component.onCompleted: {
         var usingUDP = controller.usingUDPLink()
         if (usingUDP && !_wifiReliableForCalibration) {
-            showMessage("Sensor Calibration", "Performing sensor calibration over a WiFi connection is known to be unreliable. You should disconnect and perform calibration using a direct USB connection instead.", StandardButton.Ok)
+            showMessage(qsTr("Sensor Calibration"), qsTr("Performing sensor calibration over a WiFi connection is known to be unreliable. You should disconnect and perform calibration using a direct USB connection instead."), StandardButton.Ok)
         }
     }
 
@@ -177,15 +177,10 @@ Item {
 
             Column {
                 anchors.fill:   parent
-                spacing:        ScreenTools.defaultFontPixelWidth / 2
-
-                QGCLabel {
-                    width:      parent.width
-                    wrapMode:   Text.WordWrap
-                    text:       preCalibrationDialogHelp
-                }
+                spacing:        ScreenTools.defaultFontPixelHeight
 
                 Column {
+                    width:          parent.width
                     spacing:        5
                     visible:        !_sensorsHaveFixedOrientation
 
@@ -194,14 +189,13 @@ Item {
                         width:      parent.width
                         wrapMode:   Text.WordWrap
                         visible:    (preCalibrationDialogType != "airspeed") && (preCalibrationDialogType != "gyro")
-                        text:       boardRotationText
+                        text:       qsTr("Set autopilot orientation before calibrating.")
                     }
 
                     Column {
                         visible:    boardRotationHelp.visible
-                        QGCLabel {
-                            text: qsTr("Autopilot Orientation:")
-                        }
+
+                        QGCLabel { text: qsTr("Autopilot Orientation:") }
 
                         FactComboBox {
                             id:     boardRotationCombo
@@ -210,6 +204,12 @@ Item {
                             fact:   sens_board_rot
                         }
                     }
+                }
+
+                QGCLabel {
+                    width:      parent.width
+                    wrapMode:   Text.WordWrap
+                    text:       preCalibrationDialogHelp
                 }
             }
         }
@@ -394,7 +394,7 @@ Item {
                 id:             levelButton
                 width:          _buttonWidth
                 text:           qsTr("Level Horizon")
-                indicatorGreen: sens_board_x_off.value != 0 || sens_board_y_off != 0 | sens_board_z_off != 0
+                indicatorGreen: sens_board_x_off.value != 0 || sens_board_y_off.value != 0 | sens_board_z_off.value != 0
                 enabled:        cal_acc0_id.value != 0 && cal_gyro0_id.value != 0
                 visible:        QGroundControl.corePlugin.options.showSensorCalibrationLevel && showSensorCalibrationLevel
 
@@ -410,6 +410,7 @@ Item {
                 width:          _buttonWidth
                 text:           qsTr("Airspeed")
                 visible:        (controller.vehicle.fixedWing || controller.vehicle.vtol) &&
+                                controller.getParameterFact(-1, "FW_ARSP_MODE").value == false &&
                                 controller.getParameterFact(-1, "CBRK_AIRSPD_CHK").value != 162128 &&
                                 QGroundControl.corePlugin.options.showSensorCalibrationAirspeed &&
                                 showSensorCalibrationAirspeed

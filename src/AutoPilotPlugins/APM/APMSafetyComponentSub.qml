@@ -22,7 +22,6 @@ import QGroundControl.ScreenTools   1.0
 SetupPage {
     id:                 safetyPage
     pageComponent:      safetyPageComponent
-    visibleWhileArmed:   true
 
     Component {
         id: safetyPageComponent
@@ -127,7 +126,7 @@ SetupPage {
                             }
 
                             QGCLabel {
-                                text: "Detector Pin:"
+                                text:               qsTr( "Detector Pin:")
                                 width:              failsafeSettings._labelWidth
                                 visible:            leakEnableCombo.currentIndex != 0
                                 anchors.baseline:   leakEnableCombo.baseline
@@ -326,7 +325,7 @@ SetupPage {
                             }
 
                             QGCLabel {
-                                text: "Threshold:"
+                                text:               qsTr("Threshold:")
                                 width:              failsafeSettings._labelWidth
                                 visible:            pressureEnableCombo.currentIndex != 0
                                 anchors.baseline:   pressureEnableCombo.baseline

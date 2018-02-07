@@ -122,7 +122,12 @@ void QGCMapPolygonTest::_testVertexManipulation(void)
         QCOMPARE(_mapPolygon->count(), i);
 
         _mapPolygon->appendVertex(_polyPoints[i]);
-        QVERIFY(_multiSpyPolygon->checkOnlySignalByMask(pathChangedMask | polygonDirtyChangedMask | polygonCountChangedMask | centerChangedMask));
+        if (i >= 2) {
+            // Center is no recalculated until there are 3 points or more
+            QVERIFY(_multiSpyPolygon->checkOnlySignalByMask(pathChangedMask | polygonDirtyChangedMask | polygonCountChangedMask | centerChangedMask));
+        } else {
+            QVERIFY(_multiSpyPolygon->checkOnlySignalByMask(pathChangedMask | polygonDirtyChangedMask | polygonCountChangedMask));
+        }
         QVERIFY(_multiSpyModel->checkOnlySignalByMask(modelDirtyChangedMask | modelCountChangedMask));
         QCOMPARE(_multiSpyPolygon->pullIntFromSignalIndex(polygonCountChangedIndex), i+1);
         QCOMPARE(_multiSpyModel->pullIntFromSignalIndex(modelCountChangedIndex), i+1);
@@ -196,4 +201,21 @@ void QGCMapPolygonTest::_testVertexManipulation(void)
     polyList = _mapPolygon->path();
     QCOMPARE(polyList.count(), 0);
     QCOMPARE(_pathModel->count(), 0);
+}
+
+void QGCMapPolygonTest::_testKMLLoad(void)
+{
+    QVERIFY(_mapPolygon->loadKMLFile(QStringLiteral(":/unittest/GoodPolygon.kml")));
+
+    setExpectedMessageBox(QMessageBox::Ok);
+    QVERIFY(!_mapPolygon->loadKMLFile(QStringLiteral(":/unittest/BadXml.kml")));
+    checkExpectedMessageBox();
+
+    setExpectedMessageBox(QMessageBox::Ok);
+    QVERIFY(!_mapPolygon->loadKMLFile(QStringLiteral(":/unittest/MissingPolygonNode.kml")));
+    checkExpectedMessageBox();
+
+    setExpectedMessageBox(QMessageBox::Ok);
+    QVERIFY(!_mapPolygon->loadKMLFile(QStringLiteral(":/unittest/BadCoordinatesNode.kml")));
+    checkExpectedMessageBox();
 }

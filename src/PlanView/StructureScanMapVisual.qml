@@ -22,7 +22,8 @@ import QGroundControl.FlightMap     1.0
 Item {
     id: _root
 
-    property var map    ///< Map control to place item in
+    property var map        ///< Map control to place item in
+    property var qgcView    ///< QGCView to use for popping dialogs
 
     property var _missionItem:      object
     property var _structurePolygon: object.structurePolygon
@@ -60,9 +61,10 @@ Item {
             var bottomLeftCoord =   map.toCoordinate(Qt.point(rect.x, rect.y + rect.height),                            false /* clipToViewPort */)
             var bottomRightCoord =  map.toCoordinate(Qt.point(rect.x + rect.width, rect.y + rect.height),               false /* clipToViewPort */)
 
-            // Initial polygon has max width and height of 3000 meters
-            var halfWidthMeters =   Math.min(topLeftCoord.distanceTo(topRightCoord), 3000) / 2
-            var halfHeightMeters =  Math.min(topLeftCoord.distanceTo(bottomLeftCoord), 3000) / 2
+            // Adjust polygon to max size
+            var maxSize = 100
+            var halfWidthMeters =   Math.min(topLeftCoord.distanceTo(topRightCoord), maxSize) / 2
+            var halfHeightMeters =  Math.min(topLeftCoord.distanceTo(bottomLeftCoord), maxSize) / 2
             topLeftCoord =      centerCoord.atDistanceAndAzimuth(halfWidthMeters, -90).atDistanceAndAzimuth(halfHeightMeters, 0)
             topRightCoord =     centerCoord.atDistanceAndAzimuth(halfWidthMeters, 90).atDistanceAndAzimuth(halfHeightMeters, 0)
             bottomLeftCoord =   centerCoord.atDistanceAndAzimuth(halfWidthMeters, -90).atDistanceAndAzimuth(halfHeightMeters, 180)
@@ -85,16 +87,18 @@ Item {
     }
 
     QGCMapPolygonVisuals {
+        qgcView:            _root.qgcView
         mapControl:         map
         mapPolygon:         _structurePolygon
         interactive:        _missionItem.isCurrentItem
         borderWidth:        1
         borderColor:        "black"
         interiorColor:      "green"
-        interiorOpacity:    0.5
+        interiorOpacity:    0.25
     }
 
     QGCMapPolygonVisuals {
+        qgcView:            _root.qgcView
         mapControl:         map
         mapPolygon:         _flightPolygon
         interactive:        false

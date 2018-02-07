@@ -29,7 +29,6 @@ Rectangle {
     property real   _fieldWidth:    ScreenTools.defaultFontPixelWidth * 10.5
     property var    _vehicle:       QGroundControl.multiVehicleManager.activeVehicle ? QGroundControl.multiVehicleManager.activeVehicle : QGroundControl.multiVehicleManager.offlineEditingVehicle
 
-
     function polygonCaptureStarted() {
         missionItem.clearPolygon()
     }
@@ -60,14 +59,6 @@ Rectangle {
         QGCLabel {
             anchors.left:   parent.left
             anchors.right:  parent.right
-            text:           qsTr("WARNING: WORK IN PROGRESS. USE AT YOUR OWN RISK. MEANT FOR DISCUSSION ONLY. DO NOT REPORT BUGS.")
-            wrapMode:       Text.WordWrap
-            color:          qgcPal.warningText
-        }
-
-        QGCLabel {
-            anchors.left:   parent.left
-            anchors.right:  parent.right
             text:           qsTr("Note: Polygon respresents structure surface not vehicle flight path.")
             wrapMode:       Text.WordWrap
             font.pointSize: ScreenTools.smallFontPointSize
@@ -82,59 +73,103 @@ Rectangle {
             visible:        missionItem.cameraShots > 0 && missionItem.cameraMinTriggerInterval !== 0 && missionItem.cameraMinTriggerInterval > missionItem.timeBetweenShots
         }
 
+        CameraCalc {
+            cameraCalc:             missionItem.cameraCalc
+            vehicleFlightIsFrontal: false
+            distanceToSurfaceLabel: qsTr("Scan Distance")
+            frontalDistanceLabel:   qsTr("Layer Height")
+            sideDistanceLabel:      qsTr("Trigger Distance")
+        }
+
         GridLayout {
             anchors.left:   parent.left
             anchors.right:  parent.right
-            columnSpacing:  _margin
-            rowSpacing:     _margin
-            columns:        2
+            columnSpacing:  ScreenTools.defaultFontPixelWidth / 2
+            rowSpacing:     0
+            columns:        3
+            visible:        missionItem.cameraCalc.isManualCamera
 
-            QGCLabel { text: qsTr("Altitude") }
-            FactTextField {
-                fact:               missionItem.altitude
+            Item { width: 1; height: 1 }
+            QGCLabel { text: qsTr("Pitch") }
+            QGCLabel { text: qsTr("Yaw") }
+
+            QGCLabel {
+                text:               qsTr("Gimbal")
                 Layout.fillWidth:   true
             }
-
-            QGCLabel { text: qsTr("Layers") }
             FactTextField {
-                fact:               missionItem.layers
-                Layout.fillWidth:   true
+                fact:           missionItem.gimbalPitch
+                implicitWidth:  ScreenTools.defaultFontPixelWidth * 9
             }
 
-            QGCLabel { text: qsTr("Layer distance") }
             FactTextField {
-                fact:               missionItem.layerDistance
-                Layout.fillWidth:   true
-            }
-
-            QGCLabel { text: qsTr("Scan distance") }
-            FactTextField {
-                fact:               missionItem.scanDistance
-                Layout.fillWidth:   true
-            }
-
-            QGCLabel { text: qsTr("Trigger Distance") }
-            FactTextField {
-                fact:               missionItem.cameraTriggerDistance
-                Layout.fillWidth:   true
-            }
-
-            QGCCheckBox {
-                text:               qsTr("Relative altitude")
-                checked:            missionItem.altitudeRelative
-                Layout.columnSpan:  2
-                onClicked:          missionItem.altitudeRelative = checked
+                fact:           missionItem.gimbalYaw
+                implicitWidth:  ScreenTools.defaultFontPixelWidth * 9
             }
         }
 
-        QGCLabel { text: qsTr("Point camera to structure using:") }
-        QGCRadioButton { text: qsTr("Vehicle yaw"); enabled: false }
-        QGCRadioButton { text: qsTr("Gimbal yaw"); checked: true; enabled: false }
-
-        QGCButton {
-            text:       qsTr("Rotate entry point")
-            onClicked:  missionItem.rotateEntryPoint()
+        SectionHeader {
+            id:         scanHeader
+            text:       qsTr("Scan")
         }
+
+        Column {
+            anchors.left:   parent.left
+            anchors.right:  parent.right
+            spacing:        _margin
+            visible:        scanHeader.checked
+
+            GridLayout {
+                anchors.left:   parent.left
+                anchors.right:  parent.right
+                columnSpacing:  _margin
+                rowSpacing:     _margin
+                columns:        2
+
+                QGCLabel {
+                    text:       qsTr("Structure height")
+                    visible:    !missionItem.cameraCalc.isManualCamera
+                }
+                FactTextField {
+                    fact:               missionItem.structureHeight
+                    Layout.fillWidth:   true
+                    visible:            !missionItem.cameraCalc.isManualCamera
+                }
+
+                QGCLabel {
+                    text:       qsTr("# Layers")
+                    visible:    missionItem.cameraCalc.isManualCamera
+                }
+                FactTextField {
+                    fact:               missionItem.layers
+                    Layout.fillWidth:   true
+                    visible:            missionItem.cameraCalc.isManualCamera
+                }
+
+                QGCLabel { text: qsTr("Bottom layer alt") }
+                FactTextField {
+                    fact:               missionItem.altitude
+                    Layout.fillWidth:   true
+                }
+
+                QGCCheckBox {
+                    text:               qsTr("Relative altitude")
+                    checked:            missionItem.altitudeRelative
+                    Layout.columnSpan:  2
+                    onClicked:          missionItem.altitudeRelative = checked
+                }
+            }
+
+            Item {
+                height: ScreenTools.defaultFontPixelHeight / 2
+                width:  1
+            }
+
+            QGCButton {
+                text:       qsTr("Rotate entry point")
+                onClicked:  missionItem.rotateEntryPoint()
+            }
+        } // Column - Scan
 
         SectionHeader {
             id:     statsHeader
@@ -152,6 +187,5 @@ Rectangle {
             QGCLabel { text: qsTr("Photo interval") }
             QGCLabel { text: missionItem.timeBetweenShots.toFixed(1) + " " + qsTr("secs") }
         }
-    }
-}
-
+    } // Column
+} // Rectangle

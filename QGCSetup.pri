@@ -40,7 +40,7 @@ WindowsBuild {
 # Perform platform specific setup
 #
 
-iOSBuild | MacBuild {
+MacBuild {
     # Update version info in bundle
     QMAKE_POST_LINK += && /usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $${MAC_VERSION}\" $$DESTDIR/$${TARGET}.app/Contents/Info.plist
     QMAKE_POST_LINK += && /usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $${MAC_BUILD}\" $$DESTDIR/$${TARGET}.app/Contents/Info.plist
@@ -123,6 +123,7 @@ LinuxBuild {
         libQt5Test.so.5 \
         libQt5Widgets.so.5 \
         libQt5XcbQpa.so.5 \
+        libQt5Xml.so.5 \
         libQt5TextToSpeech.so.5
 
     !contains(DEFINES, __rasp_pi2__) {

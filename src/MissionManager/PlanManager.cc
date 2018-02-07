@@ -85,8 +85,8 @@ void PlanManager::writeMissionItems(const QList<MissionItem*>& missionItems)
     int firstIndex = skipFirstItem ? 1 : 0;
 
     for (int i=firstIndex; i<missionItems.count(); i++) {
-        MissionItem* item = new MissionItem(*missionItems[i]);
-        _writeMissionItems.append(item);
+        MissionItem* item = missionItems[i];
+        _writeMissionItems.append(item); // PlanManager takes control of passed MissionItem
 
         item->setIsCurrentItem(i == firstIndex);
 
@@ -263,7 +263,7 @@ bool PlanManager::_checkForExpectedAck(AckType_t receivedAck)
         } else {
             // We just warn in this case, this could be crap left over from a previous transaction or the vehicle going bonkers.
             // Whatever it is we let the ack timeout handle any error output to the user.
-            qCDebug(PlanManagerLog) << QString("Out of sequence ack expected:received %1:%2 %1").arg(_ackTypeToString(_expectedAck)).arg(_ackTypeToString(receivedAck)).arg(_planTypeString());
+            qCDebug(PlanManagerLog) << QString("Out of sequence ack %1 expected:received %2:%3").arg(_planTypeString().arg(_ackTypeToString(_expectedAck)).arg(_ackTypeToString(receivedAck)));
         }
         return false;
     }
@@ -588,7 +588,7 @@ void PlanManager::_handleMissionAck(const mavlink_message_t& message)
     switch (savedExpectedAck) {
     case AckNone:
         // State machine is idle. Vehicle is confused.
-        _sendError(VehicleError, tr("Vehicle sent unexpected MISSION_ACK message, error: %1").arg(_missionResultToString((MAV_MISSION_RESULT)missionAck.type)));
+	qCDebug(PlanManagerLog) << QStringLiteral("Vehicle sent unexpected MISSION_ACK message, error: %1").arg(_missionResultToString((MAV_MISSION_RESULT)missionAck.type));
         break;
     case AckMissionCount:
         // MISSION_COUNT message expected
@@ -604,7 +604,7 @@ void PlanManager::_handleMissionAck(const mavlink_message_t& message)
         // MISSION_REQUEST is expected, or MISSION_ACK to end sequence
         if (missionAck.type == MAV_MISSION_ACCEPTED) {
             if (_itemIndicesToWrite.count() == 0) {
-                qCDebug(PlanManagerLog) << QStringLiteral("_handleMissionAck write sequence complete").arg(_planTypeString());
+                qCDebug(PlanManagerLog) << QStringLiteral("_handleMissionAck write sequence complete %1").arg(_planTypeString());
                 _finishTransaction(true);
             } else {
                 _sendError(MissingRequestsError, tr("Vehicle did not request all items during write sequence, missed count %1.").arg(_itemIndicesToWrite.count()));
@@ -626,14 +626,15 @@ void PlanManager::_handleMissionAck(const mavlink_message_t& message)
         // MISSION_REQUEST is expected, or MISSION_ACK to end sequence
         if (missionAck.type == MAV_MISSION_ACCEPTED) {
             qCDebug(PlanManagerLog) << QStringLiteral("_handleMissionAck %1 guided mode item accepted").arg(_planTypeString());
-            _finishTransaction(true);
+            _finishTransaction(true, true /* apmGuidedItemWrite */);
         } else {
             _sendError(VehicleError, tr("Vehicle returned error: %1. %2Vehicle did not accept guided item.").arg(_missionResultToString((MAV_MISSION_RESULT)missionAck.type)));
-            _finishTransaction(false);
+            _finishTransaction(false, true /* apmGuidedItemWrite */);
         }
         break;
     }
 }
+
 /// Called when a new mavlink message for out vehicle is received
 void PlanManager::_mavlinkMessageReceived(const mavlink_message_t& message)
 {
@@ -660,14 +661,6 @@ void PlanManager::_mavlinkMessageReceived(const mavlink_message_t& message)
 
     case MAVLINK_MSG_ID_MISSION_ACK:
         _handleMissionAck(message);
-        break;
-
-    case MAVLINK_MSG_ID_MISSION_ITEM_REACHED:
-        // FIXME: NYI
-        break;
-
-    case MAVLINK_MSG_ID_MISSION_CURRENT:
-        _handleMissionCurrent(message);
         break;
     }
 }
@@ -800,7 +793,7 @@ QString PlanManager::_missionResultToString(MAV_MISSION_RESULT result)
     return resultString + lastRequestString;
 }
 
-void PlanManager::_finishTransaction(bool success)
+void PlanManager::_finishTransaction(bool success, bool apmGuidedItemWrite)
 {
     emit progressPct(1);
     _disconnectFromMavlink();
@@ -826,22 +819,27 @@ void PlanManager::_finishTransaction(bool success)
         emit newMissionItemsAvailable(false);
         break;
     case TransactionWrite:
-        if (success) {
-            // Write succeeded, update internal list to be current            
-            _currentMissionIndex = -1;
-            _lastCurrentIndex = -1;
-            emit currentIndexChanged(-1);
-            emit lastCurrentIndexChanged(-1);
-            _clearAndDeleteMissionItems();
-            for (int i=0; i<_writeMissionItems.count(); i++) {
-                _missionItems.append(_writeMissionItems[i]);
+        // No need to do anything for ArduPilot guided go to waypoint write
+        if (!apmGuidedItemWrite) {
+            if (success) {
+                // Write succeeded, update internal list to be current
+                if (_planType == MAV_MISSION_TYPE_MISSION) {
+                    _currentMissionIndex = -1;
+                    _lastCurrentIndex = -1;
+                    emit currentIndexChanged(-1);
+                    emit lastCurrentIndexChanged(-1);
+                }
+                _clearAndDeleteMissionItems();
+                for (int i=0; i<_writeMissionItems.count(); i++) {
+                    _missionItems.append(_writeMissionItems[i]);
+                }
+                _writeMissionItems.clear();
+            } else {
+                // Write failed, throw out the write list
+                _clearAndDeleteWriteMissionItems();
             }
-            _writeMissionItems.clear();
-        } else {
-            // Write failed, throw out the write list
-            _clearAndDeleteWriteMissionItems();
+            emit sendComplete(!success /* error */);
         }
-        emit sendComplete(!success /* error */);
         break;
     case TransactionRemoveAll:
         emit removeAllComplete(!success /* error */);
@@ -863,25 +861,6 @@ void PlanManager::_finishTransaction(bool success)
 bool PlanManager::inProgress(void) const
 {
     return _transactionInProgress != TransactionNone;
-}
-
-void PlanManager::_handleMissionCurrent(const mavlink_message_t& message)
-{
-    mavlink_mission_current_t missionCurrent;
-
-    mavlink_msg_mission_current_decode(&message, &missionCurrent);
-
-    if (missionCurrent.seq != _currentMissionIndex) {
-        qCDebug(PlanManagerLog) << QStringLiteral("_handleMissionCurrent %1 currentIndex:").arg(_planTypeString()) << missionCurrent.seq;
-        _currentMissionIndex = missionCurrent.seq;
-        emit currentIndexChanged(_currentMissionIndex);
-    }
-
-    if (_vehicle->flightMode() == _vehicle->missionFlightMode() && _currentMissionIndex != _lastCurrentIndex) {
-        qCDebug(PlanManagerLog) << QStringLiteral("_handleMissionCurrent %1 lastCurrentIndex:").arg(_planTypeString()) << _currentMissionIndex;
-        _lastCurrentIndex = _currentMissionIndex;
-        emit lastCurrentIndexChanged(_lastCurrentIndex);
-    }
 }
 
 void PlanManager::_removeAllWorker(void)
@@ -915,10 +894,12 @@ void PlanManager::removeAll(void)
 
     _clearAndDeleteMissionItems();
 
-    _currentMissionIndex = -1;
-    _lastCurrentIndex = -1;
-    emit currentIndexChanged(-1);
-    emit lastCurrentIndexChanged(-1);
+    if (_planType == MAV_MISSION_TYPE_MISSION) {
+        _currentMissionIndex = -1;
+        _lastCurrentIndex = -1;
+        emit currentIndexChanged(-1);
+        emit lastCurrentIndexChanged(-1);
+    }
 
     _transactionInProgress = TransactionRemoveAll;
     _retryCount = 0;
@@ -930,7 +911,8 @@ void PlanManager::removeAll(void)
 void PlanManager::_clearAndDeleteMissionItems(void)
 {
     for (int i=0; i<_missionItems.count(); i++) {
-        _missionItems[i]->deleteLater();
+        // Using deleteLater here causes too much transient memory to stack up
+        delete _missionItems[i];
     }
     _missionItems.clear();
 }
@@ -939,7 +921,8 @@ void PlanManager::_clearAndDeleteMissionItems(void)
 void PlanManager::_clearAndDeleteWriteMissionItems(void)
 {
     for (int i=0; i<_writeMissionItems.count(); i++) {
-        _writeMissionItems[i]->deleteLater();
+        // Using deleteLater here causes too much transient memory to stack up
+        delete _writeMissionItems[i];
     }
     _writeMissionItems.clear();
 }

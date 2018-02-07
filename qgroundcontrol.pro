@@ -43,8 +43,6 @@ MacBuild {
 }
 
 iOSBuild {
-    BUNDLE.files        = $$files($$PWD/ios/AppIcon*.png) $$PWD/ios/QGCLaunchScreen.xib
-    QMAKE_BUNDLE_DATA  += BUNDLE
     LIBS               += -framework AVFoundation
     #-- Info.plist (need an "official" one for the App Store)
     ForAppStore {
@@ -63,6 +61,8 @@ iOSBuild {
         QMAKE_INFO_PLIST  = $${BASEDIR}/ios/iOS-Info.plist
         OTHER_FILES      += $${BASEDIR}/ios/iOS-Info.plist
     }
+    BUNDLE.files        = $$files($$PWD/ios/AppIcon*.png) $$PWD/ios/QGCLaunchScreen.xib $$QMAKE_INFO_PLIST
+    QMAKE_BUNDLE_DATA  += BUNDLE
     #-- TODO: Add iTunesArtwork
 }
 
@@ -233,10 +233,12 @@ QT += \
         multimedia
 }
 
-!MobileBuild {
-QT += \
-    printsupport \
-    serialport \
+AndroidBuild || iOSBuild {
+    # Android and iOS don't unclude these
+} else {
+    QT += \
+        printsupport \
+        serialport \
 }
 
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
@@ -259,12 +261,6 @@ DebugBuild {
 !iOSBuild {
     CONFIG += console
 }
-}
-
-!MobileBuild {
-# qextserialport should not be used by general QGroundControl code. Use QSerialPort instead. This is only
-# here to support special case Firmware Upgrade code.
-include(libs/qextserialport/src/qextserialport.pri)
 }
 
 #
@@ -430,6 +426,7 @@ DebugBuild { PX4FirmwarePlugin { PX4FirmwarePluginFactory  { APMFirmwarePlugin {
         src/MissionManager/SectionTest.h \
         src/MissionManager/SimpleMissionItemTest.h \
         src/MissionManager/SpeedSectionTest.h \
+        src/MissionManager/StructureScanComplexItemTest.h \
         src/MissionManager/SurveyMissionItemTest.h \
         src/MissionManager/VisualMissionItemTest.h \
         src/qgcunittest/FileDialogTest.h \
@@ -466,6 +463,7 @@ DebugBuild { PX4FirmwarePlugin { PX4FirmwarePluginFactory  { APMFirmwarePlugin {
         src/MissionManager/SectionTest.cc \
         src/MissionManager/SimpleMissionItemTest.cc \
         src/MissionManager/SpeedSectionTest.cc \
+        src/MissionManager/StructureScanComplexItemTest.cc \
         src/MissionManager/SurveyMissionItemTest.cc \
         src/MissionManager/VisualMissionItemTest.cc \
         src/qgcunittest/FileDialogTest.cc \
@@ -489,8 +487,9 @@ DebugBuild { PX4FirmwarePlugin { PX4FirmwarePluginFactory  { APMFirmwarePlugin {
 
 HEADERS += \
     src/AnalyzeView/ExifParser.h \
-    src/AnalyzeView/ULogParser.h \
+    src/AnalyzeView/LogDownloadController.h \
     src/AnalyzeView/PX4LogParser.h \
+    src/AnalyzeView/ULogParser.h \
     src/Audio/AudioOutput.h \
     src/Camera/QGCCameraControl.h \
     src/Camera/QGCCameraIO.h \
@@ -505,7 +504,9 @@ HEADERS += \
     src/JsonHelper.h \
     src/LogCompressor.h \
     src/MG.h \
+    src/MissionManager/CameraCalc.h \
     src/MissionManager/CameraSection.h \
+    src/MissionManager/CameraSpec.h \
     src/MissionManager/ComplexMissionItem.h \
     src/MissionManager/FixedWingLandingComplexItem.h \
     src/MissionManager/GeoFenceController.h \
@@ -553,6 +554,7 @@ HEADERS += \
     src/QGCToolbox.h \
     src/QmlControls/AppMessages.h \
     src/QmlControls/CoordinateVector.h \
+    src/QmlControls/EditPositionDialogController.h \
     src/QmlControls/MavlinkQmlSingleton.h \
     src/QmlControls/ParameterEditorController.h \
     src/QmlControls/QGCFileDialogController.h \
@@ -586,7 +588,7 @@ HEADERS += \
     src/uas/UAS.h \
     src/uas/UASInterface.h \
     src/uas/UASMessageHandler.h \
-    src/AnalyzeView/LogDownloadController.h \
+    src/UTM.h \
 
 AndroidBuild {
 HEADERS += \
@@ -679,8 +681,9 @@ AndroidBuild {
 
 SOURCES += \
     src/AnalyzeView/ExifParser.cc \
-    src/AnalyzeView/ULogParser.cc \
+    src/AnalyzeView/LogDownloadController.cc \
     src/AnalyzeView/PX4LogParser.cc \
+    src/AnalyzeView/ULogParser.cc \
     src/Audio/AudioOutput.cc \
     src/Camera/QGCCameraControl.cc \
     src/Camera/QGCCameraIO.cc \
@@ -693,7 +696,9 @@ SOURCES += \
     src/Joystick/JoystickManager.cc \
     src/JsonHelper.cc \
     src/LogCompressor.cc \
+    src/MissionManager/CameraCalc.cc \
     src/MissionManager/CameraSection.cc \
+    src/MissionManager/CameraSpec.cc \
     src/MissionManager/ComplexMissionItem.cc \
     src/MissionManager/FixedWingLandingComplexItem.cc \
     src/MissionManager/GeoFenceController.cc \
@@ -739,6 +744,7 @@ SOURCES += \
     src/QGCToolbox.cc \
     src/QmlControls/AppMessages.cc \
     src/QmlControls/CoordinateVector.cc \
+    src/QmlControls/EditPositionDialogController.cc \
     src/QmlControls/ParameterEditorController.cc \
     src/QmlControls/QGCFileDialogController.cc \
     src/QmlControls/QGCImageProvider.cc \
@@ -770,7 +776,7 @@ SOURCES += \
     src/main.cc \
     src/uas/UAS.cc \
     src/uas/UASMessageHandler.cc \
-    src/AnalyzeView/LogDownloadController.cc \
+    src/UTM.cpp \
 
 DebugBuild {
 SOURCES += \

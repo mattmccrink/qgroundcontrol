@@ -63,8 +63,9 @@ MissionSettingsItem::MissionSettingsItem(Vehicle* vehicle, QObject* parent)
     connect(&_cameraSection,    &CameraSection::dirtyChanged,   this, &MissionSettingsItem::_sectionDirtyChanged);
     connect(&_speedSection,     &SpeedSection::dirtyChanged,    this, &MissionSettingsItem::_sectionDirtyChanged);
 
-    connect(&_cameraSection,    &CameraSection::specifiedGimbalYawChanged,  this, &MissionSettingsItem::specifiedGimbalYawChanged);
-    connect(&_speedSection,     &SpeedSection::specifiedFlightSpeedChanged, this, &MissionSettingsItem::specifiedFlightSpeedChanged);
+    connect(&_cameraSection,    &CameraSection::specifiedGimbalYawChanged,      this, &MissionSettingsItem::specifiedGimbalYawChanged);
+    connect(&_cameraSection,    &CameraSection::specifiedGimbalPitchChanged,    this, &MissionSettingsItem::specifiedGimbalPitchChanged);
+    connect(&_speedSection,     &SpeedSection::specifiedFlightSpeedChanged,     this, &MissionSettingsItem::specifiedFlightSpeedChanged);
 }
 
 int MissionSettingsItem::lastSequenceNumber(void) const
@@ -259,6 +260,11 @@ double MissionSettingsItem::specifiedGimbalYaw(void)
     return _cameraSection.specifyGimbal() ? _cameraSection.gimbalYaw()->rawValue().toDouble() : std::numeric_limits<double>::quiet_NaN();
 }
 
+double MissionSettingsItem::specifiedGimbalPitch(void)
+{
+    return _cameraSection.specifyGimbal() ? _cameraSection.gimbalPitch()->rawValue().toDouble() : std::numeric_limits<double>::quiet_NaN();
+}
+
 void MissionSettingsItem::_updateAltitudeInCoordinate(QVariant value)
 {
     double newAltitude = value.toDouble();
@@ -291,6 +297,11 @@ void MissionSettingsItem::setMissionEndRTL(bool missionEndRTL)
 void MissionSettingsItem::_setHomeAltFromTerrain(double terrainAltitude)
 {
     if (!_plannedHomePositionFromVehicle) {
+		// We need to stop this from signalling, Otherwise the dirty but get set on a delay
+		// which then marks the Plan view as incorrectly dirty
+        _plannedHomePositionAltitudeFact.setSendValueChangedSignals(false);
         _plannedHomePositionAltitudeFact.setRawValue(terrainAltitude);
+        _plannedHomePositionAltitudeFact.clearDeferredValueChangeSignal();
+        _plannedHomePositionAltitudeFact.setSendValueChangedSignals(true);
     }
 }

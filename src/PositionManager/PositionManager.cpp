@@ -12,9 +12,12 @@
 #include "QGCCorePlugin.h"
 
 QGCPositionManager::QGCPositionManager(QGCApplication* app, QGCToolbox* toolbox)
-    : QGCTool(app, toolbox)
-    , _updateInterval(0)
-    , _currentSource(nullptr)
+    : QGCTool           (app, toolbox)
+    , _updateInterval   (0)
+    , _currentSource    (NULL)
+    , _defaultSource    (NULL)
+    , _nmeaSource       (NULL)
+    , _simulatedSource  (NULL)
 {
 
 }
@@ -22,6 +25,7 @@ QGCPositionManager::QGCPositionManager(QGCApplication* app, QGCToolbox* toolbox)
 QGCPositionManager::~QGCPositionManager()
 {
     delete(_simulatedSource);
+    delete(_nmeaSource);
 }
 
 void QGCPositionManager::setToolbox(QGCToolbox *toolbox)
@@ -32,6 +36,7 @@ void QGCPositionManager::setToolbox(QGCToolbox *toolbox)
    if(!_defaultSource) {
        //-- Otherwise, create a default one
        _defaultSource = QGeoPositionInfoSource::createDefaultSource(this);
+       qDebug() << _defaultSource;
    }
    _simulatedSource = new SimulatedPosition();
 
@@ -40,10 +45,20 @@ void QGCPositionManager::setToolbox(QGCToolbox *toolbox)
    //     _defaultSource = _simulatedSource;
    // }
 
-   setPositionSource(QGCPositionSource::GPS);
+   setPositionSource(QGCPositionSource::InternalGPS);
 }
 
-void QGCPositionManager::positionUpdated(const QGeoPositionInfo &update)
+void QGCPositionManager::setNmeaSourceDevice(QIODevice* device)
+{
+    if (_nmeaSource) {
+        delete _nmeaSource;
+    }
+    _nmeaSource = new QNmeaPositionInfoSource(QNmeaPositionInfoSource::RealTimeMode, this);
+    _nmeaSource->setDevice(device);
+    setPositionSource(QGCPositionManager::NmeaGPS);
+}
+
+void QGCPositionManager::_positionUpdated(const QGeoPositionInfo &update)
 {
     emit lastPositionUpdated(update.isValid(), QVariant::fromValue(update.coordinate()));
     emit positionInfoUpdated(update);
@@ -58,7 +73,12 @@ void QGCPositionManager::setPositionSource(QGCPositionManager::QGCPositionSource
 {
     if (_currentSource != nullptr) {
         _currentSource->stopUpdates();
-        disconnect(_currentSource, SIGNAL(positionUpdated(QGeoPositionInfo)), this, SLOT(positionUpdated(QGeoPositionInfo)));
+        disconnect(_currentSource);
+    }
+
+    if (qgcApp()->runningUnitTests()) {
+        // Units test on travis fail due to lack of position source
+        return;
     }
 
     switch(source) {
@@ -67,7 +87,10 @@ void QGCPositionManager::setPositionSource(QGCPositionManager::QGCPositionSource
     case QGCPositionManager::Simulated:
         _currentSource = _simulatedSource;
         break;
-    case QGCPositionManager::GPS:
+    case QGCPositionManager::NmeaGPS:
+        _currentSource = _nmeaSource;
+        break;
+    case QGCPositionManager::InternalGPS:
     default:        
         _currentSource = _defaultSource;
         break;
@@ -77,8 +100,13 @@ void QGCPositionManager::setPositionSource(QGCPositionManager::QGCPositionSource
         _updateInterval = _currentSource->minimumUpdateInterval();
         _currentSource->setPreferredPositioningMethods(QGeoPositionInfoSource::SatellitePositioningMethods);
         _currentSource->setUpdateInterval(_updateInterval);
-        connect(_currentSource, SIGNAL(positionUpdated(QGeoPositionInfo)), this, SLOT(positionUpdated(QGeoPositionInfo)));
+        connect(_currentSource, &QGeoPositionInfoSource::positionUpdated,       this, &QGCPositionManager::_positionUpdated);
+        connect(_currentSource, SIGNAL(error(QGeoPositionInfoSource::Error)),   this, SLOT(_error(QGeoPositionInfoSource::Error)));
         _currentSource->startUpdates();
     }
 }
 
+void QGCPositionManager::_error(QGeoPositionInfoSource::Error positioningError)
+{
+    qWarning() << "QGCPositionManager error" << positioningError;
+}

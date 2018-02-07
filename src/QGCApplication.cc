@@ -81,6 +81,9 @@
 #include "SettingsManager.h"
 #include "QGCCorePlugin.h"
 #include "QGCCameraManager.h"
+#include "CameraCalc.h"
+#include "VisualMissionItem.h"
+#include "EditPositionDialogController.h"
 
 #ifndef NO_SERIAL_LINK
 #include "SerialLink.h"
@@ -308,8 +311,20 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     }
 #endif
 
+    // gstreamer debug settings
+    QString savePath, gstDebugLevel;
+    if (settings.contains(AppSettings::savePathName)) {
+         savePath = settings.value("SavePath").toString() + "/Logs/gst"; // hardcode log path here, appsetting is not available yet
+         if (!QDir(savePath).exists()) {
+             QDir().mkdir(savePath);
+         }
+    }
+    if (settings.contains(AppSettings::gstDebugName)) {
+        gstDebugLevel = "*:" + settings.value("GstreamerDebugLevel").toString();
+    }
+
     // Initialize Video Streaming
-    initializeVideoStreaming(argc, argv);
+    initializeVideoStreaming(argc, argv, savePath.toUtf8().data(), gstDebugLevel.toUtf8().data());
 
     _toolbox = new QGCToolbox(this);
     _toolbox->setChildToolboxes();
@@ -348,6 +363,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<CoordinateVector>    ("QGroundControl",                      1, 0, "CoordinateVector",       "Reference only");
     qmlRegisterUncreatableType<QmlObjectListModel>  ("QGroundControl",                      1, 0, "QmlObjectListModel",     "Reference only");
     qmlRegisterUncreatableType<MissionCommandTree>  ("QGroundControl",                      1, 0, "MissionCommandTree",     "Reference only");
+    qmlRegisterUncreatableType<CameraCalc>          ("QGroundControl",                      1, 0, "CameraCalc",             "Reference only");
 
     qmlRegisterUncreatableType<AutoPilotPlugin>     ("QGroundControl.AutoPilotPlugin",      1, 0, "AutoPilotPlugin",        "Reference only");
     qmlRegisterUncreatableType<VehicleComponent>    ("QGroundControl.AutoPilotPlugin",      1, 0, "VehicleComponent",       "Reference only");
@@ -364,6 +380,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<MissionController>   ("QGroundControl.Controllers",          1, 0, "MissionController",      "Reference only");
     qmlRegisterUncreatableType<GeoFenceController>  ("QGroundControl.Controllers",          1, 0, "GeoFenceController",     "Reference only");
     qmlRegisterUncreatableType<RallyPointController>("QGroundControl.Controllers",          1, 0, "RallyPointController",   "Reference only");
+    qmlRegisterUncreatableType<VisualMissionItem>   ("QGroundControl.Controllers",          1, 0, "VisualMissionItem",      "Reference only");
 
     qmlRegisterType<ParameterEditorController>      ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
     qmlRegisterType<ESP8266ComponentController>     ("QGroundControl.Controllers", 1, 0, "ESP8266ComponentController");
@@ -375,6 +392,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterType<JoystickConfigController>       ("QGroundControl.Controllers", 1, 0, "JoystickConfigController");
     qmlRegisterType<LogDownloadController>          ("QGroundControl.Controllers", 1, 0, "LogDownloadController");
     qmlRegisterType<SyslinkComponentController>     ("QGroundControl.Controllers", 1, 0, "SyslinkComponentController");
+    qmlRegisterType<EditPositionDialogController>   ("QGroundControl.Controllers", 1, 0, "EditPositionDialogController");
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
     qmlRegisterType<CustomCommandWidgetController>  ("QGroundControl.Controllers", 1, 0, "CustomCommandWidgetController");

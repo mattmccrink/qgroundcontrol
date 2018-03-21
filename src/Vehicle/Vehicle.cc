@@ -821,8 +821,8 @@ void Vehicle::_handleCompactState(mavlink_message_t&message)
 
     double groundspeed = sqrt(compactState.vx*compactState.vx + compactState.vy*compactState.vy);
     _airSpeedFact.setRawValue(qIsNaN((double) compactState.airspeed) ? 0 : compactState.airspeed/1000.0); //mm/s to m/s
-    _groundSpeedFact.setRawValue(qIsNaN(groundspeed) ? 0 : groundspeed/1000.0); //mm/s to m/s
-    _climbRateFact.setRawValue(qIsNaN((double) compactState.vz) ? 0 : -compactState.vz/1000.0); //mm/s to m/s
+    _groundSpeedFact.setRawValue(qIsNaN(groundspeed) ? 0 : groundspeed/1000000.0); //um/s to m/s
+    _climbRateFact.setRawValue(qIsNaN((double) compactState.vz) ? 0 : -compactState.vz/1000000.0); //um/s to m/s
     _gpsRawIntMessageAvailable = true;
     _coordinate.setLatitude(compactState.x  / (double)1E7);
     _coordinate.setLongitude(compactState.y / (double)1E7);
@@ -831,7 +831,7 @@ void Vehicle::_handleCompactState(mavlink_message_t&message)
     _altitudeAMSLFact.setRawValue(compactState.z / 1000.0);
     double cog = atan2(compactState.vy,compactState.vx)*180.0/M_PI;
     _gpsFactGroup.courseOverGround()->setRawValue(cog);
-    _gpsFactGroup.lock()->setRawValue(3);
+    //_gpsFactGroup.lock()->setRawValue(3);
 }
 
 void Vehicle::_handleTurbineState(mavlink_message_t&message)

@@ -366,9 +366,15 @@ SetupPage {
                                 id:         enabledCheckBox
                                 enabled:    _activeJoystick ? _activeJoystick.calibrated : false
                                 text:       _activeJoystick ? _activeJoystick.calibrated ? qsTr("Enable joystick input") : qsTr("Enable not allowed (Calibrate First)") : ""
-                                checked:    _activeVehicle.joystickEnabled
 
-                                onClicked:  _activeVehicle.joystickEnabled = checked
+                                onClicked:  _activeJoystick.outputEnabled = checked
+
+                                Connections {
+                                    target: _activeJoystick
+                                    onOutputEnabledChanged: {
+                                        enabledCheckBox.checked=enabled
+                                    }
+                                }
 
                                 Connections {
                                     target: joystickManager
@@ -521,6 +527,22 @@ SetupPage {
                                     model:          _activeVehicle.joystickModes
 
                                     onActivated: _activeVehicle.joystickMode = index
+                                }
+                            }
+
+                            Row {
+                                width:      parent.width
+                                spacing:    ScreenTools.defaultFontPixelWidth
+                                visible:    advancedSettings.checked
+                                QGCCheckBox {
+                                    id:         joystickCircleCorrection
+                                    checked:    _activeVehicle.joystickMode != 0
+                                    text:       qsTr("Enable circle correction")
+
+                                    Component.onCompleted: checked = _activeJoystick.circleCorrection
+                                    onClicked: {
+                                        _activeJoystick.circleCorrection = checked
+                                    }
                                 }
                             }
 

@@ -21,6 +21,7 @@
 #include <QtLocation/private/qgeotiledmapreply_p.h>
 
 Q_DECLARE_LOGGING_CATEGORY(TerrainQueryLog)
+Q_DECLARE_LOGGING_CATEGORY(TerrainQueryVerboseLog)
 
 class TerrainAtCoordinateQuery;
 
@@ -68,7 +69,8 @@ public:
 
 private slots:
     void _requestError              (QNetworkReply::NetworkError code);
-    void _requestFinished           ();
+    void _requestFinished           (void);
+    void _sslErrors                 (const QList<QSslError> &errors);
 
 private:
     void _sendQuery                 (const QString& path, const QUrlQuery& urlQuery);

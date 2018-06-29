@@ -76,6 +76,7 @@
 #include "FollowMe.h"
 #include "MissionCommandTree.h"
 #include "QGCMapPolygon.h"
+#include "QGCMapCircle.h"
 #include "ParameterManager.h"
 #include "SettingsManager.h"
 #include "QGCCorePlugin.h"
@@ -83,6 +84,8 @@
 #include "CameraCalc.h"
 #include "VisualMissionItem.h"
 #include "EditPositionDialogController.h"
+#include "FactValueSliderListModel.h"
+#include "KMLFileHelper.h"
 
 #ifndef NO_SERIAL_LINK
 #include "SerialLink.h"
@@ -136,6 +139,11 @@ static QObject* qgroundcontrolQmlGlobalSingletonFactory(QQmlEngine*, QJSEngine*)
     qmlGlobal->setToolbox(qgcApp()->toolbox());
 
     return qmlGlobal;
+}
+
+static QObject* kmlFileHelperSingletonFactory(QQmlEngine*, QJSEngine*)
+{
+    return new KMLFileHelper;
 }
 
 QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
@@ -360,6 +368,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<ParameterManager>    ("QGroundControl.Vehicle",              1, 0, "ParameterManager",       "Reference only");
     qmlRegisterUncreatableType<QGCCameraManager>    ("QGroundControl.Vehicle",              1, 0, "QGCCameraManager",       "Reference only");
     qmlRegisterUncreatableType<QGCCameraControl>    ("QGroundControl.Vehicle",              1, 0, "QGCCameraControl",       "Reference only");
+    qmlRegisterUncreatableType<LinkInterface>       ("QGroundControl.Vehicle",              1, 0, "LinkInterface",          "Reference only");
     qmlRegisterUncreatableType<JoystickManager>     ("QGroundControl.JoystickManager",      1, 0, "JoystickManager",        "Reference only");
     qmlRegisterUncreatableType<Joystick>            ("QGroundControl.JoystickManager",      1, 0, "Joystick",               "Reference only");
     qmlRegisterUncreatableType<QGCPositionManager>  ("QGroundControl.QGCPositionManager",   1, 0, "QGCPositionManager",     "Reference only");
@@ -368,6 +377,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<GeoFenceController>  ("QGroundControl.Controllers",          1, 0, "GeoFenceController",     "Reference only");
     qmlRegisterUncreatableType<RallyPointController>("QGroundControl.Controllers",          1, 0, "RallyPointController",   "Reference only");
     qmlRegisterUncreatableType<VisualMissionItem>   ("QGroundControl.Controllers",          1, 0, "VisualMissionItem",      "Reference only");
+    qmlRegisterUncreatableType<FactValueSliderListModel>("QGroundControl.FactControls",     1, 0, "FactValueSliderListModel","Reference only");
 
     qmlRegisterType<ParameterEditorController>      ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
     qmlRegisterType<ESP8266ComponentController>     ("QGroundControl.Controllers", 1, 0, "ESP8266ComponentController");
@@ -380,6 +390,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterType<LogDownloadController>          ("QGroundControl.Controllers", 1, 0, "LogDownloadController");
     qmlRegisterType<SyslinkComponentController>     ("QGroundControl.Controllers", 1, 0, "SyslinkComponentController");
     qmlRegisterType<EditPositionDialogController>   ("QGroundControl.Controllers", 1, 0, "EditPositionDialogController");
+    qmlRegisterType<QGCMapCircle>                   ("QGroundControl.FlightMap",   1, 0, "QGCMapCircle");
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
     qmlRegisterType<CustomCommandWidgetController>  ("QGroundControl.Controllers", 1, 0, "CustomCommandWidgetController");
@@ -391,6 +402,7 @@ void QGCApplication::_initCommon(void)
     // Register Qml Singletons
     qmlRegisterSingletonType<QGroundControlQmlGlobal>   ("QGroundControl",                          1, 0, "QGroundControl",         qgroundcontrolQmlGlobalSingletonFactory);
     qmlRegisterSingletonType<ScreenToolsController>     ("QGroundControl.ScreenToolsController",    1, 0, "ScreenToolsController",  screenToolsControllerSingletonFactory);
+    qmlRegisterSingletonType<KMLFileHelper>             ("QGroundControl.KMLFileHelper",            1, 0, "KMLFileHelper",          kmlFileHelperSingletonFactory);
 }
 
 bool QGCApplication::_initForNormalAppBoot(void)

@@ -134,7 +134,7 @@ Rectangle {
         SectionHeader {
             id:         terrainHeader
             text:       qsTr("Terrain")
-            checked:    false
+            checked:    missionItem.followTerrain
         }
 
         ColumnLayout {
@@ -189,16 +189,6 @@ Rectangle {
             text:   qsTr("Statistics")
         }
 
-        Grid {
-            columns:        2
-            columnSpacing:  ScreenTools.defaultFontPixelWidth
-            visible:        statsHeader.checked
-
-            QGCLabel { text: qsTr("Photo count") }
-            QGCLabel { text: missionItem.cameraShots }
-
-            QGCLabel { text: qsTr("Photo interval") }
-            QGCLabel { text: missionItem.timeBetweenShots.toFixed(1) + " " + qsTr("secs") }
-        }
+        TransectStyleComplexItemStats { }
     } // Column
 } // Rectangle

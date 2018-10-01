@@ -5,13 +5,13 @@
 
 MAVPACKED(
 typedef struct __mavlink_turbine_state_t {
- uint32_t time_boot_ms; /*< Timestamp of the component clock since boot time in milliseconds.*/
- int32_t RPM; /*< Turbine RPM*/
- int16_t EGT; /*< Exhaust gas temperature*/
- int16_t FuelConsumed; /*< Total fuel consumed (mL)*/
- int16_t FuelFlow; /*< Fuel Flow in mL/min*/
- int16_t FuelRemaining; /*< Total fuel remaining (mL)*/
- int8_t State; /*< Turbine operational state*/
+ uint32_t time_boot_ms; /*<  Timestamp of the component clock since boot time in milliseconds.*/
+ int32_t RPM; /*<  Turbine RPM*/
+ int16_t EGT; /*<  Exhaust gas temperature*/
+ int16_t FuelConsumed; /*<  Total fuel consumed (mL)*/
+ int16_t FuelFlow; /*<  Fuel Flow in mL/min*/
+ int16_t FuelRemaining; /*<  Total fuel remaining (mL)*/
+ int8_t State; /*<  Turbine operational state*/
 }) mavlink_turbine_state_t;
 
 #define MAVLINK_MSG_ID_TURBINE_STATE_LEN 17
@@ -59,13 +59,13 @@ typedef struct __mavlink_turbine_state_t {
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param time_boot_ms Timestamp of the component clock since boot time in milliseconds.
- * @param RPM Turbine RPM
- * @param EGT Exhaust gas temperature
- * @param FuelConsumed Total fuel consumed (mL)
- * @param FuelFlow Fuel Flow in mL/min
- * @param FuelRemaining Total fuel remaining (mL)
- * @param State Turbine operational state
+ * @param time_boot_ms  Timestamp of the component clock since boot time in milliseconds.
+ * @param RPM  Turbine RPM
+ * @param EGT  Exhaust gas temperature
+ * @param FuelConsumed  Total fuel consumed (mL)
+ * @param FuelFlow  Fuel Flow in mL/min
+ * @param FuelRemaining  Total fuel remaining (mL)
+ * @param State  Turbine operational state
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_turbine_state_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -105,13 +105,13 @@ static inline uint16_t mavlink_msg_turbine_state_pack(uint8_t system_id, uint8_t
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param time_boot_ms Timestamp of the component clock since boot time in milliseconds.
- * @param RPM Turbine RPM
- * @param EGT Exhaust gas temperature
- * @param FuelConsumed Total fuel consumed (mL)
- * @param FuelFlow Fuel Flow in mL/min
- * @param FuelRemaining Total fuel remaining (mL)
- * @param State Turbine operational state
+ * @param time_boot_ms  Timestamp of the component clock since boot time in milliseconds.
+ * @param RPM  Turbine RPM
+ * @param EGT  Exhaust gas temperature
+ * @param FuelConsumed  Total fuel consumed (mL)
+ * @param FuelFlow  Fuel Flow in mL/min
+ * @param FuelRemaining  Total fuel remaining (mL)
+ * @param State  Turbine operational state
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_turbine_state_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -177,13 +177,13 @@ static inline uint16_t mavlink_msg_turbine_state_encode_chan(uint8_t system_id, 
  * @brief Send a turbine_state message
  * @param chan MAVLink channel to send the message
  *
- * @param time_boot_ms Timestamp of the component clock since boot time in milliseconds.
- * @param RPM Turbine RPM
- * @param EGT Exhaust gas temperature
- * @param FuelConsumed Total fuel consumed (mL)
- * @param FuelFlow Fuel Flow in mL/min
- * @param FuelRemaining Total fuel remaining (mL)
- * @param State Turbine operational state
+ * @param time_boot_ms  Timestamp of the component clock since boot time in milliseconds.
+ * @param RPM  Turbine RPM
+ * @param EGT  Exhaust gas temperature
+ * @param FuelConsumed  Total fuel consumed (mL)
+ * @param FuelFlow  Fuel Flow in mL/min
+ * @param FuelRemaining  Total fuel remaining (mL)
+ * @param State  Turbine operational state
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -272,7 +272,7 @@ static inline void mavlink_msg_turbine_state_send_buf(mavlink_message_t *msgbuf,
 /**
  * @brief Get field time_boot_ms from turbine_state message
  *
- * @return Timestamp of the component clock since boot time in milliseconds.
+ * @return  Timestamp of the component clock since boot time in milliseconds.
  */
 static inline uint32_t mavlink_msg_turbine_state_get_time_boot_ms(const mavlink_message_t* msg)
 {
@@ -282,7 +282,7 @@ static inline uint32_t mavlink_msg_turbine_state_get_time_boot_ms(const mavlink_
 /**
  * @brief Get field RPM from turbine_state message
  *
- * @return Turbine RPM
+ * @return  Turbine RPM
  */
 static inline int32_t mavlink_msg_turbine_state_get_RPM(const mavlink_message_t* msg)
 {
@@ -292,7 +292,7 @@ static inline int32_t mavlink_msg_turbine_state_get_RPM(const mavlink_message_t*
 /**
  * @brief Get field EGT from turbine_state message
  *
- * @return Exhaust gas temperature
+ * @return  Exhaust gas temperature
  */
 static inline int16_t mavlink_msg_turbine_state_get_EGT(const mavlink_message_t* msg)
 {
@@ -302,7 +302,7 @@ static inline int16_t mavlink_msg_turbine_state_get_EGT(const mavlink_message_t*
 /**
  * @brief Get field FuelConsumed from turbine_state message
  *
- * @return Total fuel consumed (mL)
+ * @return  Total fuel consumed (mL)
  */
 static inline int16_t mavlink_msg_turbine_state_get_FuelConsumed(const mavlink_message_t* msg)
 {
@@ -312,7 +312,7 @@ static inline int16_t mavlink_msg_turbine_state_get_FuelConsumed(const mavlink_m
 /**
  * @brief Get field FuelFlow from turbine_state message
  *
- * @return Fuel Flow in mL/min
+ * @return  Fuel Flow in mL/min
  */
 static inline int16_t mavlink_msg_turbine_state_get_FuelFlow(const mavlink_message_t* msg)
 {
@@ -322,7 +322,7 @@ static inline int16_t mavlink_msg_turbine_state_get_FuelFlow(const mavlink_messa
 /**
  * @brief Get field FuelRemaining from turbine_state message
  *
- * @return Total fuel remaining (mL)
+ * @return  Total fuel remaining (mL)
  */
 static inline int16_t mavlink_msg_turbine_state_get_FuelRemaining(const mavlink_message_t* msg)
 {
@@ -332,7 +332,7 @@ static inline int16_t mavlink_msg_turbine_state_get_FuelRemaining(const mavlink_
 /**
  * @brief Get field State from turbine_state message
  *
- * @return Turbine operational state
+ * @return  Turbine operational state
  */
 static inline int8_t mavlink_msg_turbine_state_get_State(const mavlink_message_t* msg)
 {

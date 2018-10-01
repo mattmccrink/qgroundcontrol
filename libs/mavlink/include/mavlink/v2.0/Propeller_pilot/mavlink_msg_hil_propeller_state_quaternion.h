@@ -5,25 +5,25 @@
 
 MAVPACKED(
 typedef struct __mavlink_hil_propeller_state_quaternion_t {
- uint64_t time_usec; /*< Timestamp (microseconds since UNIX epoch or microseconds since system boot)*/
- int32_t attitude_quaternion[4]; /*< Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)*/
- int32_t rollspeed; /*< Body frame roll / phi angular speed (rad/s) * 1E7*/
- int32_t pitchspeed; /*< Body frame pitch / theta angular speed (rad/s) * 1E7*/
- int32_t yawspeed; /*< Body frame yaw / psi angular speed (rad/s) * 1E7*/
- int32_t xacc; /*< X acceleration (g) * 1E7*/
- int32_t yacc; /*< Y acceleration (g) * 1E7*/
- int32_t zacc; /*< Z acceleration (g) * 1E7*/
- int32_t lat; /*< Latitude, expressed as * 1E7*/
- int32_t lon; /*< Longitude, expressed as * 1E7*/
- int32_t alt; /*< Altitude in meters, expressed as * 1000 (millimeters)*/
- int16_t vx; /*< Ground X Speed (Latitude), expressed as m/s * 100*/
- int16_t vy; /*< Ground Y Speed (Longitude), expressed as m/s * 100*/
- int16_t vz; /*< Ground Z Speed (Altitude), expressed as m/s * 100*/
- uint16_t ind_airspeed; /*< Indicated airspeed, expressed as m/s * 100*/
- uint16_t true_airspeed; /*< True airspeed, expressed as m/s * 100*/
- int16_t xmag; /*< x magnetometer in Guass * 1000*/
- uint16_t ymag; /*< y magnetometer in Guass * 1000*/
- uint16_t zmag; /*< z magnetometer in Guass * 1000*/
+ uint64_t time_usec; /*<  Timestamp (microseconds since UNIX epoch or microseconds since system boot)*/
+ int32_t attitude_quaternion[4]; /*<  Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)*/
+ int32_t rollspeed; /*<  Body frame roll / phi angular speed (rad/s) * 1E7*/
+ int32_t pitchspeed; /*<  Body frame pitch / theta angular speed (rad/s) * 1E7*/
+ int32_t yawspeed; /*<  Body frame yaw / psi angular speed (rad/s) * 1E7*/
+ int32_t xacc; /*<  X acceleration (g) * 1E7*/
+ int32_t yacc; /*<  Y acceleration (g) * 1E7*/
+ int32_t zacc; /*<  Z acceleration (g) * 1E7*/
+ int32_t lat; /*<  Latitude, expressed as * 1E7*/
+ int32_t lon; /*<  Longitude, expressed as * 1E7*/
+ int32_t alt; /*<  Altitude in meters, expressed as * 1000 (millimeters)*/
+ int16_t vx; /*<  Ground X Speed (Latitude), expressed as m/s * 100*/
+ int16_t vy; /*<  Ground Y Speed (Longitude), expressed as m/s * 100*/
+ int16_t vz; /*<  Ground Z Speed (Altitude), expressed as m/s * 100*/
+ uint16_t ind_airspeed; /*<  Indicated airspeed, expressed as m/s * 100*/
+ uint16_t true_airspeed; /*<  True airspeed, expressed as m/s * 100*/
+ int16_t xmag; /*<  x magnetometer in Guass * 1000*/
+ uint16_t ymag; /*<  y magnetometer in Guass * 1000*/
+ uint16_t zmag; /*<  z magnetometer in Guass * 1000*/
 }) mavlink_hil_propeller_state_quaternion_t;
 
 #define MAVLINK_MSG_ID_HIL_PROPELLER_STATE_QUATERNION_LEN 76
@@ -95,25 +95,25 @@ typedef struct __mavlink_hil_propeller_state_quaternion_t {
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param time_usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
- * @param attitude_quaternion Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)
- * @param rollspeed Body frame roll / phi angular speed (rad/s) * 1E7
- * @param pitchspeed Body frame pitch / theta angular speed (rad/s) * 1E7
- * @param yawspeed Body frame yaw / psi angular speed (rad/s) * 1E7
- * @param xacc X acceleration (g) * 1E7
- * @param yacc Y acceleration (g) * 1E7
- * @param zacc Z acceleration (g) * 1E7
- * @param lat Latitude, expressed as * 1E7
- * @param lon Longitude, expressed as * 1E7
- * @param alt Altitude in meters, expressed as * 1000 (millimeters)
- * @param vx Ground X Speed (Latitude), expressed as m/s * 100
- * @param vy Ground Y Speed (Longitude), expressed as m/s * 100
- * @param vz Ground Z Speed (Altitude), expressed as m/s * 100
- * @param ind_airspeed Indicated airspeed, expressed as m/s * 100
- * @param true_airspeed True airspeed, expressed as m/s * 100
- * @param xmag x magnetometer in Guass * 1000
- * @param ymag y magnetometer in Guass * 1000
- * @param zmag z magnetometer in Guass * 1000
+ * @param time_usec  Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+ * @param attitude_quaternion  Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)
+ * @param rollspeed  Body frame roll / phi angular speed (rad/s) * 1E7
+ * @param pitchspeed  Body frame pitch / theta angular speed (rad/s) * 1E7
+ * @param yawspeed  Body frame yaw / psi angular speed (rad/s) * 1E7
+ * @param xacc  X acceleration (g) * 1E7
+ * @param yacc  Y acceleration (g) * 1E7
+ * @param zacc  Z acceleration (g) * 1E7
+ * @param lat  Latitude, expressed as * 1E7
+ * @param lon  Longitude, expressed as * 1E7
+ * @param alt  Altitude in meters, expressed as * 1000 (millimeters)
+ * @param vx  Ground X Speed (Latitude), expressed as m/s * 100
+ * @param vy  Ground Y Speed (Longitude), expressed as m/s * 100
+ * @param vz  Ground Z Speed (Altitude), expressed as m/s * 100
+ * @param ind_airspeed  Indicated airspeed, expressed as m/s * 100
+ * @param true_airspeed  True airspeed, expressed as m/s * 100
+ * @param xmag  x magnetometer in Guass * 1000
+ * @param ymag  y magnetometer in Guass * 1000
+ * @param zmag  z magnetometer in Guass * 1000
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -175,25 +175,25 @@ static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_pack(uint8_t s
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param time_usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
- * @param attitude_quaternion Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)
- * @param rollspeed Body frame roll / phi angular speed (rad/s) * 1E7
- * @param pitchspeed Body frame pitch / theta angular speed (rad/s) * 1E7
- * @param yawspeed Body frame yaw / psi angular speed (rad/s) * 1E7
- * @param xacc X acceleration (g) * 1E7
- * @param yacc Y acceleration (g) * 1E7
- * @param zacc Z acceleration (g) * 1E7
- * @param lat Latitude, expressed as * 1E7
- * @param lon Longitude, expressed as * 1E7
- * @param alt Altitude in meters, expressed as * 1000 (millimeters)
- * @param vx Ground X Speed (Latitude), expressed as m/s * 100
- * @param vy Ground Y Speed (Longitude), expressed as m/s * 100
- * @param vz Ground Z Speed (Altitude), expressed as m/s * 100
- * @param ind_airspeed Indicated airspeed, expressed as m/s * 100
- * @param true_airspeed True airspeed, expressed as m/s * 100
- * @param xmag x magnetometer in Guass * 1000
- * @param ymag y magnetometer in Guass * 1000
- * @param zmag z magnetometer in Guass * 1000
+ * @param time_usec  Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+ * @param attitude_quaternion  Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)
+ * @param rollspeed  Body frame roll / phi angular speed (rad/s) * 1E7
+ * @param pitchspeed  Body frame pitch / theta angular speed (rad/s) * 1E7
+ * @param yawspeed  Body frame yaw / psi angular speed (rad/s) * 1E7
+ * @param xacc  X acceleration (g) * 1E7
+ * @param yacc  Y acceleration (g) * 1E7
+ * @param zacc  Z acceleration (g) * 1E7
+ * @param lat  Latitude, expressed as * 1E7
+ * @param lon  Longitude, expressed as * 1E7
+ * @param alt  Altitude in meters, expressed as * 1000 (millimeters)
+ * @param vx  Ground X Speed (Latitude), expressed as m/s * 100
+ * @param vy  Ground Y Speed (Longitude), expressed as m/s * 100
+ * @param vz  Ground Z Speed (Altitude), expressed as m/s * 100
+ * @param ind_airspeed  Indicated airspeed, expressed as m/s * 100
+ * @param true_airspeed  True airspeed, expressed as m/s * 100
+ * @param xmag  x magnetometer in Guass * 1000
+ * @param ymag  y magnetometer in Guass * 1000
+ * @param zmag  z magnetometer in Guass * 1000
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -281,25 +281,25 @@ static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_encode_chan(ui
  * @brief Send a hil_propeller_state_quaternion message
  * @param chan MAVLink channel to send the message
  *
- * @param time_usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
- * @param attitude_quaternion Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)
- * @param rollspeed Body frame roll / phi angular speed (rad/s) * 1E7
- * @param pitchspeed Body frame pitch / theta angular speed (rad/s) * 1E7
- * @param yawspeed Body frame yaw / psi angular speed (rad/s) * 1E7
- * @param xacc X acceleration (g) * 1E7
- * @param yacc Y acceleration (g) * 1E7
- * @param zacc Z acceleration (g) * 1E7
- * @param lat Latitude, expressed as * 1E7
- * @param lon Longitude, expressed as * 1E7
- * @param alt Altitude in meters, expressed as * 1000 (millimeters)
- * @param vx Ground X Speed (Latitude), expressed as m/s * 100
- * @param vy Ground Y Speed (Longitude), expressed as m/s * 100
- * @param vz Ground Z Speed (Altitude), expressed as m/s * 100
- * @param ind_airspeed Indicated airspeed, expressed as m/s * 100
- * @param true_airspeed True airspeed, expressed as m/s * 100
- * @param xmag x magnetometer in Guass * 1000
- * @param ymag y magnetometer in Guass * 1000
- * @param zmag z magnetometer in Guass * 1000
+ * @param time_usec  Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+ * @param attitude_quaternion  Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)
+ * @param rollspeed  Body frame roll / phi angular speed (rad/s) * 1E7
+ * @param pitchspeed  Body frame pitch / theta angular speed (rad/s) * 1E7
+ * @param yawspeed  Body frame yaw / psi angular speed (rad/s) * 1E7
+ * @param xacc  X acceleration (g) * 1E7
+ * @param yacc  Y acceleration (g) * 1E7
+ * @param zacc  Z acceleration (g) * 1E7
+ * @param lat  Latitude, expressed as * 1E7
+ * @param lon  Longitude, expressed as * 1E7
+ * @param alt  Altitude in meters, expressed as * 1000 (millimeters)
+ * @param vx  Ground X Speed (Latitude), expressed as m/s * 100
+ * @param vy  Ground Y Speed (Longitude), expressed as m/s * 100
+ * @param vz  Ground Z Speed (Altitude), expressed as m/s * 100
+ * @param ind_airspeed  Indicated airspeed, expressed as m/s * 100
+ * @param true_airspeed  True airspeed, expressed as m/s * 100
+ * @param xmag  x magnetometer in Guass * 1000
+ * @param ymag  y magnetometer in Guass * 1000
+ * @param zmag  z magnetometer in Guass * 1000
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -432,7 +432,7 @@ static inline void mavlink_msg_hil_propeller_state_quaternion_send_buf(mavlink_m
 /**
  * @brief Get field time_usec from hil_propeller_state_quaternion message
  *
- * @return Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+ * @return  Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  */
 static inline uint64_t mavlink_msg_hil_propeller_state_quaternion_get_time_usec(const mavlink_message_t* msg)
 {
@@ -442,7 +442,7 @@ static inline uint64_t mavlink_msg_hil_propeller_state_quaternion_get_time_usec(
 /**
  * @brief Get field attitude_quaternion from hil_propeller_state_quaternion message
  *
- * @return Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)
+ * @return  Vehicle attitude expressed as normalized quaternion in w, x, y, z order (with 2^30 0 0 0 being the null-rotation)
  */
 static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_get_attitude_quaternion(const mavlink_message_t* msg, int32_t *attitude_quaternion)
 {
@@ -452,7 +452,7 @@ static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_get_attitude_q
 /**
  * @brief Get field rollspeed from hil_propeller_state_quaternion message
  *
- * @return Body frame roll / phi angular speed (rad/s) * 1E7
+ * @return  Body frame roll / phi angular speed (rad/s) * 1E7
  */
 static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_rollspeed(const mavlink_message_t* msg)
 {
@@ -462,7 +462,7 @@ static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_rollspeed(c
 /**
  * @brief Get field pitchspeed from hil_propeller_state_quaternion message
  *
- * @return Body frame pitch / theta angular speed (rad/s) * 1E7
+ * @return  Body frame pitch / theta angular speed (rad/s) * 1E7
  */
 static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_pitchspeed(const mavlink_message_t* msg)
 {
@@ -472,7 +472,7 @@ static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_pitchspeed(
 /**
  * @brief Get field yawspeed from hil_propeller_state_quaternion message
  *
- * @return Body frame yaw / psi angular speed (rad/s) * 1E7
+ * @return  Body frame yaw / psi angular speed (rad/s) * 1E7
  */
 static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_yawspeed(const mavlink_message_t* msg)
 {
@@ -482,7 +482,7 @@ static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_yawspeed(co
 /**
  * @brief Get field xacc from hil_propeller_state_quaternion message
  *
- * @return X acceleration (g) * 1E7
+ * @return  X acceleration (g) * 1E7
  */
 static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_xacc(const mavlink_message_t* msg)
 {
@@ -492,7 +492,7 @@ static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_xacc(const 
 /**
  * @brief Get field yacc from hil_propeller_state_quaternion message
  *
- * @return Y acceleration (g) * 1E7
+ * @return  Y acceleration (g) * 1E7
  */
 static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_yacc(const mavlink_message_t* msg)
 {
@@ -502,7 +502,7 @@ static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_yacc(const 
 /**
  * @brief Get field zacc from hil_propeller_state_quaternion message
  *
- * @return Z acceleration (g) * 1E7
+ * @return  Z acceleration (g) * 1E7
  */
 static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_zacc(const mavlink_message_t* msg)
 {
@@ -512,7 +512,7 @@ static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_zacc(const 
 /**
  * @brief Get field lat from hil_propeller_state_quaternion message
  *
- * @return Latitude, expressed as * 1E7
+ * @return  Latitude, expressed as * 1E7
  */
 static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_lat(const mavlink_message_t* msg)
 {
@@ -522,7 +522,7 @@ static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_lat(const m
 /**
  * @brief Get field lon from hil_propeller_state_quaternion message
  *
- * @return Longitude, expressed as * 1E7
+ * @return  Longitude, expressed as * 1E7
  */
 static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_lon(const mavlink_message_t* msg)
 {
@@ -532,7 +532,7 @@ static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_lon(const m
 /**
  * @brief Get field alt from hil_propeller_state_quaternion message
  *
- * @return Altitude in meters, expressed as * 1000 (millimeters)
+ * @return  Altitude in meters, expressed as * 1000 (millimeters)
  */
 static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_alt(const mavlink_message_t* msg)
 {
@@ -542,7 +542,7 @@ static inline int32_t mavlink_msg_hil_propeller_state_quaternion_get_alt(const m
 /**
  * @brief Get field vx from hil_propeller_state_quaternion message
  *
- * @return Ground X Speed (Latitude), expressed as m/s * 100
+ * @return  Ground X Speed (Latitude), expressed as m/s * 100
  */
 static inline int16_t mavlink_msg_hil_propeller_state_quaternion_get_vx(const mavlink_message_t* msg)
 {
@@ -552,7 +552,7 @@ static inline int16_t mavlink_msg_hil_propeller_state_quaternion_get_vx(const ma
 /**
  * @brief Get field vy from hil_propeller_state_quaternion message
  *
- * @return Ground Y Speed (Longitude), expressed as m/s * 100
+ * @return  Ground Y Speed (Longitude), expressed as m/s * 100
  */
 static inline int16_t mavlink_msg_hil_propeller_state_quaternion_get_vy(const mavlink_message_t* msg)
 {
@@ -562,7 +562,7 @@ static inline int16_t mavlink_msg_hil_propeller_state_quaternion_get_vy(const ma
 /**
  * @brief Get field vz from hil_propeller_state_quaternion message
  *
- * @return Ground Z Speed (Altitude), expressed as m/s * 100
+ * @return  Ground Z Speed (Altitude), expressed as m/s * 100
  */
 static inline int16_t mavlink_msg_hil_propeller_state_quaternion_get_vz(const mavlink_message_t* msg)
 {
@@ -572,7 +572,7 @@ static inline int16_t mavlink_msg_hil_propeller_state_quaternion_get_vz(const ma
 /**
  * @brief Get field ind_airspeed from hil_propeller_state_quaternion message
  *
- * @return Indicated airspeed, expressed as m/s * 100
+ * @return  Indicated airspeed, expressed as m/s * 100
  */
 static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_get_ind_airspeed(const mavlink_message_t* msg)
 {
@@ -582,7 +582,7 @@ static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_get_ind_airspe
 /**
  * @brief Get field true_airspeed from hil_propeller_state_quaternion message
  *
- * @return True airspeed, expressed as m/s * 100
+ * @return  True airspeed, expressed as m/s * 100
  */
 static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_get_true_airspeed(const mavlink_message_t* msg)
 {
@@ -592,7 +592,7 @@ static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_get_true_airsp
 /**
  * @brief Get field xmag from hil_propeller_state_quaternion message
  *
- * @return x magnetometer in Guass * 1000
+ * @return  x magnetometer in Guass * 1000
  */
 static inline int16_t mavlink_msg_hil_propeller_state_quaternion_get_xmag(const mavlink_message_t* msg)
 {
@@ -602,7 +602,7 @@ static inline int16_t mavlink_msg_hil_propeller_state_quaternion_get_xmag(const 
 /**
  * @brief Get field ymag from hil_propeller_state_quaternion message
  *
- * @return y magnetometer in Guass * 1000
+ * @return  y magnetometer in Guass * 1000
  */
 static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_get_ymag(const mavlink_message_t* msg)
 {
@@ -612,7 +612,7 @@ static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_get_ymag(const
 /**
  * @brief Get field zmag from hil_propeller_state_quaternion message
  *
- * @return z magnetometer in Guass * 1000
+ * @return  z magnetometer in Guass * 1000
  */
 static inline uint16_t mavlink_msg_hil_propeller_state_quaternion_get_zmag(const mavlink_message_t* msg)
 {

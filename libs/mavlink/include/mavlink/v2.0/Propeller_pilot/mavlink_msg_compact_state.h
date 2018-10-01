@@ -5,18 +5,18 @@
 
 MAVPACKED(
 typedef struct __mavlink_compact_state_t {
- uint32_t time_boot_ms; /*< Timestamp of the component clock since boot time in milliseconds.*/
- int32_t q1; /*< Quaternion component 1, w (2^30 in null-rotation)*/
- int32_t q2; /*< Quaternion component 2, x (0 in null-rotation)*/
- int32_t q3; /*< Quaternion component 3, y (0 in null-rotation)*/
- int32_t q4; /*< Quaternion component 4, z (0 in null-rotation)*/
- int32_t x; /*< X Position in WGS84*10^7*/
- int32_t y; /*< Y Position in WGS84*10^7*/
- int32_t z; /*< Z Position in WGS84*10^7*/
- int32_t vx; /*< X Speed mm/s*/
- int32_t vy; /*< Y Speed mm/s*/
- int32_t vz; /*< Z Speed mm/s*/
- int32_t airspeed; /*< Current airspeed in mm/s*/
+ uint32_t time_boot_ms; /*<  Timestamp of the component clock since boot time in milliseconds.*/
+ int32_t q1; /*<  Quaternion component 1, w (2^30 in null-rotation)*/
+ int32_t q2; /*<  Quaternion component 2, x (0 in null-rotation)*/
+ int32_t q3; /*<  Quaternion component 3, y (0 in null-rotation)*/
+ int32_t q4; /*<  Quaternion component 4, z (0 in null-rotation)*/
+ int32_t x; /*<  X Position in WGS84*10^7*/
+ int32_t y; /*<  Y Position in WGS84*10^7*/
+ int32_t z; /*<  Z Position in WGS84*10^7*/
+ int32_t vx; /*<  X Speed mm/s*/
+ int32_t vy; /*<  Y Speed mm/s*/
+ int32_t vz; /*<  Z Speed mm/s*/
+ int32_t airspeed; /*<  Current airspeed in mm/s*/
 }) mavlink_compact_state_t;
 
 #define MAVLINK_MSG_ID_COMPACT_STATE_LEN 48
@@ -74,18 +74,18 @@ typedef struct __mavlink_compact_state_t {
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param time_boot_ms Timestamp of the component clock since boot time in milliseconds.
- * @param q1 Quaternion component 1, w (2^30 in null-rotation)
- * @param q2 Quaternion component 2, x (0 in null-rotation)
- * @param q3 Quaternion component 3, y (0 in null-rotation)
- * @param q4 Quaternion component 4, z (0 in null-rotation)
- * @param x X Position in WGS84*10^7
- * @param y Y Position in WGS84*10^7
- * @param z Z Position in WGS84*10^7
- * @param vx X Speed mm/s
- * @param vy Y Speed mm/s
- * @param vz Z Speed mm/s
- * @param airspeed Current airspeed in mm/s
+ * @param time_boot_ms  Timestamp of the component clock since boot time in milliseconds.
+ * @param q1  Quaternion component 1, w (2^30 in null-rotation)
+ * @param q2  Quaternion component 2, x (0 in null-rotation)
+ * @param q3  Quaternion component 3, y (0 in null-rotation)
+ * @param q4  Quaternion component 4, z (0 in null-rotation)
+ * @param x  X Position in WGS84*10^7
+ * @param y  Y Position in WGS84*10^7
+ * @param z  Z Position in WGS84*10^7
+ * @param vx  X Speed mm/s
+ * @param vy  Y Speed mm/s
+ * @param vz  Z Speed mm/s
+ * @param airspeed  Current airspeed in mm/s
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_compact_state_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -135,18 +135,18 @@ static inline uint16_t mavlink_msg_compact_state_pack(uint8_t system_id, uint8_t
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param time_boot_ms Timestamp of the component clock since boot time in milliseconds.
- * @param q1 Quaternion component 1, w (2^30 in null-rotation)
- * @param q2 Quaternion component 2, x (0 in null-rotation)
- * @param q3 Quaternion component 3, y (0 in null-rotation)
- * @param q4 Quaternion component 4, z (0 in null-rotation)
- * @param x X Position in WGS84*10^7
- * @param y Y Position in WGS84*10^7
- * @param z Z Position in WGS84*10^7
- * @param vx X Speed mm/s
- * @param vy Y Speed mm/s
- * @param vz Z Speed mm/s
- * @param airspeed Current airspeed in mm/s
+ * @param time_boot_ms  Timestamp of the component clock since boot time in milliseconds.
+ * @param q1  Quaternion component 1, w (2^30 in null-rotation)
+ * @param q2  Quaternion component 2, x (0 in null-rotation)
+ * @param q3  Quaternion component 3, y (0 in null-rotation)
+ * @param q4  Quaternion component 4, z (0 in null-rotation)
+ * @param x  X Position in WGS84*10^7
+ * @param y  Y Position in WGS84*10^7
+ * @param z  Z Position in WGS84*10^7
+ * @param vx  X Speed mm/s
+ * @param vy  Y Speed mm/s
+ * @param vz  Z Speed mm/s
+ * @param airspeed  Current airspeed in mm/s
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_compact_state_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -222,18 +222,18 @@ static inline uint16_t mavlink_msg_compact_state_encode_chan(uint8_t system_id, 
  * @brief Send a compact_state message
  * @param chan MAVLink channel to send the message
  *
- * @param time_boot_ms Timestamp of the component clock since boot time in milliseconds.
- * @param q1 Quaternion component 1, w (2^30 in null-rotation)
- * @param q2 Quaternion component 2, x (0 in null-rotation)
- * @param q3 Quaternion component 3, y (0 in null-rotation)
- * @param q4 Quaternion component 4, z (0 in null-rotation)
- * @param x X Position in WGS84*10^7
- * @param y Y Position in WGS84*10^7
- * @param z Z Position in WGS84*10^7
- * @param vx X Speed mm/s
- * @param vy Y Speed mm/s
- * @param vz Z Speed mm/s
- * @param airspeed Current airspeed in mm/s
+ * @param time_boot_ms  Timestamp of the component clock since boot time in milliseconds.
+ * @param q1  Quaternion component 1, w (2^30 in null-rotation)
+ * @param q2  Quaternion component 2, x (0 in null-rotation)
+ * @param q3  Quaternion component 3, y (0 in null-rotation)
+ * @param q4  Quaternion component 4, z (0 in null-rotation)
+ * @param x  X Position in WGS84*10^7
+ * @param y  Y Position in WGS84*10^7
+ * @param z  Z Position in WGS84*10^7
+ * @param vx  X Speed mm/s
+ * @param vy  Y Speed mm/s
+ * @param vz  Z Speed mm/s
+ * @param airspeed  Current airspeed in mm/s
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -342,7 +342,7 @@ static inline void mavlink_msg_compact_state_send_buf(mavlink_message_t *msgbuf,
 /**
  * @brief Get field time_boot_ms from compact_state message
  *
- * @return Timestamp of the component clock since boot time in milliseconds.
+ * @return  Timestamp of the component clock since boot time in milliseconds.
  */
 static inline uint32_t mavlink_msg_compact_state_get_time_boot_ms(const mavlink_message_t* msg)
 {
@@ -352,7 +352,7 @@ static inline uint32_t mavlink_msg_compact_state_get_time_boot_ms(const mavlink_
 /**
  * @brief Get field q1 from compact_state message
  *
- * @return Quaternion component 1, w (2^30 in null-rotation)
+ * @return  Quaternion component 1, w (2^30 in null-rotation)
  */
 static inline int32_t mavlink_msg_compact_state_get_q1(const mavlink_message_t* msg)
 {
@@ -362,7 +362,7 @@ static inline int32_t mavlink_msg_compact_state_get_q1(const mavlink_message_t* 
 /**
  * @brief Get field q2 from compact_state message
  *
- * @return Quaternion component 2, x (0 in null-rotation)
+ * @return  Quaternion component 2, x (0 in null-rotation)
  */
 static inline int32_t mavlink_msg_compact_state_get_q2(const mavlink_message_t* msg)
 {
@@ -372,7 +372,7 @@ static inline int32_t mavlink_msg_compact_state_get_q2(const mavlink_message_t* 
 /**
  * @brief Get field q3 from compact_state message
  *
- * @return Quaternion component 3, y (0 in null-rotation)
+ * @return  Quaternion component 3, y (0 in null-rotation)
  */
 static inline int32_t mavlink_msg_compact_state_get_q3(const mavlink_message_t* msg)
 {
@@ -382,7 +382,7 @@ static inline int32_t mavlink_msg_compact_state_get_q3(const mavlink_message_t* 
 /**
  * @brief Get field q4 from compact_state message
  *
- * @return Quaternion component 4, z (0 in null-rotation)
+ * @return  Quaternion component 4, z (0 in null-rotation)
  */
 static inline int32_t mavlink_msg_compact_state_get_q4(const mavlink_message_t* msg)
 {
@@ -392,7 +392,7 @@ static inline int32_t mavlink_msg_compact_state_get_q4(const mavlink_message_t* 
 /**
  * @brief Get field x from compact_state message
  *
- * @return X Position in WGS84*10^7
+ * @return  X Position in WGS84*10^7
  */
 static inline int32_t mavlink_msg_compact_state_get_x(const mavlink_message_t* msg)
 {
@@ -402,7 +402,7 @@ static inline int32_t mavlink_msg_compact_state_get_x(const mavlink_message_t* m
 /**
  * @brief Get field y from compact_state message
  *
- * @return Y Position in WGS84*10^7
+ * @return  Y Position in WGS84*10^7
  */
 static inline int32_t mavlink_msg_compact_state_get_y(const mavlink_message_t* msg)
 {
@@ -412,7 +412,7 @@ static inline int32_t mavlink_msg_compact_state_get_y(const mavlink_message_t* m
 /**
  * @brief Get field z from compact_state message
  *
- * @return Z Position in WGS84*10^7
+ * @return  Z Position in WGS84*10^7
  */
 static inline int32_t mavlink_msg_compact_state_get_z(const mavlink_message_t* msg)
 {
@@ -422,7 +422,7 @@ static inline int32_t mavlink_msg_compact_state_get_z(const mavlink_message_t* m
 /**
  * @brief Get field vx from compact_state message
  *
- * @return X Speed mm/s
+ * @return  X Speed mm/s
  */
 static inline int32_t mavlink_msg_compact_state_get_vx(const mavlink_message_t* msg)
 {
@@ -432,7 +432,7 @@ static inline int32_t mavlink_msg_compact_state_get_vx(const mavlink_message_t* 
 /**
  * @brief Get field vy from compact_state message
  *
- * @return Y Speed mm/s
+ * @return  Y Speed mm/s
  */
 static inline int32_t mavlink_msg_compact_state_get_vy(const mavlink_message_t* msg)
 {
@@ -442,7 +442,7 @@ static inline int32_t mavlink_msg_compact_state_get_vy(const mavlink_message_t* 
 /**
  * @brief Get field vz from compact_state message
  *
- * @return Z Speed mm/s
+ * @return  Z Speed mm/s
  */
 static inline int32_t mavlink_msg_compact_state_get_vz(const mavlink_message_t* msg)
 {
@@ -452,7 +452,7 @@ static inline int32_t mavlink_msg_compact_state_get_vz(const mavlink_message_t* 
 /**
  * @brief Get field airspeed from compact_state message
  *
- * @return Current airspeed in mm/s
+ * @return  Current airspeed in mm/s
  */
 static inline int32_t mavlink_msg_compact_state_get_airspeed(const mavlink_message_t* msg)
 {

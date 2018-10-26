@@ -1,4 +1,5 @@
 libs/lib/Frameworks/GStreamer.framework
+*_qmlcache.qrc
 *.swp
 *.nfs
 CMakeFiles
@@ -57,6 +58,7 @@ libs/thirdParty/libxbee/lib/
 libs/mavlink/include/mavlink/v1.0/*
 GeneratedFiles/
 gstreamer-1.0-android*
+src/Airmap/Airmap_api_key.h
 
 *.autosave
 .settings/
@@ -85,3 +87,4 @@ src/latex/
 .vagrant/
 Qt*-linux*.tar.*
 
+libs/airmapd/include/boost

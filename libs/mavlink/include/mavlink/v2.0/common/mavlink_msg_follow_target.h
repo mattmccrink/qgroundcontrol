@@ -5,11 +5,11 @@
 
 MAVPACKED(
 typedef struct __mavlink_follow_target_t {
- uint64_t timestamp; /*< [ms] Timestamp in milliseconds since system boot*/
+ uint64_t timestamp; /*< [ms] Timestamp (time since system boot).*/
  uint64_t custom_state; /*<  button states or switches of a tracker device*/
- int32_t lat; /*< [degE7] Latitude (WGS84), in degrees * 1E7*/
- int32_t lon; /*< [degE7] Longitude (WGS84), in degrees * 1E7*/
- float alt; /*< [m] AMSL, in meters*/
+ int32_t lat; /*< [degE7] Latitude (WGS84)*/
+ int32_t lon; /*< [degE7] Longitude (WGS84)*/
+ float alt; /*< [m] Altitude (AMSL)*/
  float vel[3]; /*< [m/s] target velocity (0,0,0) for unknown*/
  float acc[3]; /*< [m/s/s] linear target acceleration (0,0,0) for unknown*/
  float attitude_q[4]; /*<  (1 0 0 0 for unknown)*/
@@ -75,11 +75,11 @@ typedef struct __mavlink_follow_target_t {
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param timestamp [ms] Timestamp in milliseconds since system boot
+ * @param timestamp [ms] Timestamp (time since system boot).
  * @param est_capabilities  bit positions for tracker reporting capabilities (POS = 0, VEL = 1, ACCEL = 2, ATT + RATES = 3)
- * @param lat [degE7] Latitude (WGS84), in degrees * 1E7
- * @param lon [degE7] Longitude (WGS84), in degrees * 1E7
- * @param alt [m] AMSL, in meters
+ * @param lat [degE7] Latitude (WGS84)
+ * @param lon [degE7] Longitude (WGS84)
+ * @param alt [m] Altitude (AMSL)
  * @param vel [m/s] target velocity (0,0,0) for unknown
  * @param acc [m/s/s] linear target acceleration (0,0,0) for unknown
  * @param attitude_q  (1 0 0 0 for unknown)
@@ -131,11 +131,11 @@ static inline uint16_t mavlink_msg_follow_target_pack(uint8_t system_id, uint8_t
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param timestamp [ms] Timestamp in milliseconds since system boot
+ * @param timestamp [ms] Timestamp (time since system boot).
  * @param est_capabilities  bit positions for tracker reporting capabilities (POS = 0, VEL = 1, ACCEL = 2, ATT + RATES = 3)
- * @param lat [degE7] Latitude (WGS84), in degrees * 1E7
- * @param lon [degE7] Longitude (WGS84), in degrees * 1E7
- * @param alt [m] AMSL, in meters
+ * @param lat [degE7] Latitude (WGS84)
+ * @param lon [degE7] Longitude (WGS84)
+ * @param alt [m] Altitude (AMSL)
  * @param vel [m/s] target velocity (0,0,0) for unknown
  * @param acc [m/s/s] linear target acceleration (0,0,0) for unknown
  * @param attitude_q  (1 0 0 0 for unknown)
@@ -213,11 +213,11 @@ static inline uint16_t mavlink_msg_follow_target_encode_chan(uint8_t system_id, 
  * @brief Send a follow_target message
  * @param chan MAVLink channel to send the message
  *
- * @param timestamp [ms] Timestamp in milliseconds since system boot
+ * @param timestamp [ms] Timestamp (time since system boot).
  * @param est_capabilities  bit positions for tracker reporting capabilities (POS = 0, VEL = 1, ACCEL = 2, ATT + RATES = 3)
- * @param lat [degE7] Latitude (WGS84), in degrees * 1E7
- * @param lon [degE7] Longitude (WGS84), in degrees * 1E7
- * @param alt [m] AMSL, in meters
+ * @param lat [degE7] Latitude (WGS84)
+ * @param lon [degE7] Longitude (WGS84)
+ * @param alt [m] Altitude (AMSL)
  * @param vel [m/s] target velocity (0,0,0) for unknown
  * @param acc [m/s/s] linear target acceleration (0,0,0) for unknown
  * @param attitude_q  (1 0 0 0 for unknown)
@@ -324,7 +324,7 @@ static inline void mavlink_msg_follow_target_send_buf(mavlink_message_t *msgbuf,
 /**
  * @brief Get field timestamp from follow_target message
  *
- * @return [ms] Timestamp in milliseconds since system boot
+ * @return [ms] Timestamp (time since system boot).
  */
 static inline uint64_t mavlink_msg_follow_target_get_timestamp(const mavlink_message_t* msg)
 {
@@ -344,7 +344,7 @@ static inline uint8_t mavlink_msg_follow_target_get_est_capabilities(const mavli
 /**
  * @brief Get field lat from follow_target message
  *
- * @return [degE7] Latitude (WGS84), in degrees * 1E7
+ * @return [degE7] Latitude (WGS84)
  */
 static inline int32_t mavlink_msg_follow_target_get_lat(const mavlink_message_t* msg)
 {
@@ -354,7 +354,7 @@ static inline int32_t mavlink_msg_follow_target_get_lat(const mavlink_message_t*
 /**
  * @brief Get field lon from follow_target message
  *
- * @return [degE7] Longitude (WGS84), in degrees * 1E7
+ * @return [degE7] Longitude (WGS84)
  */
 static inline int32_t mavlink_msg_follow_target_get_lon(const mavlink_message_t* msg)
 {
@@ -364,7 +364,7 @@ static inline int32_t mavlink_msg_follow_target_get_lon(const mavlink_message_t*
 /**
  * @brief Get field alt from follow_target message
  *
- * @return [m] AMSL, in meters
+ * @return [m] Altitude (AMSL)
  */
 static inline float mavlink_msg_follow_target_get_alt(const mavlink_message_t* msg)
 {

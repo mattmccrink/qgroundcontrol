@@ -54,8 +54,10 @@ public:
     Fact* hoverAndCapture               (void) { return &_hoverAndCaptureFact; }
     Fact* refly90Degrees                (void) { return &_refly90DegreesFact; }
     Fact* terrainAdjustTolerance        (void) { return &_terrainAdjustToleranceFact; }
-    Fact* terrainAdjustMaxDescentRate   (void) { return &_terrainAdjustMaxClimbRateFact; }
-    Fact* terrainAdjustMaxClimbRate     (void) { return &_terrainAdjustMaxDescentRateFact; }
+    Fact* terrainAdjustMaxDescentRate   (void) { return &_terrainAdjustMaxDescentRateFact; }
+    Fact* terrainAdjustMaxClimbRate     (void) { return &_terrainAdjustMaxClimbRateFact; }
+
+    const Fact* hoverAndCapture         (void) const { return &_hoverAndCaptureFact; }
 
     int             cameraShots             (void) const { return _cameraShots; }
     double          coveredArea             (void) const;
@@ -66,11 +68,16 @@ public:
 
     void setFollowTerrain(bool followTerrain);
 
+    double  triggerDistance         (void) const { return _cameraCalc.adjustedFootprintFrontal()->rawValue().toDouble(); }
+    bool    hoverAndCaptureEnabled  (void) const { return hoverAndCapture()->rawValue().toBool(); }
+    bool    triggerCamera           (void) const { return triggerDistance() != 0; }
+
     // Overrides from ComplexMissionItem
 
-    int             lastSequenceNumber  (void) const final;
-    QString         mapVisualQML        (void) const override = 0;
-    bool            load                (const QJsonObject& complexObject, int sequenceNumber, QString& errorString) override = 0;
+    int                 lastSequenceNumber  (void) const final;
+    QString             mapVisualQML        (void) const override = 0;
+    bool                load                (const QJsonObject& complexObject, int sequenceNumber, QString& errorString) override = 0;
+    QGCGeoBoundingCube  boundingCube        (void) const override { return _boundingCube; }
 
     double          complexDistance     (void) const final { return _complexDistance; }
     double          greatestDistanceTo  (const QGeoCoordinate &other) const final;
@@ -140,18 +147,21 @@ protected:
     double  _triggerDistance                (void) const;
     bool    _hasTurnaround                  (void) const;
     double  _turnaroundDistance             (void) const;
+    void    _setBoundingCube                (QGCGeoBoundingCube bc);
 
-    int             _sequenceNumber;
-    bool            _dirty;
-    QGeoCoordinate  _coordinate;
-    QGeoCoordinate  _exitCoordinate;
-    QGCMapPolygon   _surveyAreaPolygon;
+    int                 _sequenceNumber;
+    bool                _dirty;
+    QGeoCoordinate      _coordinate;
+    QGeoCoordinate      _exitCoordinate;
+    QGCMapPolygon       _surveyAreaPolygon;
+    QGCGeoBoundingCube  _boundingCube;
 
     enum CoordType {
-        CoordTypeInterior,
-        CoordTypeInteriorTerrainAdded,
-        CoordTypeSurveyEdge,
-        CoordTypeTurnaround
+        CoordTypeInterior,              ///< Interior waypoint for flight path only
+        CoordTypeInteriorHoverTrigger,  ///< Interior waypoint for hover and capture trigger
+        CoordTypeInteriorTerrainAdded,  ///< Interior waypoint added for terrain
+        CoordTypeSurveyEdge,            ///< Waypoint at edge of survey polygon
+        CoordTypeTurnaround             ///< Waypoint outside of survey polygon for turnaround
     };
 
     typedef struct {

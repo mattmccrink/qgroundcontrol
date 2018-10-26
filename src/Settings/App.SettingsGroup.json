@@ -18,7 +18,7 @@
 {
     "name":             "OfflineEditingCruiseSpeed",
     "shortDescription": "Offline editing cruise speed",
-    "longDescription":  "This value defines the cruising speed for forward flight vehicles for use in calculating mission duration.",
+    "longDescription":  "This value defines the default cruising speed for forward flight vehicles for use in calculating mission statistics. It does not modify the flight speed for a specific flight plan.",
     "type":             "double",
     "defaultValue":     15.0,
     "min":              1.0,
@@ -28,7 +28,7 @@
 {
     "name":             "OfflineEditingHoverSpeed",
     "shortDescription": "Offline editing hover speed",
-    "longDescription":  "This value defines the cruising speed for multi-rotor vehicles for use in calculating mission duration.",
+    "longDescription":  "This value defines the default cruising speed for multi-rotor vehicles for use in calculating mission statistics. It does not modify the flight speed for a specific flight plan.",
     "type":             "double",
     "defaultValue":     5.0,
     "min":              1.0,
@@ -125,14 +125,15 @@
     "defaultValue":     false
 },
 {
-    "name":             "BaseDeviceFontPointSize",
-    "shortDescription": "Application font size",
-    "longDescription":  "The point size for the default font used.",
-    "type":             "uint32",
-    "units":            "pt",
-    "min":              6,
-    "max":              48,
-    "defaultValue":     0
+    "name":                 "BaseDeviceFontPointSize",
+    "shortDescription":     "Application font size",
+    "longDescription":      "The point size for the default font used.",
+    "type":                 "uint32",
+    "units":                "pt",
+    "min":                  6,
+    "max":                  48,
+    "defaultValue":         0,
+    "qgcRebootRequired":    true
 },
 {
     "name":             "StyleIsDark",

@@ -5,7 +5,7 @@
 
 MAVPACKED(
 typedef struct __mavlink_vision_speed_estimate_t {
- uint64_t usec; /*< [us] Timestamp (microseconds, synced to UNIX time or since system boot)*/
+ uint64_t usec; /*< [us] Timestamp (UNIX time or time since system boot)*/
  float x; /*< [m/s] Global X speed*/
  float y; /*< [m/s] Global Y speed*/
  float z; /*< [m/s] Global Z speed*/
@@ -53,7 +53,7 @@ typedef struct __mavlink_vision_speed_estimate_t {
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param usec [us] Timestamp (microseconds, synced to UNIX time or since system boot)
+ * @param usec [us] Timestamp (UNIX time or time since system boot)
  * @param x [m/s] Global X speed
  * @param y [m/s] Global Y speed
  * @param z [m/s] Global Z speed
@@ -91,7 +91,7 @@ static inline uint16_t mavlink_msg_vision_speed_estimate_pack(uint8_t system_id,
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param usec [us] Timestamp (microseconds, synced to UNIX time or since system boot)
+ * @param usec [us] Timestamp (UNIX time or time since system boot)
  * @param x [m/s] Global X speed
  * @param y [m/s] Global Y speed
  * @param z [m/s] Global Z speed
@@ -155,7 +155,7 @@ static inline uint16_t mavlink_msg_vision_speed_estimate_encode_chan(uint8_t sys
  * @brief Send a vision_speed_estimate message
  * @param chan MAVLink channel to send the message
  *
- * @param usec [us] Timestamp (microseconds, synced to UNIX time or since system boot)
+ * @param usec [us] Timestamp (UNIX time or time since system boot)
  * @param x [m/s] Global X speed
  * @param y [m/s] Global Y speed
  * @param z [m/s] Global Z speed
@@ -236,7 +236,7 @@ static inline void mavlink_msg_vision_speed_estimate_send_buf(mavlink_message_t 
 /**
  * @brief Get field usec from vision_speed_estimate message
  *
- * @return [us] Timestamp (microseconds, synced to UNIX time or since system boot)
+ * @return [us] Timestamp (UNIX time or time since system boot)
  */
 static inline uint64_t mavlink_msg_vision_speed_estimate_get_usec(const mavlink_message_t* msg)
 {

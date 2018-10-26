@@ -427,7 +427,6 @@ void PlanManager::_handleMissionItem(const mavlink_message_t& message, bool miss
     } else if (frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
         frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
     }
-    
 
     bool ardupilotHomePositionUpdate = false;
     if (!_checkForExpectedAck(AckMissionItem)) {
@@ -586,6 +585,14 @@ void PlanManager::_handleMissionAck(const mavlink_message_t& message)
         // if there was a previous transaction with a different mission_type, it can happen that we receive
         // a stale message here, for example when the MAV ran into a timeout and sent a message twice
         qCDebug(PlanManagerLog) << QStringLiteral("_handleMissionAck %1 Incorrect mission_type received expected:actual").arg(_planTypeString()) << _planType << missionAck.mission_type;
+        return;
+    }
+
+    if (_vehicle->apmFirmware() && missionAck.type == MAV_MISSION_INVALID_SEQUENCE) {
+        // ArduPilot sends these Acks which can happen just due to noisy links causing duplicated requests being responded to.
+        // As far as I'm concerned this is incorrect protocol implementation but we need to deal with it anyway. So we just
+        // ignore it and if things really go haywire the timeouts will fire to fail the overall transaction.
+        qCDebug(PlanManagerLog) << QStringLiteral("_handleMissionAck ArduPilot sending possibly bogus MAV_MISSION_INVALID_SEQUENCE").arg(_planTypeString()) << _planType;
         return;
     }
 

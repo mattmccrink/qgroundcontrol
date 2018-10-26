@@ -12,20 +12,20 @@ typedef struct __mavlink_sim_state_t {
  float roll; /*<  Attitude roll expressed as Euler angles, not recommended except for human-readable outputs*/
  float pitch; /*<  Attitude pitch expressed as Euler angles, not recommended except for human-readable outputs*/
  float yaw; /*<  Attitude yaw expressed as Euler angles, not recommended except for human-readable outputs*/
- float xacc; /*< [m/s/s] X acceleration m/s/s*/
- float yacc; /*< [m/s/s] Y acceleration m/s/s*/
- float zacc; /*< [m/s/s] Z acceleration m/s/s*/
- float xgyro; /*< [rad/s] Angular speed around X axis rad/s*/
- float ygyro; /*< [rad/s] Angular speed around Y axis rad/s*/
- float zgyro; /*< [rad/s] Angular speed around Z axis rad/s*/
- float lat; /*< [deg] Latitude in degrees*/
- float lon; /*< [deg] Longitude in degrees*/
- float alt; /*< [m] Altitude in meters*/
+ float xacc; /*< [m/s/s] X acceleration*/
+ float yacc; /*< [m/s/s] Y acceleration*/
+ float zacc; /*< [m/s/s] Z acceleration*/
+ float xgyro; /*< [rad/s] Angular speed around X axis*/
+ float ygyro; /*< [rad/s] Angular speed around Y axis*/
+ float zgyro; /*< [rad/s] Angular speed around Z axis*/
+ float lat; /*< [deg] Latitude*/
+ float lon; /*< [deg] Longitude*/
+ float alt; /*< [m] Altitude*/
  float std_dev_horz; /*<  Horizontal position standard deviation*/
  float std_dev_vert; /*<  Vertical position standard deviation*/
- float vn; /*< [m/s] True velocity in m/s in NORTH direction in earth-fixed NED frame*/
- float ve; /*< [m/s] True velocity in m/s in EAST direction in earth-fixed NED frame*/
- float vd; /*< [m/s] True velocity in m/s in DOWN direction in earth-fixed NED frame*/
+ float vn; /*< [m/s] True velocity in NORTH direction in earth-fixed NED frame*/
+ float ve; /*< [m/s] True velocity in EAST direction in earth-fixed NED frame*/
+ float vd; /*< [m/s] True velocity in DOWN direction in earth-fixed NED frame*/
 }) mavlink_sim_state_t;
 
 #define MAVLINK_MSG_ID_SIM_STATE_LEN 84
@@ -108,20 +108,20 @@ typedef struct __mavlink_sim_state_t {
  * @param roll  Attitude roll expressed as Euler angles, not recommended except for human-readable outputs
  * @param pitch  Attitude pitch expressed as Euler angles, not recommended except for human-readable outputs
  * @param yaw  Attitude yaw expressed as Euler angles, not recommended except for human-readable outputs
- * @param xacc [m/s/s] X acceleration m/s/s
- * @param yacc [m/s/s] Y acceleration m/s/s
- * @param zacc [m/s/s] Z acceleration m/s/s
- * @param xgyro [rad/s] Angular speed around X axis rad/s
- * @param ygyro [rad/s] Angular speed around Y axis rad/s
- * @param zgyro [rad/s] Angular speed around Z axis rad/s
- * @param lat [deg] Latitude in degrees
- * @param lon [deg] Longitude in degrees
- * @param alt [m] Altitude in meters
+ * @param xacc [m/s/s] X acceleration
+ * @param yacc [m/s/s] Y acceleration
+ * @param zacc [m/s/s] Z acceleration
+ * @param xgyro [rad/s] Angular speed around X axis
+ * @param ygyro [rad/s] Angular speed around Y axis
+ * @param zgyro [rad/s] Angular speed around Z axis
+ * @param lat [deg] Latitude
+ * @param lon [deg] Longitude
+ * @param alt [m] Altitude
  * @param std_dev_horz  Horizontal position standard deviation
  * @param std_dev_vert  Vertical position standard deviation
- * @param vn [m/s] True velocity in m/s in NORTH direction in earth-fixed NED frame
- * @param ve [m/s] True velocity in m/s in EAST direction in earth-fixed NED frame
- * @param vd [m/s] True velocity in m/s in DOWN direction in earth-fixed NED frame
+ * @param vn [m/s] True velocity in NORTH direction in earth-fixed NED frame
+ * @param ve [m/s] True velocity in EAST direction in earth-fixed NED frame
+ * @param vd [m/s] True velocity in DOWN direction in earth-fixed NED frame
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_sim_state_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -196,20 +196,20 @@ static inline uint16_t mavlink_msg_sim_state_pack(uint8_t system_id, uint8_t com
  * @param roll  Attitude roll expressed as Euler angles, not recommended except for human-readable outputs
  * @param pitch  Attitude pitch expressed as Euler angles, not recommended except for human-readable outputs
  * @param yaw  Attitude yaw expressed as Euler angles, not recommended except for human-readable outputs
- * @param xacc [m/s/s] X acceleration m/s/s
- * @param yacc [m/s/s] Y acceleration m/s/s
- * @param zacc [m/s/s] Z acceleration m/s/s
- * @param xgyro [rad/s] Angular speed around X axis rad/s
- * @param ygyro [rad/s] Angular speed around Y axis rad/s
- * @param zgyro [rad/s] Angular speed around Z axis rad/s
- * @param lat [deg] Latitude in degrees
- * @param lon [deg] Longitude in degrees
- * @param alt [m] Altitude in meters
+ * @param xacc [m/s/s] X acceleration
+ * @param yacc [m/s/s] Y acceleration
+ * @param zacc [m/s/s] Z acceleration
+ * @param xgyro [rad/s] Angular speed around X axis
+ * @param ygyro [rad/s] Angular speed around Y axis
+ * @param zgyro [rad/s] Angular speed around Z axis
+ * @param lat [deg] Latitude
+ * @param lon [deg] Longitude
+ * @param alt [m] Altitude
  * @param std_dev_horz  Horizontal position standard deviation
  * @param std_dev_vert  Vertical position standard deviation
- * @param vn [m/s] True velocity in m/s in NORTH direction in earth-fixed NED frame
- * @param ve [m/s] True velocity in m/s in EAST direction in earth-fixed NED frame
- * @param vd [m/s] True velocity in m/s in DOWN direction in earth-fixed NED frame
+ * @param vn [m/s] True velocity in NORTH direction in earth-fixed NED frame
+ * @param ve [m/s] True velocity in EAST direction in earth-fixed NED frame
+ * @param vd [m/s] True velocity in DOWN direction in earth-fixed NED frame
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_sim_state_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -310,20 +310,20 @@ static inline uint16_t mavlink_msg_sim_state_encode_chan(uint8_t system_id, uint
  * @param roll  Attitude roll expressed as Euler angles, not recommended except for human-readable outputs
  * @param pitch  Attitude pitch expressed as Euler angles, not recommended except for human-readable outputs
  * @param yaw  Attitude yaw expressed as Euler angles, not recommended except for human-readable outputs
- * @param xacc [m/s/s] X acceleration m/s/s
- * @param yacc [m/s/s] Y acceleration m/s/s
- * @param zacc [m/s/s] Z acceleration m/s/s
- * @param xgyro [rad/s] Angular speed around X axis rad/s
- * @param ygyro [rad/s] Angular speed around Y axis rad/s
- * @param zgyro [rad/s] Angular speed around Z axis rad/s
- * @param lat [deg] Latitude in degrees
- * @param lon [deg] Longitude in degrees
- * @param alt [m] Altitude in meters
+ * @param xacc [m/s/s] X acceleration
+ * @param yacc [m/s/s] Y acceleration
+ * @param zacc [m/s/s] Z acceleration
+ * @param xgyro [rad/s] Angular speed around X axis
+ * @param ygyro [rad/s] Angular speed around Y axis
+ * @param zgyro [rad/s] Angular speed around Z axis
+ * @param lat [deg] Latitude
+ * @param lon [deg] Longitude
+ * @param alt [m] Altitude
  * @param std_dev_horz  Horizontal position standard deviation
  * @param std_dev_vert  Vertical position standard deviation
- * @param vn [m/s] True velocity in m/s in NORTH direction in earth-fixed NED frame
- * @param ve [m/s] True velocity in m/s in EAST direction in earth-fixed NED frame
- * @param vd [m/s] True velocity in m/s in DOWN direction in earth-fixed NED frame
+ * @param vn [m/s] True velocity in NORTH direction in earth-fixed NED frame
+ * @param ve [m/s] True velocity in EAST direction in earth-fixed NED frame
+ * @param vd [m/s] True velocity in DOWN direction in earth-fixed NED frame
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -538,7 +538,7 @@ static inline float mavlink_msg_sim_state_get_yaw(const mavlink_message_t* msg)
 /**
  * @brief Get field xacc from sim_state message
  *
- * @return [m/s/s] X acceleration m/s/s
+ * @return [m/s/s] X acceleration
  */
 static inline float mavlink_msg_sim_state_get_xacc(const mavlink_message_t* msg)
 {
@@ -548,7 +548,7 @@ static inline float mavlink_msg_sim_state_get_xacc(const mavlink_message_t* msg)
 /**
  * @brief Get field yacc from sim_state message
  *
- * @return [m/s/s] Y acceleration m/s/s
+ * @return [m/s/s] Y acceleration
  */
 static inline float mavlink_msg_sim_state_get_yacc(const mavlink_message_t* msg)
 {
@@ -558,7 +558,7 @@ static inline float mavlink_msg_sim_state_get_yacc(const mavlink_message_t* msg)
 /**
  * @brief Get field zacc from sim_state message
  *
- * @return [m/s/s] Z acceleration m/s/s
+ * @return [m/s/s] Z acceleration
  */
 static inline float mavlink_msg_sim_state_get_zacc(const mavlink_message_t* msg)
 {
@@ -568,7 +568,7 @@ static inline float mavlink_msg_sim_state_get_zacc(const mavlink_message_t* msg)
 /**
  * @brief Get field xgyro from sim_state message
  *
- * @return [rad/s] Angular speed around X axis rad/s
+ * @return [rad/s] Angular speed around X axis
  */
 static inline float mavlink_msg_sim_state_get_xgyro(const mavlink_message_t* msg)
 {
@@ -578,7 +578,7 @@ static inline float mavlink_msg_sim_state_get_xgyro(const mavlink_message_t* msg
 /**
  * @brief Get field ygyro from sim_state message
  *
- * @return [rad/s] Angular speed around Y axis rad/s
+ * @return [rad/s] Angular speed around Y axis
  */
 static inline float mavlink_msg_sim_state_get_ygyro(const mavlink_message_t* msg)
 {
@@ -588,7 +588,7 @@ static inline float mavlink_msg_sim_state_get_ygyro(const mavlink_message_t* msg
 /**
  * @brief Get field zgyro from sim_state message
  *
- * @return [rad/s] Angular speed around Z axis rad/s
+ * @return [rad/s] Angular speed around Z axis
  */
 static inline float mavlink_msg_sim_state_get_zgyro(const mavlink_message_t* msg)
 {
@@ -598,7 +598,7 @@ static inline float mavlink_msg_sim_state_get_zgyro(const mavlink_message_t* msg
 /**
  * @brief Get field lat from sim_state message
  *
- * @return [deg] Latitude in degrees
+ * @return [deg] Latitude
  */
 static inline float mavlink_msg_sim_state_get_lat(const mavlink_message_t* msg)
 {
@@ -608,7 +608,7 @@ static inline float mavlink_msg_sim_state_get_lat(const mavlink_message_t* msg)
 /**
  * @brief Get field lon from sim_state message
  *
- * @return [deg] Longitude in degrees
+ * @return [deg] Longitude
  */
 static inline float mavlink_msg_sim_state_get_lon(const mavlink_message_t* msg)
 {
@@ -618,7 +618,7 @@ static inline float mavlink_msg_sim_state_get_lon(const mavlink_message_t* msg)
 /**
  * @brief Get field alt from sim_state message
  *
- * @return [m] Altitude in meters
+ * @return [m] Altitude
  */
 static inline float mavlink_msg_sim_state_get_alt(const mavlink_message_t* msg)
 {
@@ -648,7 +648,7 @@ static inline float mavlink_msg_sim_state_get_std_dev_vert(const mavlink_message
 /**
  * @brief Get field vn from sim_state message
  *
- * @return [m/s] True velocity in m/s in NORTH direction in earth-fixed NED frame
+ * @return [m/s] True velocity in NORTH direction in earth-fixed NED frame
  */
 static inline float mavlink_msg_sim_state_get_vn(const mavlink_message_t* msg)
 {
@@ -658,7 +658,7 @@ static inline float mavlink_msg_sim_state_get_vn(const mavlink_message_t* msg)
 /**
  * @brief Get field ve from sim_state message
  *
- * @return [m/s] True velocity in m/s in EAST direction in earth-fixed NED frame
+ * @return [m/s] True velocity in EAST direction in earth-fixed NED frame
  */
 static inline float mavlink_msg_sim_state_get_ve(const mavlink_message_t* msg)
 {
@@ -668,7 +668,7 @@ static inline float mavlink_msg_sim_state_get_ve(const mavlink_message_t* msg)
 /**
  * @brief Get field vd from sim_state message
  *
- * @return [m/s] True velocity in m/s in DOWN direction in earth-fixed NED frame
+ * @return [m/s] True velocity in DOWN direction in earth-fixed NED frame
  */
 static inline float mavlink_msg_sim_state_get_vd(const mavlink_message_t* msg)
 {

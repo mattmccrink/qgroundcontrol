@@ -38,6 +38,7 @@ Item {
     property var    _centerDragHandleComponent
     property bool   _circle:                    false
     property real   _circleRadius
+    property bool   _editCircleRadius:          false
 
     property real _zorderDragHandle:    QGroundControl.zOrderMapItems + 3   // Highest to prevent splitting when items overlap
     property real _zorderSplitHandle:   QGroundControl.zOrderMapItems + 2
@@ -122,7 +123,6 @@ Item {
         _circle = false
     }
 
-    /// Reset polygon to a circle which fits within initial polygon
     function setCircleRadius(center, radius) {
         var unboundCenter = center.atDistanceAndAzimuth(0, 0)
         _circleRadius = radius
@@ -224,13 +224,13 @@ Item {
         MenuItem {
             text:           qsTr("Set radius..." )
             visible:        _circle
-            onTriggered:    radiusDialog.visible = true
+            onTriggered:    _editCircleRadius = true
         }
 
         MenuItem {
             text:           qsTr("Edit position..." )
             enabled:        _circle
-            onTriggered:    qgcView.showDialog(editPositionDialog, qsTr("Edit Position"), qgcView.showDialogDefaultWidth, StandardButton.Cancel)
+            onTriggered:    qgcView.showDialog(editPositionDialog, qsTr("Edit Position"), qgcView.showDialogDefaultWidth, StandardButton.Close)
         }
 
         MenuItem {
@@ -459,19 +459,19 @@ Item {
             }
 
             function setRadiusFromDialog() {
-                setCircleRadius(mapPolygon.center, radiusField.text)
-                radiusDialog.visible = false
+                var radius = QGroundControl.appSettingsDistanceUnitsToMeters(radiusField.text)
+                setCircleRadius(mapPolygon.center, radius)
+                _editCircleRadius = false
             }
 
             Rectangle {
-                id:                 radiusDialog
                 anchors.margins:    _margin
                 anchors.left:       parent.right
                 width:              radiusColumn.width + (_margin *2)
                 height:             radiusColumn.height + (_margin *2)
                 color:              qgcPal.window
                 border.color:       qgcPal.text
-                visible:            false
+                visible:            _editCircleRadius
 
                 Column {
                     id:                 radiusColumn
@@ -484,7 +484,9 @@ Item {
 
                     QGCTextField {
                         id:                 radiusField
-                        text:               _circleRadius.toFixed(2)
+                        showUnits:          true
+                        unitsLabel:         QGroundControl.appSettingsDistanceUnitsString
+                        text:               QGroundControl.metersToAppSettingsDistanceUnits(_circleRadius).toFixed(2)
                         onEditingFinished:  setRadiusFromDialog()
                         inputMethodHints:   Qt.ImhFormattedNumbersOnly
                     }

@@ -46,18 +46,17 @@ linux {
         error("Unsuported Linux toolchain, only GCC 32- or 64-bit is supported")
     }
 } else : win32 {
-    win32-msvc2010 | win32-msvc2012 | win32-msvc2013 | win32-msvc2015 {
+    win32-msvc2015 {
         message("Windows build")
         CONFIG += WindowsBuild
         DEFINES += __STDC_LIMIT_MACROS
     } else {
-        error("Unsupported Windows toolchain, only Visual Studio 2010, 2012, and 2013 are supported")
+        error("Unsupported Windows toolchain, only Visual Studio 2015 is supported")
     }
 } else : macx {
     macx-clang | macx-llvm {
         message("Mac build")
         CONFIG += MacBuild
-        DEFINES += __macos__
         CONFIG += x86_64
         CONFIG -= x86
         equals(QT_MAJOR_VERSION, 5) | greaterThan(QT_MINOR_VERSION, 5) {

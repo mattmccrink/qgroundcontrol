@@ -5,8 +5,11 @@ Note: This file only contains high level features or important fixes.
 ## 3.5
 
 ### 3.5.0 - Daily Build
+* Add support for specifying fixed RTK based station location in Settings/General.
 * Added Airmap integration to QGC
 * Add ESTIMATOR_STATUS values to new estimatorStatus Vehicle FactGroup. These are now available to display in instrument panel.
+* Make Distance to GCS available for display from instrument panel.
+* Make Heading to Home available for display from instrument panel.
 
 ## 3.4
 

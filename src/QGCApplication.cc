@@ -87,8 +87,10 @@
 #include "VisualMissionItem.h"
 #include "EditPositionDialogController.h"
 #include "FactValueSliderListModel.h"
-#include "KMLFileHelper.h"
+#include "ShapeFileHelper.h"
 #include "QGCFileDownload.h"
+#include "FirmwareImage.h"
+#include "MavlinkConsoleController.h"
 
 #ifndef NO_SERIAL_LINK
 #include "SerialLink.h"
@@ -100,7 +102,6 @@
 #include "FirmwareUpgradeController.h"
 #include "MainWindow.h"
 #include "GeoTagController.h"
-#include "MavlinkConsoleController.h"
 #include "GPS/GPSManager.h"
 #endif
 
@@ -145,9 +146,9 @@ static QObject* qgroundcontrolQmlGlobalSingletonFactory(QQmlEngine*, QJSEngine*)
     return qmlGlobal;
 }
 
-static QObject* kmlFileHelperSingletonFactory(QQmlEngine*, QJSEngine*)
+static QObject* shapeFileHelperSingletonFactory(QQmlEngine*, QJSEngine*)
 {
-    return new KMLFileHelper;
+    return new ShapeFileHelper;
 }
 
 QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
@@ -170,19 +171,6 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     , _bluetoothAvailable       (false)
 {
     _app = this;
-
-
-    QLocale locale = QLocale::system();
-    //-- Some forced locales for testing
-    //QLocale locale = QLocale(QLocale::German);
-    //QLocale locale = QLocale(QLocale::French);
-    //QLocale locale = QLocale(QLocale::Chinese);
-#if defined (__macos__)
-    locale = QLocale(locale.name());
-#endif
-    //-- Our localization
-    if(_QGCTranslator.load(locale, "qgc_", "", ":/localization"))
-        _app->installTranslator(&_QGCTranslator);
 
     // This prevents usage of QQuickWidget to fail since it doesn't support native widget siblings
 #ifndef __android__
@@ -236,11 +224,13 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     // Parse command line options
 
     bool fClearSettingsOptions = false; // Clear stored settings
+    bool fClearCache = false;           // Clear parameter/airframe caches
     bool logging = false;               // Turn on logging
     QString loggingOptions;
 
     CmdLineOpt_t rgCmdLineOptions[] = {
         { "--clear-settings",   &fClearSettingsOptions, nullptr },
+        { "--clear-cache",      &fClearCache,           nullptr },
         { "--logging",          &logging,               &loggingOptions },
         { "--fake-mobile",      &_fakeMobile,           nullptr },
         { "--log-output",       &_logOutput,            nullptr },
@@ -309,6 +299,15 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     }
     settings.setValue(_settingsVersionKey, QGC_SETTINGS_VERSION);
 
+    if (fClearCache) {
+        QDir dir(ParameterManager::parameterCacheDir());
+        dir.removeRecursively();
+        QFile airframe(cachedAirframeMetaDataFile());
+        airframe.remove();
+        QFile parameter(cachedParameterMetaDataFile());
+        parameter.remove();
+    }
+
     // Set up our logging filters
     QGCLoggingCategoryRegister::instance()->setFilterRulesFromSettings(loggingOptions);
 
@@ -321,20 +320,28 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     }
 #endif
 
-    // gstreamer debug settings
+    // Gstreamer debug settings
+#if defined(__ios__) || defined(__android__)
+    // Initialize Video Streaming
+    initializeVideoStreaming(argc, argv, nullptr, nullptr);
+#else
     QString savePath, gstDebugLevel;
     if (settings.contains(AppSettings::savePathName)) {
-         savePath = settings.value("SavePath").toString() + "/Logs/gst"; // hardcode log path here, appsetting is not available yet
-         if (!QDir(savePath).exists()) {
-             QDir().mkdir(savePath);
-         }
+        savePath = settings.value(AppSettings::savePathName).toString();
     }
-    if (settings.contains(AppSettings::gstDebugName)) {
-        gstDebugLevel = "*:" + settings.value("GstreamerDebugLevel").toString();
+    if(savePath.isEmpty()) {
+        savePath = "/tmp";
     }
-
+    savePath = savePath + "/Logs/gst";
+    if (!QDir(savePath).exists()) {
+        QDir().mkpath(savePath);
+    }
+    if (settings.contains(AppSettings::gstDebugLevelName)) {
+        gstDebugLevel = "*:" + settings.value(AppSettings::gstDebugLevelName).toString();
+    }
     // Initialize Video Streaming
     initializeVideoStreaming(argc, argv, savePath.toUtf8().data(), gstDebugLevel.toUtf8().data());
+#endif
 
     _toolbox = new QGCToolbox(this);
     _toolbox->setChildToolboxes();
@@ -350,7 +357,50 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
    }
 #endif /* __mobile__ */
 
+   setLanguage();
     _checkForNewVersion();
+}
+
+void QGCApplication::setLanguage()
+{
+    QLocale locale = QLocale::system();
+    qDebug() << "System reported locale:" << locale << locale.name();
+    int langID = toolbox()->settingsManager()->appSettings()->language()->rawValue().toInt();
+    //-- See App.SettinsGroup.json for index
+    if(langID) {
+        switch(langID) {
+        case 1:
+            locale = QLocale(QLocale::English);
+            break;
+        case 2:
+            locale = QLocale(QLocale::Bulgarian);
+            break;
+        case 3:
+            locale = QLocale(QLocale::German);
+            break;
+        case 4:
+            locale = QLocale(QLocale::French);
+            break;
+        case 5:
+            locale = QLocale(QLocale::Italian);
+            break;
+        case 6:
+            locale = QLocale(QLocale::Korean);
+            break;
+        case 7:
+            locale = QLocale(QLocale::Russian);
+            break;
+        case 8:
+            locale = QLocale(QLocale::Turkish);
+            break;
+        case 9:
+            locale = QLocale(QLocale::Chinese);
+            break;
+        }
+    }
+    //-- Our localization
+    if(_QGCTranslator.load(locale, "qgc_", "", ":/localization"))
+        _app->installTranslator(&_QGCTranslator);
 }
 
 void QGCApplication::_shutdown(void)
@@ -377,6 +427,10 @@ QGCApplication::~QGCApplication()
 
 void QGCApplication::_initCommon(void)
 {
+    static const char* kRefOnly         = "Reference only";
+    static const char* kQGCControllers  = "QGroundControl.Controllers";
+    static const char* kQGCVehicle      = "QGroundControl.Vehicle";
+
     QSettings settings;
 
     // Register our Qml objects
@@ -384,56 +438,62 @@ void QGCApplication::_initCommon(void)
     qmlRegisterType<QGCPalette>     ("QGroundControl.Palette", 1, 0, "QGCPalette");
     qmlRegisterType<QGCMapPalette>  ("QGroundControl.Palette", 1, 0, "QGCMapPalette");
 
-    qmlRegisterUncreatableType<CoordinateVector>    ("QGroundControl",                      1, 0, "CoordinateVector",       "Reference only");
-    qmlRegisterUncreatableType<QmlObjectListModel>  ("QGroundControl",                      1, 0, "QmlObjectListModel",     "Reference only");
-    qmlRegisterUncreatableType<MissionCommandTree>  ("QGroundControl",                      1, 0, "MissionCommandTree",     "Reference only");
-    qmlRegisterUncreatableType<CameraCalc>          ("QGroundControl",                      1, 0, "CameraCalc",             "Reference only");
+    qmlRegisterUncreatableType<Vehicle>             (kQGCVehicle,                           1, 0, "Vehicle",                    kRefOnly);
+    qmlRegisterUncreatableType<MissionItem>         (kQGCVehicle,                           1, 0, "MissionItem",                kRefOnly);
+    qmlRegisterUncreatableType<MissionManager>      (kQGCVehicle,                           1, 0, "MissionManager",             kRefOnly);
+    qmlRegisterUncreatableType<ParameterManager>    (kQGCVehicle,                           1, 0, "ParameterManager",           kRefOnly);
+    qmlRegisterUncreatableType<QGCCameraManager>    (kQGCVehicle,                           1, 0, "QGCCameraManager",           kRefOnly);
+    qmlRegisterUncreatableType<QGCCameraControl>    (kQGCVehicle,                           1, 0, "QGCCameraControl",           kRefOnly);
+    qmlRegisterUncreatableType<QGCVideoStreamInfo>  (kQGCVehicle,                           1, 0, "QGCVideoStreamInfo",         kRefOnly);
+    qmlRegisterUncreatableType<LinkInterface>       (kQGCVehicle,                           1, 0, "LinkInterface",              kRefOnly);
+    qmlRegisterUncreatableType<MissionController>   (kQGCControllers,                       1, 0, "MissionController",          kRefOnly);
+    qmlRegisterUncreatableType<GeoFenceController>  (kQGCControllers,                       1, 0, "GeoFenceController",         kRefOnly);
+    qmlRegisterUncreatableType<RallyPointController>(kQGCControllers,                       1, 0, "RallyPointController",       kRefOnly);
+    qmlRegisterUncreatableType<VisualMissionItem>   (kQGCControllers,                       1, 0, "VisualMissionItem",          kRefOnly);
 
-    qmlRegisterUncreatableType<AutoPilotPlugin>     ("QGroundControl.AutoPilotPlugin",      1, 0, "AutoPilotPlugin",        "Reference only");
-    qmlRegisterUncreatableType<VehicleComponent>    ("QGroundControl.AutoPilotPlugin",      1, 0, "VehicleComponent",       "Reference only");
-    qmlRegisterUncreatableType<Vehicle>             ("QGroundControl.Vehicle",              1, 0, "Vehicle",                "Reference only");
-    qmlRegisterUncreatableType<MissionItem>         ("QGroundControl.Vehicle",              1, 0, "MissionItem",            "Reference only");
-    qmlRegisterUncreatableType<MissionManager>      ("QGroundControl.Vehicle",              1, 0, "MissionManager",         "Reference only");
-    qmlRegisterUncreatableType<ParameterManager>    ("QGroundControl.Vehicle",              1, 0, "ParameterManager",       "Reference only");
-    qmlRegisterUncreatableType<QGCCameraManager>    ("QGroundControl.Vehicle",              1, 0, "QGCCameraManager",       "Reference only");
-    qmlRegisterUncreatableType<QGCCameraControl>    ("QGroundControl.Vehicle",              1, 0, "QGCCameraControl",       "Reference only");
-    qmlRegisterUncreatableType<LinkInterface>       ("QGroundControl.Vehicle",              1, 0, "LinkInterface",          "Reference only");
-    qmlRegisterUncreatableType<JoystickManager>     ("QGroundControl.JoystickManager",      1, 0, "JoystickManager",        "Reference only");
-    qmlRegisterUncreatableType<Joystick>            ("QGroundControl.JoystickManager",      1, 0, "Joystick",               "Reference only");
-    qmlRegisterUncreatableType<QGCPositionManager>  ("QGroundControl.QGCPositionManager",   1, 0, "QGCPositionManager",     "Reference only");
-    qmlRegisterUncreatableType<QGCMapPolygon>       ("QGroundControl.FlightMap",            1, 0, "QGCMapPolygon",          "Reference only");
-    qmlRegisterUncreatableType<MissionController>   ("QGroundControl.Controllers",          1, 0, "MissionController",      "Reference only");
-    qmlRegisterUncreatableType<GeoFenceController>  ("QGroundControl.Controllers",          1, 0, "GeoFenceController",     "Reference only");
-    qmlRegisterUncreatableType<RallyPointController>("QGroundControl.Controllers",          1, 0, "RallyPointController",   "Reference only");
-    qmlRegisterUncreatableType<VisualMissionItem>   ("QGroundControl.Controllers",          1, 0, "VisualMissionItem",      "Reference only");
-    qmlRegisterUncreatableType<FactValueSliderListModel>("QGroundControl.FactControls",     1, 0, "FactValueSliderListModel","Reference only");
+    qmlRegisterUncreatableType<CoordinateVector>    ("QGroundControl",                      1, 0, "CoordinateVector",           kRefOnly);
+    qmlRegisterUncreatableType<QmlObjectListModel>  ("QGroundControl",                      1, 0, "QmlObjectListModel",         kRefOnly);
+    qmlRegisterUncreatableType<MissionCommandTree>  ("QGroundControl",                      1, 0, "MissionCommandTree",         kRefOnly);
+    qmlRegisterUncreatableType<CameraCalc>          ("QGroundControl",                      1, 0, "CameraCalc",                 kRefOnly);
 
-    qmlRegisterType<QGCGeoBoundingCube>             ("QGroundControl",                      1, 0, "QGCGeoBoundingCube");
+    qmlRegisterUncreatableType<AutoPilotPlugin>     ("QGroundControl.AutoPilotPlugin",      1, 0, "AutoPilotPlugin",            kRefOnly);
+    qmlRegisterUncreatableType<VehicleComponent>    ("QGroundControl.AutoPilotPlugin",      1, 0, "VehicleComponent",           kRefOnly);
+    qmlRegisterUncreatableType<JoystickManager>     ("QGroundControl.JoystickManager",      1, 0, "JoystickManager",            kRefOnly);
+    qmlRegisterUncreatableType<Joystick>            ("QGroundControl.JoystickManager",      1, 0, "Joystick",                   kRefOnly);
+    qmlRegisterUncreatableType<QGCPositionManager>  ("QGroundControl.QGCPositionManager",   1, 0, "QGCPositionManager",         kRefOnly);
+    qmlRegisterUncreatableType<FactValueSliderListModel>("QGroundControl.FactControls",     1, 0, "FactValueSliderListModel",   kRefOnly);
 
-    qmlRegisterType<ParameterEditorController>      ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
-    qmlRegisterType<ESP8266ComponentController>     ("QGroundControl.Controllers", 1, 0, "ESP8266ComponentController");
-    qmlRegisterType<ScreenToolsController>          ("QGroundControl.Controllers", 1, 0, "ScreenToolsController");
-    qmlRegisterType<PlanMasterController>           ("QGroundControl.Controllers", 1, 0, "PlanMasterController");
-    qmlRegisterType<ValuesWidgetController>         ("QGroundControl.Controllers", 1, 0, "ValuesWidgetController");
-    qmlRegisterType<QGCFileDialogController>        ("QGroundControl.Controllers", 1, 0, "QGCFileDialogController");
-    qmlRegisterType<RCChannelMonitorController>     ("QGroundControl.Controllers", 1, 0, "RCChannelMonitorController");
-    qmlRegisterType<JoystickConfigController>       ("QGroundControl.Controllers", 1, 0, "JoystickConfigController");
-    qmlRegisterType<LogDownloadController>          ("QGroundControl.Controllers", 1, 0, "LogDownloadController");
-    qmlRegisterType<SyslinkComponentController>     ("QGroundControl.Controllers", 1, 0, "SyslinkComponentController");
-    qmlRegisterType<EditPositionDialogController>   ("QGroundControl.Controllers", 1, 0, "EditPositionDialogController");
-    qmlRegisterType<QGCMapCircle>                   ("QGroundControl.FlightMap",   1, 0, "QGCMapCircle");
+    qmlRegisterUncreatableType<QGCMapPolygon>       ("QGroundControl.FlightMap",            1, 0, "QGCMapPolygon",              kRefOnly);
+    qmlRegisterUncreatableType<QGCGeoBoundingCube>  ("QGroundControl.FlightMap",            1, 0, "QGCGeoBoundingCube",         kRefOnly);
+
+    qmlRegisterType<QGCMapCircle>                   ("QGroundControl.FlightMap",            1, 0, "QGCMapCircle");
+
+    qmlRegisterType<ParameterEditorController>      (kQGCControllers,                       1, 0, "ParameterEditorController");
+    qmlRegisterType<ESP8266ComponentController>     (kQGCControllers,                       1, 0, "ESP8266ComponentController");
+    qmlRegisterType<ScreenToolsController>          (kQGCControllers,                       1, 0, "ScreenToolsController");
+    qmlRegisterType<PlanMasterController>           (kQGCControllers,                       1, 0, "PlanMasterController");
+    qmlRegisterType<ValuesWidgetController>         (kQGCControllers,                       1, 0, "ValuesWidgetController");
+    qmlRegisterType<QGCFileDialogController>        (kQGCControllers,                       1, 0, "QGCFileDialogController");
+    qmlRegisterType<RCChannelMonitorController>     (kQGCControllers,                       1, 0, "RCChannelMonitorController");
+    qmlRegisterType<JoystickConfigController>       (kQGCControllers,                       1, 0, "JoystickConfigController");
+    qmlRegisterType<LogDownloadController>          (kQGCControllers,                       1, 0, "LogDownloadController");
+    qmlRegisterType<SyslinkComponentController>     (kQGCControllers,                       1, 0, "SyslinkComponentController");
+    qmlRegisterType<EditPositionDialogController>   (kQGCControllers,                       1, 0, "EditPositionDialogController");
+
 #ifndef __mobile__
-    qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
-    qmlRegisterType<CustomCommandWidgetController>  ("QGroundControl.Controllers", 1, 0, "CustomCommandWidgetController");
-    qmlRegisterType<FirmwareUpgradeController>      ("QGroundControl.Controllers", 1, 0, "FirmwareUpgradeController");
-    qmlRegisterType<GeoTagController>               ("QGroundControl.Controllers", 1, 0, "GeoTagController");
-    qmlRegisterType<MavlinkConsoleController>       ("QGroundControl.Controllers", 1, 0, "MavlinkConsoleController");
+    qmlRegisterType<ViewWidgetController>           (kQGCControllers,                       1, 0, "ViewWidgetController");
+    qmlRegisterType<CustomCommandWidgetController>  (kQGCControllers,                       1, 0, "CustomCommandWidgetController");
+#ifndef NO_SERIAL_LINK
+    qmlRegisterType<FirmwareUpgradeController>      (kQGCControllers,                       1, 0, "FirmwareUpgradeController");
 #endif
+    qmlRegisterType<GeoTagController>               (kQGCControllers,                       1, 0, "GeoTagController");
+#endif
+    qmlRegisterType<MavlinkConsoleController>       (kQGCControllers,                       1, 0, "MavlinkConsoleController");
 
     // Register Qml Singletons
     qmlRegisterSingletonType<QGroundControlQmlGlobal>   ("QGroundControl",                          1, 0, "QGroundControl",         qgroundcontrolQmlGlobalSingletonFactory);
     qmlRegisterSingletonType<ScreenToolsController>     ("QGroundControl.ScreenToolsController",    1, 0, "ScreenToolsController",  screenToolsControllerSingletonFactory);
-    qmlRegisterSingletonType<KMLFileHelper>             ("QGroundControl.KMLFileHelper",            1, 0, "KMLFileHelper",          kmlFileHelperSingletonFactory);
+    qmlRegisterSingletonType<ShapeFileHelper>           ("QGroundControl.ShapeFileHelper",          1, 0, "ShapeFileHelper",        shapeFileHelperSingletonFactory);
 }
 
 bool QGCApplication::_initForNormalAppBoot(void)
@@ -464,8 +524,8 @@ bool QGCApplication::_initForNormalAppBoot(void)
     toolbox()->joystickManager()->init();
 
     if (_settingsUpgraded) {
-        showMessage(tr("The format for QGroundControl saved settings has been modified. "
-                    "Your saved settings have been reset to defaults."));
+        showMessage(QString(tr("The format for %1 saved settings has been modified. "
+                    "Your saved settings have been reset to defaults.")).arg(applicationName()));
     }
 
     // Connect links with flag AutoconnectLink
@@ -669,7 +729,9 @@ void QGCApplication::_missingParamsDisplay(void)
 QObject* QGCApplication::_rootQmlObject()
 {
 #ifdef __mobile__
-    return _qmlAppEngine->rootObjects()[0];
+    if(_qmlAppEngine && _qmlAppEngine->rootObjects().size())
+        return _qmlAppEngine->rootObjects()[0];
+    return nullptr;
 #else
     MainWindow * mainWindow = MainWindow::instance();
     if (mainWindow) {
@@ -711,12 +773,16 @@ void QGCApplication::showMessage(const QString& message)
 
 void QGCApplication::showSetupView(void)
 {
-    QMetaObject::invokeMethod(_rootQmlObject(), "showSetupView");
+    if(_rootQmlObject()) {
+        QMetaObject::invokeMethod(_rootQmlObject(), "showSetupView");
+    }
 }
 
 void QGCApplication::qmlAttemptWindowClose(void)
 {
-    QMetaObject::invokeMethod(_rootQmlObject(), "attemptWindowClose");
+    if(_rootQmlObject()) {
+        QMetaObject::invokeMethod(_rootQmlObject(), "attemptWindowClose");
+    }
 }
 
 bool QGCApplication::isInternetAvailable()
@@ -816,3 +882,16 @@ void QGCApplication::_gpsNumSatellites(int numSatellites)
     _gpsRtkFactGroup->numSatellites()->setRawValue(numSatellites);
 }
 
+QString QGCApplication::cachedParameterMetaDataFile(void)
+{
+    QSettings settings;
+    QDir parameterDir = QFileInfo(settings.fileName()).dir();
+    return parameterDir.filePath(QStringLiteral("ParameterFactMetaData.xml"));
+}
+
+QString QGCApplication::cachedAirframeMetaDataFile(void)
+{
+    QSettings settings;
+    QDir airframeDir = QFileInfo(settings.fileName()).dir();
+    return airframeDir.filePath(QStringLiteral("PX4AirframeFactMetaData.xml"));
+}

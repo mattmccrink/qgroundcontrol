@@ -1,5 +1,12 @@
 <RCC>
     <qresource prefix="/localization">
+        <file alias="qgc_bg.qm">localization/qgc_bg.qm</file>
+        <file alias="qgc_de_DE.qm">localization/qgc_de-DE.qm</file>
+        <file alias="qgc_fr_FR.qm">localization/qgc_fr_FR.qm</file>
+        <file alias="qgc_it.qm">localization/qgc_it.qm</file>
+        <file alias="qgc_ko.qm">localization/qgc_ko.qm</file>
+        <file alias="qgc_ru.qm">localization/qgc_ru.qm</file>
+        <file alias="qgc_tr.qm">localization/qgc_tr.qm</file>
         <file alias="qgc_zh_CN.qm">localization/qgc_zh-CN.qm</file>
     </qresource>
     <qresource prefix="/fonts">
@@ -53,7 +60,7 @@
 		<file alias="camera.svg">resources/camera.svg</file>
         <file alias="camera_photo.svg">src/Camera/images/camera_photo.svg</file>
         <file alias="camera_video.svg">src/Camera/images/camera_video.svg</file>
-        <file alias="check.png">src/QmlControls/check.png</file>
+        <file alias="checkbox-check.svg">src/QmlControls/checkbox-check.svg</file>
         <file alias="FirmwareUpgradeIcon.png">src/VehicleSetup/FirmwareUpgradeIcon.png</file>
         <file alias="FlightModesComponentIcon.png">src/AutoPilotPlugins/PX4/Images/FlightModesComponentIcon.png</file>
         <file alias="CameraTrigger.svg">src/AutoPilotPlugins/PX4/Images/CameraTrigger.svg</file>
@@ -73,6 +80,7 @@
         <file alias="Frames/Vectored6DOF.png">src/AutoPilotPlugins/APM/Images/vectored6dof-frame.png</file>
         <file alias="Frames/SimpleROV-3.png">src/AutoPilotPlugins/APM/Images/simple3-frame.png</file>
         <file alias="Frames/SimpleROV-4.png">src/AutoPilotPlugins/APM/Images/simple4-frame.png</file>
+        <file alias="Frames/SimpleROV-5.png">src/AutoPilotPlugins/APM/Images/simple5-frame.png</file>
         <file alias="LogDownloadIcon">src/AnalyzeView/LogDownloadIcon.svg</file>
         <file alias="LowBattery.svg">src/AutoPilotPlugins/PX4/Images/LowBattery.svg</file>
         <file alias="LowBatteryLight.svg">src/AutoPilotPlugins/PX4/Images/LowBatteryLight.svg</file>
@@ -179,6 +187,8 @@
         <file alias="AlertAircraft.svg">src/FlightMap/Images/AlertAircraft.svg</file>
         <file alias="AwarenessAircraft.svg">src/FlightMap/Images/AwarenessAircraft.svg</file>
         <file alias="check.svg">resources/check.svg</file>
+        <file alias="no-logging.svg">src/AutoPilotPlugins/PX4/Images/no-logging.svg</file>
+        <file alias="no-logging-light.svg">src/AutoPilotPlugins/PX4/Images/no-logging-light.svg</file>
     </qresource>
     <qresource prefix="/res">
         <file alias="action.svg">resources/action.svg</file>
@@ -193,6 +203,7 @@
         <file alias="counter-clockwise-arrow.svg">resources/counter-clockwise-arrow.svg</file>
         <file alias="chevron-down.svg">resources/chevron-down.svg</file>
         <file alias="chevron-up.svg">resources/chevron-up.svg</file>
+		<file alias="DropArrow.svg">resources/DropArrow.svg</file>
         <file alias="gear-black.svg">resources/gear-black.svg</file>
         <file alias="gear-white.svg">resources/gear-white.svg</file>
         <file alias="helicoptericon.svg">resources/helicoptericon.svg</file>
@@ -207,6 +218,7 @@
         <file alias="QGCLogoBlack">resources/QGCLogoBlack.svg</file>
 		<file alias="QGCLogoFull">resources/QGCLogoFull.svg</file>
         <file alias="QGCLogoWhite">resources/QGCLogoWhite.svg</file>
+        <file alias="QGCLogoArrow">resources/QGCLogoArrow.svg</file>
         <file alias="QGroundControlConnect">resources/QGroundControlConnect.svg</file>
         <file alias="rtl.svg">resources/rtl.svg</file>
         <file alias="SplashScreen">resources/SplashScreen.png</file>

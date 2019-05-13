@@ -2,18 +2,63 @@
 
 Note: This file only contains high level features or important fixes.
 
-## 3.5
+## 3.6
 
-### 3.5.0 - Daily Build
+### 3.6.0 - Daily Build
+
+* ArduPilot: Copter - Add suppor for Simple and Super Simple flight modes
+* ArduPilot: Flight Mode setup - Switch Options were not showing up for all firmware revs
+* ArduCopter: Add PID Tuning page to Tuning Setup
+* ArduPilot: Copter - Advanced Tuning support
+* ArduPilot: Rover - Frame setup support
+* ArduPilot: Copter - Update support to 3.5+
+* ArduPilot: Plane - Update support to 3.8+
+* ArduPilot: Rover - Update support to 3.4+
+* ArduPilot: Rework Airframe setup ui
+* Plan/Pattern: Support named presets to simplify commonly used settings setup. Currently only supported by Survey.
+* ArduCopter: Handle 3.7 parameter name change from CH#_OPT to RC#_OPTION.
+* Improved support for flashing/connecting to ChibiOS bootloaders boards.
+* Making the camera API available to all firmwares, not just PX4.
+* ArduPilot: Support configurable mavlink stream rates. Available from Settings/Mavlink page.
+* Major rewrite and bug fix pass through Structure Scan. Previous version had such bad problems that it can no longer be supported. Plans with Structure Scan will need to be recreated. New QGC will not load old Structure Scan plans.
+
+### 3.5.3 - Not yet released
+* Fix crash when clicking on GeoFence polygon vertex
+* PX4: Fix missing ```MC_YAW_FF``` parameter in PID Tuning
+* ArduPilot: Fix parameter file save generating bad characters from git hash
+
+### 3.5.2 - Stable
+* Fix Ubuntu AppImage startup failure
+
+### 3.5.1
+* Update Windows usb drivers
+* Add ArduPilot CubeBlack Service Bulletin check
+* Fix visibility of PX4/ArduPilot logo in toolbar
+* Fix tile set count but in OfflineMaps which would cause image and elevation tile set to have incorrect counts and be incorrectly marked as download incomplete.
+
+### 3.5.0
+* Plan GeoFence: Fix loading of fence from intermediate 3.4 code
+* Structure Scan: Fix loading of structure scan height
+* ArduPilot: Fix location of planned home position when not connected to vehicle. Issue #6840.
+* Fix loading of parameters from multiple components. Would report download complete too early, thus missing all default component params.
+* Fix file delete in mobile file dialogs
 * Add support for specifying fixed RTK based station location in Settings/General.
 * Added Airmap integration to QGC
-* Add ESTIMATOR_STATUS values to new estimatorStatus Vehicle FactGroup. These are now available to display in instrument panel.
+* Added ESTIMATOR_STATUS values to new estimatorStatus Vehicle FactGroup. These are now available to display in instrument panel.
+* Added Chinese and Turkish localization and partial German localization. 
 * Make Distance to GCS available for display from instrument panel.
 * Make Heading to Home available for display from instrument panel.
+* Edit Position dialog available on polygon vertices.
+* Fixed Wing Landing Pattern: Add stop photo/video support. Defaults to on such that doing an RTL will stop camera.
+* Support loading polygons from SHP files
+* Bumped settings version (now 8). This will cause all settings to be reset to defaults.
+* Orbit visuals support changing rotation direction
+* Added support for the Taisync 2.4GHz ViUlinx digital HD wireless link.
+* Added UDP Port option for NMEA GPS Device.
 
 ## 3.4
 
-### 3.4.4 - Stable
+### 3.4.4
 * Stable desktop versions now inform user at boot if newer version is available.
 * Multi-Vehicle Start Mission and Pause now work correctly. Issue #6864.
 

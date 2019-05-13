@@ -79,6 +79,9 @@ SetupPage {
             property int    _orientationDialogCalType
             property var    _activeVehicle:                 QGroundControl.multiVehicleManager.activeVehicle
             property real   _margins:                       ScreenTools.defaultFontPixelHeight / 2
+            property bool   _compassAutoRotAvailable:       controller.parameterExists(-1, "COMPASS_AUTO_ROT")
+            property Fact   _compassAutoRotFact:            controller.getParameterFact(-1, "COMPASS_AUTO_ROT", false /* reportMissing */)
+            property bool   _compassAutoRot:                _compassAutoRotAvailable ? _compassAutoRotFact.rawValue == 2 : false
 
             function showOrientationsDialog(calType) {
                 var dialogTitle
@@ -346,7 +349,7 @@ SetupPage {
                         }
 
                         Column {
-                            visible: sensorParams.rgCompassExternal[index] && sensorParams.rgCompassRotParamAvailable[index]
+                            visible: !_compassAutoRot && sensorParams.rgCompassExternal[index] && sensorParams.rgCompassRotParamAvailable[index]
 
                             QGCLabel { text: qsTr("Orientation:") }
 
@@ -691,34 +694,7 @@ SetupPage {
                                 calValid:           controller.orientationCalDownSideDone
                                 calInProgress:      controller.orientationCalDownSideInProgress
                                 calInProgressText:  controller.orientationCalDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                                imageSource:        controller.orientationCalDownSideRotate ? "qrc:///qmlimages/VehicleDownRotate.png" : "qrc:///qmlimages/VehicleDown.png"
-                            }
-                            VehicleRotationCal {
-                                width:              parent.indicatorWidth
-                                height:             parent.indicatorHeight
-                                visible:            controller.orientationCalUpsideDownSideVisible
-                                calValid:           controller.orientationCalUpsideDownSideDone
-                                calInProgress:      controller.orientationCalUpsideDownSideInProgress
-                                calInProgressText:  controller.orientationCalUpsideDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                                imageSource:        controller.orientationCalUpsideDownSideRotate ? "qrc:///qmlimages/VehicleUpsideDownRotate.png" : "qrc:///qmlimages/VehicleUpsideDown.png"
-                            }
-                            VehicleRotationCal {
-                                width:              parent.indicatorWidth
-                                height:             parent.indicatorHeight
-                                visible:            controller.orientationCalNoseDownSideVisible
-                                calValid:           controller.orientationCalNoseDownSideDone
-                                calInProgress:      controller.orientationCalNoseDownSideInProgress
-                                calInProgressText:  controller.orientationCalNoseDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                                imageSource:        controller.orientationCalNoseDownSideRotate ? "qrc:///qmlimages/VehicleNoseDownRotate.png" : "qrc:///qmlimages/VehicleNoseDown.png"
-                            }
-                            VehicleRotationCal {
-                                width:              parent.indicatorWidth
-                                height:             parent.indicatorHeight
-                                visible:            controller.orientationCalTailDownSideVisible
-                                calValid:           controller.orientationCalTailDownSideDone
-                                calInProgress:      controller.orientationCalTailDownSideInProgress
-                                calInProgressText:  controller.orientationCalTailDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                                imageSource:        controller.orientationCalTailDownSideRotate ? "qrc:///qmlimages/VehicleTailDownRotate.png" : "qrc:///qmlimages/VehicleTailDown.png"
+                                imageSource:        "qrc:///qmlimages/VehicleDown.png"
                             }
                             VehicleRotationCal {
                                 width:              parent.indicatorWidth
@@ -727,7 +703,7 @@ SetupPage {
                                 calValid:           controller.orientationCalLeftSideDone
                                 calInProgress:      controller.orientationCalLeftSideInProgress
                                 calInProgressText:  controller.orientationCalLeftSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                                imageSource:        controller.orientationCalLeftSideRotate ? "qrc:///qmlimages/VehicleLeftRotate.png" : "qrc:///qmlimages/VehicleLeft.png"
+                                imageSource:        "qrc:///qmlimages/VehicleLeft.png"
                             }
                             VehicleRotationCal {
                                 width:              parent.indicatorWidth
@@ -736,7 +712,34 @@ SetupPage {
                                 calValid:           controller.orientationCalRightSideDone
                                 calInProgress:      controller.orientationCalRightSideInProgress
                                 calInProgressText:  controller.orientationCalRightSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
-                                imageSource:        controller.orientationCalRightSideRotate ? "qrc:///qmlimages/VehicleRightRotate.png" : "qrc:///qmlimages/VehicleRight.png"
+                                imageSource:        "qrc:///qmlimages/VehicleRight.png"
+                            }
+                            VehicleRotationCal {
+                                width:              parent.indicatorWidth
+                                height:             parent.indicatorHeight
+                                visible:            controller.orientationCalNoseDownSideVisible
+                                calValid:           controller.orientationCalNoseDownSideDone
+                                calInProgress:      controller.orientationCalNoseDownSideInProgress
+                                calInProgressText:  controller.orientationCalNoseDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
+                                imageSource:        "qrc:///qmlimages/VehicleNoseDown.png"
+                            }
+                            VehicleRotationCal {
+                                width:              parent.indicatorWidth
+                                height:             parent.indicatorHeight
+                                visible:            controller.orientationCalTailDownSideVisible
+                                calValid:           controller.orientationCalTailDownSideDone
+                                calInProgress:      controller.orientationCalTailDownSideInProgress
+                                calInProgressText:  controller.orientationCalTailDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
+                                imageSource:        "qrc:///qmlimages/VehicleTailDown.png"
+                            }
+                            VehicleRotationCal {
+                                width:              parent.indicatorWidth
+                                height:             parent.indicatorHeight
+                                visible:            controller.orientationCalUpsideDownSideVisible
+                                calValid:           controller.orientationCalUpsideDownSideDone
+                                calInProgress:      controller.orientationCalUpsideDownSideInProgress
+                                calInProgressText:  controller.orientationCalUpsideDownSideRotate ? qsTr("Rotate") : qsTr("Hold Still")
+                                imageSource:        "qrc:///qmlimages/VehicleUpsideDown.png"
                             }
                         }
                     }

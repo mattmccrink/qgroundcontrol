@@ -188,6 +188,15 @@
       <output name="MAIN5">feed-through of RC AUX1 channel</output>
       <output name="MAIN6">feed-through of RC AUX2 channel</output>
     </airframe>
+    <airframe id="4041" maintainer="Beat Kueng &lt;beat-kueng@gmx.net&gt;" name="BetaFPV Beta75X 2S Brushless Whoop">
+      <class>Copter</class>
+      <maintainer>Beat Kueng &lt;beat-kueng@gmx.net&gt;</maintainer>
+      <type>Quadrotor H</type>
+      <output name="MAIN1">motor 1</output>
+      <output name="MAIN2">motor 2</output>
+      <output name="MAIN3">motor 3</output>
+      <output name="MAIN4">motor 4</output>
+    </airframe>
   </airframe_group>
   <airframe_group image="QuadRotorWide" name="Quadrotor Wide">
     <airframe id="10015" maintainer="Lorenz Meier &lt;lorenz@px4.io&gt;" name="Team Blacksheep Discovery">
@@ -354,6 +363,12 @@
       <maintainer>Lorenz Meier &lt;lorenz@px4.io&gt;</maintainer>
       <type>Quadrotor x</type>
     </airframe>
+    <airframe id="4052" maintainer="Beat Kueng &lt;beat-kueng@gmx.net&gt;" name="HolyBro QAV250">
+      <class>Copter</class>
+      <maintainer>Beat Kueng &lt;beat-kueng@gmx.net&gt;</maintainer>
+      <type>Quadrotor x</type>
+      <url>https://docs.px4.io/en/frames_multicopter/holybro_qav250_pixhawk4_mini.html</url>
+    </airframe>
     <airframe id="4060" maintainer="James Goppert &lt;james.goppert@gmail.com&gt;" name="DJI Matrice 100">
       <class>Copter</class>
       <maintainer>James Goppert &lt;james.goppert@gmail.com&gt;</maintainer>
@@ -374,16 +389,16 @@
       <maintainer>Henry Zhang &lt;zhanghui629@gmail.com&gt;</maintainer>
       <type>Quadrotor x</type>
     </airframe>
-    <airframe id="4250" maintainer="Alex Klimaj &lt;alex.klimaj@tealdrones.com&gt;" name="Teal One">
+    <airframe id="4250" maintainer="Jacob Dahl &lt;jacob.dahl@tealdrones.com&gt;" name="Teal One">
       <class>Copter</class>
-      <maintainer>Alex Klimaj &lt;alex.klimaj@tealdrones.com&gt;</maintainer>
+      <maintainer>Jacob Dahl &lt;jacob.dahl@tealdrones.com&gt;</maintainer>
       <type>Quadrotor x</type>
       <output name="MAIN1">motor 1</output>
       <output name="MAIN2">motor 2</output>
       <output name="MAIN3">motor 3</output>
       <output name="MAIN4">motor 4</output>
     </airframe>
-    <airframe id="4900" maintainer="Dennis Shtatov &lt;densht@gmail.com&gt;" name="Crazyflie 2.0">
+    <airframe id="4900" maintainer="Dennis Shtatov &lt;densht@gmail.com&gt;" name="Crazyflie 2">
       <class>Copter</class>
       <maintainer>Dennis Shtatov &lt;densht@gmail.com&gt;</maintainer>
       <type>Quadrotor x</type>
@@ -393,6 +408,11 @@
     <airframe id="1001" maintainer="Lorenz Meier &lt;lorenz@px4.io&gt;" name="HIL Quadcopter X">
       <class>Copter</class>
       <maintainer>Lorenz Meier &lt;lorenz@px4.io&gt;</maintainer>
+      <type>Simulation</type>
+    </airframe>
+    <airframe id="1100" maintainer="Romain Chiappinelli &lt;romain.chiap@gmail.com&gt;" name="SIH Quadcopter X">
+      <class>Copter</class>
+      <maintainer>Romain Chiappinelli &lt;romain.chiap@gmail.com&gt;</maintainer>
       <type>Simulation</type>
     </airframe>
   </airframe_group>
@@ -439,6 +459,12 @@
       <class>Plane</class>
       <maintainer />
       <type>Flying Wing</type>
+      <output name="MAIN1">left aileron</output>
+      <output name="MAIN2">right aileron</output>
+      <output name="MAIN4">throttle</output>
+      <output name="AUX1">feed-through of RC AUX1 channel</output>
+      <output name="AUX2">feed-through of RC AUX2 channel</output>
+      <output name="AUX3">feed-through of RC AUX3 channel</output>
     </airframe>
     <airframe id="3030" maintainer="Simon Wilks &lt;simon@uaventure.com&gt;" name="IO Camflyer">
       <class>Plane</class>
@@ -490,11 +516,23 @@
       <class>Plane</class>
       <maintainer>Simon Wilks &lt;simon@uaventure.com&gt;</maintainer>
       <type>Flying Wing</type>
+      <output name="MAIN1">right aileron</output>
+      <output name="MAIN2">left aileron</output>
+      <output name="MAIN4">throttle</output>
+      <output name="AUX1">feed-through of RC AUX1 channel</output>
+      <output name="AUX2">feed-through of RC AUX2 channel</output>
+      <output name="AUX3">feed-through of RC AUX3 channel</output>
     </airframe>
     <airframe id="3035" maintainer="Simon Wilks &lt;simon@uaventure.com&gt;" name="Viper">
       <class>Plane</class>
       <maintainer>Simon Wilks &lt;simon@uaventure.com&gt;</maintainer>
       <type>Flying Wing</type>
+      <output name="MAIN1">left aileron</output>
+      <output name="MAIN2">right aileron</output>
+      <output name="MAIN4">throttle</output>
+      <output name="AUX1">feed-through of RC AUX1 channel</output>
+      <output name="AUX2">feed-through of RC AUX2 channel</output>
+      <output name="AUX3">feed-through of RC AUX3 channel</output>
     </airframe>
     <airframe id="3036" maintainer="Simon Wilks &lt;simon@uaventure.com&gt;" name="Sparkle Tech Pigeon">
       <class>Plane</class>
@@ -524,6 +562,12 @@
       <class>Plane</class>
       <maintainer>Lorenz Meier &lt;lorenz@px4.io&gt;</maintainer>
       <type>Flying Wing</type>
+      <output name="MAIN1">left aileron</output>
+      <output name="MAIN2">right aileron</output>
+      <output name="MAIN4">throttle</output>
+      <output name="AUX1">feed-through of RC AUX1 channel</output>
+      <output name="AUX2">feed-through of RC AUX2 channel</output>
+      <output name="AUX3">feed-through of RC AUX3 channel</output>
     </airframe>
   </airframe_group>
   <airframe_group image="PlaneATail" name="Plane A-Tail">
@@ -708,6 +752,19 @@
       <output name="MAIN6">Left elevon</output>
       <output name="MAIN7">Pusher motor</output>
       <output name="MAIN8">Pusher reverse channel</output>
+    </airframe>
+    <airframe id="13014" maintainer="Silvan Fuhrer &lt;silvan@auterion.com&gt;" name="BabyShark VTOL">
+      <class>VTOL</class>
+      <maintainer>Silvan Fuhrer &lt;silvan@auterion.com&gt;</maintainer>
+      <type>Standard VTOL</type>
+      <output name="MAIN1">Ailerons</output>
+      <output name="MAIN2">A-tail left</output>
+      <output name="MAIN3">Pusher motor</output>
+      <output name="MAIN4">A-tail right</output>
+      <output name="MAIN5">motor 1</output>
+      <output name="MAIN6">motor 2</output>
+      <output name="MAIN7">motor 3</output>
+      <output name="MAIN8">motor 4</output>
     </airframe>
   </airframe_group>
   <airframe_group image="VTOLDuoRotorTailSitter" name="VTOL Duo Tailsitter">

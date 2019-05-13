@@ -25,7 +25,7 @@ SetupPage {
     pageComponent:      subFramePageComponent
 
     property var  _activeVehicle:       QGroundControl.multiVehicleManager.activeVehicle
-    property bool _oldFW:   !(_activeVehicle.firmwareMajorVersion > 3 || _activeVehicle.firmwareMinorVersion > 5 || _activeVehicle.firmwarePatchVersion >= 2)
+    property bool _oldFW:   _activeVehicle.versionCompare(3 ,5 ,2) < 0
 
     APMAirframeComponentController { id: controller; factPanel: subFramePage.viewPanel }
 
@@ -103,6 +103,12 @@ SetupPage {
                     name: "SimpleROV-4"
                     resource: "qrc:///qmlimages/Frames/SimpleROV-4.png"
                     paramValue: 5
+                }
+
+                ListElement {
+                    name: "SimpleROV-5"
+                    resource: "qrc:///qmlimages/Frames/SimpleROV-5.png"
+                    paramValue: 6
                 }
             }
 

@@ -29,23 +29,9 @@ double           QGroundControlQmlGlobal::_zoom = 2;
 
 QGroundControlQmlGlobal::QGroundControlQmlGlobal(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool               (app, toolbox)
-    , _flightMapInitialZoom (17.0)
-    , _linkManager          (NULL)
-    , _multiVehicleManager  (NULL)
-    , _mapEngineManager     (NULL)
-    , _qgcPositionManager   (NULL)
-    , _missionCommandTree   (NULL)
-    , _videoManager         (NULL)
-    , _mavlinkLogManager    (NULL)
-    , _corePlugin           (NULL)
-    , _firmwarePluginManager(NULL)
-    , _settingsManager      (NULL)
-    , _gpsRtkFactGroup      (nullptr)
-    , _airspaceManager      (NULL)
-    , _skipSetupPage        (false)
 {
     // We clear the parent on this object since we run into shutdown problems caused by hybrid qml app. Instead we let it leak on shutdown.
-    setParent(NULL);
+    setParent(nullptr);
     // Load last coordinates and zoom from config file
     QSettings settings;
     settings.beginGroup(_flightMapPositionSettingsGroup);
@@ -80,6 +66,12 @@ void QGroundControlQmlGlobal::setToolbox(QGCToolbox* toolbox)
     _settingsManager        = toolbox->settingsManager();
     _gpsRtkFactGroup        = qgcApp()->gpsRtkFactGroup();
     _airspaceManager        = toolbox->airspaceManager();
+#if defined(QGC_GST_TAISYNC_ENABLED)
+    _taisyncManager         = toolbox->taisyncManager();
+#endif
+#if defined(QGC_GST_MICROHARD_ENABLED)
+    _microhardManager       = toolbox->microhardManager();
+#endif
 }
 
 void QGroundControlQmlGlobal::saveGlobalSetting (const QString& key, const QString& value)
@@ -155,6 +147,15 @@ void QGroundControlQmlGlobal::startAPMArduSubMockLink(bool sendStatusText)
 #endif
 }
 
+void QGroundControlQmlGlobal::startAPMArduRoverMockLink(bool sendStatusText)
+{
+#ifdef QT_DEBUG
+    MockLink::startAPMArduRoverMockLink(sendStatusText);
+#else
+    Q_UNUSED(sendStatusText);
+#endif
+}
+
 void QGroundControlQmlGlobal::stopOneMockLink(void)
 {
 #ifdef QT_DEBUG
@@ -189,6 +190,15 @@ int QGroundControlQmlGlobal::supportedFirmwareCount()
     return _firmwarePluginManager->supportedFirmwareTypes().count();
 }
 
+bool QGroundControlQmlGlobal::px4ProFirmwareSupported()
+{
+    return _firmwarePluginManager->supportedFirmwareTypes().contains(MAV_AUTOPILOT_PX4);
+}
+
+bool QGroundControlQmlGlobal::apmFirmwareSupported()
+{
+    return _firmwarePluginManager->supportedFirmwareTypes().contains(MAV_AUTOPILOT_ARDUPILOTMEGA);
+}
 
 bool QGroundControlQmlGlobal::linesIntersect(QPointF line1A, QPointF line1B, QPointF line2A, QPointF line2B)
 {

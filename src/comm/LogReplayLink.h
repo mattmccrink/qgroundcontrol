@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   (c) 2009-2016 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+ *   (c) 2009-2018 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
  *
  * QGroundControl is licensed according to the terms in the file
  * COPYING.md in the root of the source code directory.
@@ -8,8 +8,7 @@
  ****************************************************************************/
 
 
-#ifndef LogReplayLink_H
-#define LogReplayLink_H
+#pragma once
 
 #include "LinkInterface.h"
 #include "LinkConfiguration.h"
@@ -41,6 +40,7 @@ public:
     void        saveSettings            (QSettings& settings, const QString& root);
     void        updateSettings          ();
     QString     settingsURL             () { return "LogReplaySettings.qml"; }
+    QString     settingsTitle           () { return tr("Log Replay Link Settings"); }
 signals:
     void fileNameChanged();
 
@@ -120,6 +120,7 @@ private:
     void _finishPlayback(void);
     void _playbackError(void);
     void _resetPlaybackToBeginning(void);
+    void _signalCurrentLogTimeSecs(void);
 
     // Virtuals from LinkInterface
     virtual bool _connect(void);
@@ -155,4 +156,3 @@ private:
     static const int cbTimestamp = sizeof(quint64);
 };
 
-#endif

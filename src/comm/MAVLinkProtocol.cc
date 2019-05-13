@@ -53,6 +53,8 @@ const char* MAVLinkProtocol::_logFileExtension = "mavlink";             ///< Ext
 MAVLinkProtocol::MAVLinkProtocol(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
     , m_enable_version_check(true)
+    , _message({})
+    , _status({})
     , versionMismatchIgnore(false)
     , systemId(255)
     , _current_version(100)
@@ -68,6 +70,8 @@ MAVLinkProtocol::MAVLinkProtocol(QGCApplication* app, QGCToolbox* toolbox)
     memset(totalLossCounter,    0, sizeof(totalLossCounter));
     memset(runningLossPercent,  0, sizeof(runningLossPercent));
     memset(firstMessage,        1, sizeof(firstMessage));
+    memset(&_status,            0, sizeof(_status));
+    memset(&_message,           0, sizeof(_message));
 }
 
 MAVLinkProtocol::~MAVLinkProtocol()
@@ -285,10 +289,9 @@ void MAVLinkProtocol::receiveBytes(LinkInterface* link, QByteArray b)
 
             // Detect if we are talking to an old radio not supporting v2
             mavlink_status_t* mavlinkStatus = mavlink_get_channel_status(mavlinkChannel);
-            if (_message.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
+            if (_message.msgid == MAVLINK_MSG_ID_RADIO_STATUS && _radio_version_mismatch_count != -1) {
                 if ((mavlinkStatus->flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1)
                 && !(mavlinkStatus->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
-
                     _radio_version_mismatch_count++;
                 }
             }
@@ -296,8 +299,8 @@ void MAVLinkProtocol::receiveBytes(LinkInterface* link, QByteArray b)
             if (_radio_version_mismatch_count == 5) {
                 // Warn the user if the radio continues to send v1 while the link uses v2
                 emit protocolStatusMessage(tr("MAVLink Protocol"), tr("Detected radio still using MAVLink v1.0 on a link with MAVLink v2.0 enabled. Please upgrade the radio firmware."));
-                // Ensure the warning can't get stuck
-                _radio_version_mismatch_count++;
+                // Set to flag warning already shown
+                _radio_version_mismatch_count = -1;
                 // Flick link back to v1
                 qDebug() << "Switching outbound to mavlink 1.0 due to incoming mavlink 1.0 packet:" << mavlinkStatus << mavlinkChannel << mavlinkStatus->flags;
                 mavlinkStatus->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
@@ -401,9 +404,13 @@ void MAVLinkProtocol::_startLogging(void)
     if (qgcApp()->runningUnitTests()) {
         return;
     }
+    AppSettings* appSettings = _app->toolbox()->settingsManager()->appSettings();
+    if(appSettings->disableAllPersistence()->rawValue().toBool()) {
+        return;
+    }
 #ifdef __mobile__
     //-- Mobile build don't write to /tmp unless told to do so
-    if (!_app->toolbox()->settingsManager()->appSettings()->telemetrySave()->rawValue().toBool()) {
+    if (!appSettings->telemetrySave()->rawValue().toBool()) {
         return;
     }
 #endif
@@ -432,7 +439,8 @@ void MAVLinkProtocol::_stopLogging(void)
     if (_tempLogFile.isOpen()) {
         if (_closeLogFile()) {
             if ((_vehicleWasArmed || _app->toolbox()->settingsManager()->appSettings()->telemetrySaveNotArmed()->rawValue().toBool()) &&
-                _app->toolbox()->settingsManager()->appSettings()->telemetrySave()->rawValue().toBool()) {
+                _app->toolbox()->settingsManager()->appSettings()->telemetrySave()->rawValue().toBool() &&
+                !_app->toolbox()->settingsManager()->appSettings()->disableAllPersistence()->rawValue().toBool()) {
                 emit saveTelemetryLog(_tempLogFile.fileName());
             } else {
                 QFile::remove(_tempLogFile.fileName());
